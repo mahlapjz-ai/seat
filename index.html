@@ -10,8 +10,11 @@
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:15px;color:#333;background:#f0f2f5;-webkit-tap-highlight-color:transparent}
 #app{max-width:480px;margin:0 auto;padding:12px 10px 100px;min-height:100vh}
 
-/* ===== 页面标题 ===== */
-.page-title{text-align:center;font-size:20px;font-weight:700;padding:14px 0 10px;color:#1a1a1a;letter-spacing:1px}
+/* ===== 页面标题栏 ===== */
+.page-header{display:flex;align-items:center;justify-content:center;padding:14px 0 10px;gap:10px}
+.page-title{font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:1px}
+.btn-cleanup{padding:6px 14px;font-size:13px;font-weight:600;border:none;border-radius:6px;background:#ff4d4f;color:#fff;cursor:pointer;white-space:nowrap}
+.btn-cleanup:active{opacity:.7}
 
 /* ===== 楼层按钮 ===== */
 .floor-btn{display:block;width:100%;padding:16px 20px;margin:8px 0;font-size:18px;font-weight:600;border:none;border-radius:10px;color:#fff;cursor:pointer;text-align:left;position:relative;transition:transform .1s}
@@ -34,34 +37,36 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .area-btn .arrow{margin-left:6px;font-size:12px;transition:transform .25s}
 .area-btn.expanded .arrow{transform:rotate(90deg)}
 
-/* ===== 座位网格容器 ===== */
+/* ===== 座位容器 ===== */
 .seat-container{display:none;padding:8px 0}
 .seat-container.show{display:block}
 
-/* ===== 座位按钮 ===== */
-.seat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:0 2px}
-.seat-btn{position:relative;padding:10px 2px;font-size:13px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,border-color .15s}
+/* ===== 座位流式布局（flex-wrap，时间段紧跟座位按钮） ===== */
+.seat-flow{display:flex;flex-wrap:wrap;gap:6px;padding:0 2px}
+.seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:13px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,border-color .15s}
 .seat-btn:active{background:#e6f7ff}
 .seat-btn.expanded{background:#e6f7ff;border-color:#1890ff}
 
-/* ===== 有图片的座位视觉提示：绿色边框 + 浅绿背景 ===== */
+/* ===== 有图片的座位视觉提示 ===== */
 .seat-btn.has-images{border-color:#52c41a;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d;font-weight:700}
 .seat-btn.has-images.expanded{border-color:#1890ff;background:#e6f7ff;color:#333;font-weight:500}
 
 /* ===== 新增座位按钮 ===== */
-.add-seat-btn{padding:10px 2px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s}
+.add-seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s}
 .add-seat-btn:active{background:#e6f7ff;border-color:#1890ff;color:#1890ff}
 
-/* ===== 时间段卡片容器 ===== */
-.timeslot-container{display:none;padding:8px 0}
+/* ===== 时间段卡片容器（宽度100%，紧跟对应座位按钮） ===== */
+.timeslot-container{display:none;width:100%;padding:8px 0}
 .timeslot-container.show{display:block}
 
 /* ===== 座位名称编辑区 ===== */
-.seat-header{display:flex;align-items:center;padding:8px 4px 10px;gap:8px}
+.seat-header{display:flex;align-items:center;padding:8px 4px 10px;gap:8px;flex-wrap:wrap}
 .seat-header-label{font-size:15px;color:#666}
 .seat-name-text{font-size:17px;font-weight:700;color:#1890ff;cursor:pointer;border-bottom:1px dashed #1890ff;padding-bottom:1px}
 .seat-name-hint{font-size:12px;color:#999;margin-left:4px}
 .seat-name-edit-input{font-size:17px;font-weight:700;color:#1890ff;border:none;border-bottom:2px solid #1890ff;outline:none;background:transparent;width:120px;padding-bottom:1px}
+.btn-delete-seat{padding:4px 12px;font-size:12px;font-weight:600;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;cursor:pointer;margin-left:auto}
+.btn-delete-seat:active{background:#fff1f0}
 
 /* ===== 时间段卡片 ===== */
 .timeslot-card{background:#fff;border-radius:8px;margin:8px 0;padding:10px 10px 8px;box-shadow:0 1px 3px rgba(0,0,0,.08);position:relative}
@@ -93,13 +98,26 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 #btn-download-separate{background:#1890ff;color:#fff}
 #btn-download-concat{background:#fa8c16;color:#fff}
 
-/* ===== 全屏预览弹窗（支持双指缩放） ===== */
+/* ===== 全屏预览弹窗 ===== */
 #preview-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:200;overflow:hidden;touch-action:none}
 #preview-modal.show{display:block}
 #preview-close{position:absolute;top:12px;right:16px;font-size:32px;color:#fff;cursor:pointer;z-index:201;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:50%}
 #preview-image-wrap{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
 #preview-image{max-width:95vw;max-height:90vh;object-fit:contain;border-radius:4px;transform-origin:0 0;transition:none}
 #preview-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.5);font-size:12px;pointer-events:none}
+
+/* ===== 批量清理弹窗 ===== */
+#cleanup-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:250;align-items:center;justify-content:center}
+#cleanup-modal.show{display:flex}
+.cleanup-box{background:#fff;border-radius:12px;padding:24px 20px;width:90%;max-width:360px}
+.cleanup-box h3{font-size:18px;margin-bottom:16px;text-align:center}
+.cleanup-box p{font-size:14px;color:#666;margin-bottom:12px}
+.cleanup-box input[type="date"]{width:100%;padding:10px;font-size:16px;border:1px solid #d9d9d9;border-radius:6px;margin-bottom:16px}
+.cleanup-btns{display:flex;gap:10px}
+.cleanup-btns button{flex:1;padding:12px;font-size:15px;font-weight:600;border:none;border-radius:8px;cursor:pointer}
+.cleanup-btns button:active{opacity:.8}
+.cleanup-cancel{background:#f0f0f0;color:#333}
+.cleanup-exec{background:#ff4d4f;color:#fff}
 
 /* ===== 提示信息 ===== */
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:14px 28px;border-radius:8px;font-size:15px;z-index:300;pointer-events:none;animation:toast-fade 2s forwards}
@@ -127,12 +145,24 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
   <div id="preview-hint">双指缩放 · 单指拖动 · 点击空白关闭</div>
 </div>
 
+<!-- 批量清理弹窗 -->
+<div id="cleanup-modal">
+  <div class="cleanup-box">
+    <h3>批量清理图片</h3>
+    <p>删除所选日期<strong>之前</strong>添加的所有图片，释放存储空间。</p>
+    <input type="date" id="cleanup-date" />
+    <div class="cleanup-btns">
+      <button class="cleanup-cancel" id="cleanup-cancel-btn">取消</button>
+      <button class="cleanup-exec" id="cleanup-exec-btn">执行清理</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============================================================
 // 一、常量与配置
 // ============================================================
 
-/** 楼层与区域定义 */
 const FLOORS = [
   { id: 1, name: '一楼', areas: ['中庭', '报刊'] },
   { id: 2, name: '二楼', areas: ['东', '南', '西', '北', '青少年'] },
@@ -141,7 +171,6 @@ const FLOORS = [
   { id: 5, name: '五楼', areas: ['东', '南', '西'] }
 ];
 
-/** 22 个时间段 */
 const TIME_SLOTS = [
   '09:00','09:30','10:00','10:30','11:00','12:00',
   '13:00','13:30','14:00','14:30','15:00','15:30',
@@ -149,15 +178,10 @@ const TIME_SLOTS = [
   '19:30','20:00','20:30','21:00'
 ];
 
-/** 每个区域默认座位数 */
 const DEFAULT_SEAT_COUNT = 90;
-
-/** 每个单元格最大图片数 */
 const MAX_IMAGES = 3;
-
-/** IndexedDB 数据库名与版本 */
 const DB_NAME = 'SeatImageDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 // ============================================================
 // 二、IndexedDB 数据库操作
@@ -165,32 +189,22 @@ const DB_VERSION = 2;
 
 let dbInstance = null;
 
-/** 打开/初始化数据库 */
 function openDB() {
   if (dbInstance) return Promise.resolve(dbInstance);
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = (e) => {
       const db = e.target.result;
-      if (!db.objectStoreNames.contains('cells')) {
-        db.createObjectStore('cells', { keyPath: 'key' });
-      }
-      if (!db.objectStoreNames.contains('seatNames')) {
-        db.createObjectStore('seatNames', { keyPath: 'key' });
-      }
-      if (!db.objectStoreNames.contains('areaSeatCount')) {
-        db.createObjectStore('areaSeatCount', { keyPath: 'key' });
-      }
+      if (!db.objectStoreNames.contains('cells')) db.createObjectStore('cells', { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('seatNames')) db.createObjectStore('seatNames', { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('areaSeatCount')) db.createObjectStore('areaSeatCount', { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('deletedSeats')) db.createObjectStore('deletedSeats', { keyPath: 'key' });
     };
-    req.onsuccess = (e) => {
-      dbInstance = e.target.result;
-      resolve(dbInstance);
-    };
+    req.onsuccess = (e) => { dbInstance = e.target.result; resolve(dbInstance); };
     req.onerror = (e) => reject(e.target.error);
   });
 }
 
-/** 通用写入（put） */
 async function dbPut(storeName, data) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -201,7 +215,6 @@ async function dbPut(storeName, data) {
   });
 }
 
-/** 通用读取（get） */
 async function dbGet(storeName, key) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -212,7 +225,6 @@ async function dbGet(storeName, key) {
   });
 }
 
-/** 通用删除 */
 async function dbDelete(storeName, key) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -223,7 +235,6 @@ async function dbDelete(storeName, key) {
   });
 }
 
-/** 获取整个 store 的所有记录 */
 async function dbGetAll(storeName) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -234,41 +245,25 @@ async function dbGetAll(storeName) {
   });
 }
 
-/** 保存单元格数据 */
-async function saveCellData(cellKey, images) {
-  await dbPut('cells', { key: cellKey, images });
+async function dbClearStore(storeName) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(storeName, 'readwrite');
+    tx.objectStore(storeName).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = (e) => reject(e.target.error);
+  });
 }
 
-/** 获取单元格数据 */
-async function getCellData(cellKey) {
-  return await dbGet('cells', cellKey);
-}
-
-/** 保存座位编号 */
-async function saveSeatName(seatKey, name) {
-  await dbPut('seatNames', { key: seatKey, name });
-}
-
-/** 获取所有座位编号 */
-async function getAllSeatNames() {
-  const all = await dbGetAll('seatNames');
-  const map = {};
-  all.forEach(r => { map[r.key] = r.name; });
-  return map;
-}
-
-/** 保存区域座位数量 */
-async function saveAreaSeatCount(ak, count) {
-  await dbPut('areaSeatCount', { key: ak, count });
-}
-
-/** 获取所有区域座位数量 */
-async function getAllAreaSeatCounts() {
-  const all = await dbGetAll('areaSeatCount');
-  const map = {};
-  all.forEach(r => { map[r.key] = r.count; });
-  return map;
-}
+async function saveCellData(cellKey, images) { await dbPut('cells', { key: cellKey, images }); }
+async function getCellData(cellKey) { return await dbGet('cells', cellKey); }
+async function saveSeatName(sk, name) { await dbPut('seatNames', { key: sk, name }); }
+async function getAllSeatNames() { const all = await dbGetAll('seatNames'); const m = {}; all.forEach(r => m[r.key] = r.name); return m; }
+async function saveAreaSeatCount(ak, count) { await dbPut('areaSeatCount', { key: ak, count }); }
+async function getAllAreaSeatCounts() { const all = await dbGetAll('areaSeatCount'); const m = {}; all.forEach(r => m[r.key] = r.count); return m; }
+async function saveDeletedSeat(sk) { await dbPut('deletedSeats', { key: sk }); }
+async function removeDeletedSeat(sk) { await dbDelete('deletedSeats', sk); }
+async function getAllDeletedSeats() { const all = await dbGetAll('deletedSeats'); return new Set(all.map(r => r.key)); }
 
 // ============================================================
 // 三、应用状态管理
@@ -277,56 +272,42 @@ async function getAllAreaSeatCounts() {
 const state = {
   expandedFloors: new Set(),
   expandedAreas: new Set(),
-  expandedSeats: new Set(),     // 同时只展开一个座位
+  expandedSeats: new Set(),
   selectedCells: [],
-  seatNames: {},                // { seatKey: name }
-  seatHasImages: new Set(),     // 有图片的座位 key 集合
-  areaSeatCounts: {},           // { areaKey: count } 每个区域的实际座位数
+  seatNames: {},
+  seatHasImages: new Set(),
+  areaSeatCounts: {},
+  deletedSeats: new Set(),
 };
 
-/** 生成区域 key */
-function areaKey(floorId, areaName) { return `${floorId}-${areaName}`; }
-
-/** 生成座位 key */
-function seatKey(floorId, areaName, seatIdx) { return `${floorId}-${areaName}-${seatIdx}`; }
-
-/** 生成单元格 key */
-function cellKey(floorId, areaName, seatIdx, timeIdx) { return `${floorId}-${areaName}-${seatIdx}-${timeIdx}`; }
-
-/** 从单元格 key 提取座位 key */
+function areaKey(fid, aname) { return `${fid}-${aname}`; }
+function seatKey(fid, aname, idx) { return `${fid}-${aname}-${idx}`; }
+function cellKey(fid, aname, sidx, tidx) { return `${fid}-${aname}-${sidx}-${tidx}`; }
 function cellToSeatKey(ck) { return ck.split('-').slice(0, 3).join('-'); }
 
-/** 获取某区域的座位数量 */
-function getAreaSeatCount(floorId, areaName) {
-  const ak = areaKey(floorId, areaName);
-  return state.areaSeatCounts[ak] || DEFAULT_SEAT_COUNT;
+function getAreaSeatCount(fid, aname) {
+  return state.areaSeatCounts[areaKey(fid, aname)] || DEFAULT_SEAT_COUNT;
 }
 
-/** 默认座位编号 */
-function defaultSeatName(floorId, areaName, seatIdx) {
-  return `${areaName}${floorId}${String(seatIdx + 1).padStart(3, '0')}`;
+function defaultSeatName(fid, aname, idx) {
+  return `${aname}${fid}${String(idx + 1).padStart(3, '0')}`;
 }
 
-/** 获取座位编号（优先自定义，否则默认） */
-function getSeatNameSync(floorId, areaName, seatIdx) {
-  const sk = seatKey(floorId, areaName, seatIdx);
-  return state.seatNames[sk] || defaultSeatName(floorId, areaName, seatIdx);
+function getSeatNameSync(fid, aname, idx) {
+  const sk = seatKey(fid, aname, idx);
+  return state.seatNames[sk] || defaultSeatName(fid, aname, idx);
 }
 
-/** 构建有图片的座位集合 */
 async function buildSeatHasImages() {
   const all = await dbGetAll('cells');
   state.seatHasImages = new Set();
   all.forEach(r => {
     if (r.images && r.images.length > 0) {
-      const parts = r.key.split('-');
-      const sk = parts.slice(0, 3).join('-');
-      state.seatHasImages.add(sk);
+      state.seatHasImages.add(r.key.split('-').slice(0, 3).join('-'));
     }
   });
 }
 
-/** 保存展开状态到 localStorage */
 function saveUIState() {
   try {
     localStorage.setItem('seat_ui_state', JSON.stringify({
@@ -334,10 +315,9 @@ function saveUIState() {
       expandedAreas: [...state.expandedAreas],
       expandedSeats: [...state.expandedSeats]
     }));
-  } catch (e) { /* 忽略 */ }
+  } catch (e) {}
 }
 
-/** 从 localStorage 恢复展开状态 */
 function loadUIState() {
   try {
     const raw = localStorage.getItem('seat_ui_state');
@@ -346,18 +326,17 @@ function loadUIState() {
     if (obj.expandedFloors) state.expandedFloors = new Set(obj.expandedFloors);
     if (obj.expandedAreas) state.expandedAreas = new Set(obj.expandedAreas);
     if (obj.expandedSeats) state.expandedSeats = new Set(obj.expandedSeats);
-  } catch (e) { /* 忽略 */ }
+  } catch (e) {}
 }
 
 // ============================================================
-// 四、UI 渲染函数
+// 四、UI 渲染
 // ============================================================
 
 const app = document.getElementById('app');
 
-/** 渲染主界面 */
 function renderMain() {
-  let html = '<div class="page-title">图书馆座位图片管理</div>';
+  let html = '<div class="page-header"><span class="page-title">图书馆座位图片管理</span><button class="btn-cleanup" data-action="open-cleanup">批量清理</button></div>';
   FLOORS.forEach(floor => {
     const fid = floor.id;
     const expanded = state.expandedFloors.has(fid);
@@ -368,38 +347,34 @@ function renderMain() {
       const aExpanded = state.expandedAreas.has(ak);
       html += `<button class="area-btn ${aExpanded ? 'expanded' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}">${aname}<span class="arrow">▶</span></button>`;
       html += `<div class="seat-container ${aExpanded ? 'show' : ''}" id="seats-${ak}">`;
-      html += renderSeatGrid(fid, aname);
+      html += renderSeatFlow(fid, aname);
       html += `</div>`;
     });
     html += `</div>`;
   });
   app.innerHTML = html;
-  // 渲染已展开座位的时间段
-  state.expandedSeats.forEach(sk => {
-    renderTimeSlots(sk);
-  });
+  state.expandedSeats.forEach(sk => renderTimeSlots(sk));
 }
 
-/** 渲染座位网格（含新增按钮） */
-function renderSeatGrid(fid, aname) {
+/** 渲染座位流（每个座位按钮紧跟其时间段容器） */
+function renderSeatFlow(fid, aname) {
   const count = getAreaSeatCount(fid, aname);
-  let html = '<div class="seat-grid">';
+  let html = '<div class="seat-flow">';
   for (let i = 0; i < count; i++) {
     const sk = seatKey(fid, aname, i);
+    // 跳过已删除的座位
+    if (state.deletedSeats.has(sk)) continue;
     const sName = getSeatNameSync(fid, aname, i);
     const sExpanded = state.expandedSeats.has(sk);
     const hasImg = state.seatHasImages.has(sk);
+    // 座位按钮
     html += `<button class="seat-btn ${sExpanded ? 'expanded' : ''} ${hasImg ? 'has-images' : ''}" data-action="toggle-seat" data-floor="${fid}" data-area="${aname}" data-seat="${i}">${sName}</button>`;
+    // 时间段容器紧跟其后（宽度100%，展开时占据整行）
+    html += `<div class="timeslot-container ${sExpanded ? 'show' : ''}" id="timeslots-${sk}"></div>`;
   }
   // 新增座位按钮
   html += `<button class="add-seat-btn" data-action="add-seat" data-floor="${fid}" data-area="${aname}">+</button>`;
   html += '</div>';
-  // 为每个座位创建独立的时间段容器
-  for (let i = 0; i < count; i++) {
-    const sk = seatKey(fid, aname, i);
-    const sExpanded = state.expandedSeats.has(sk);
-    html += `<div class="timeslot-container ${sExpanded ? 'show' : ''}" id="timeslots-${sk}"></div>`;
-  }
   return html;
 }
 
@@ -413,7 +388,12 @@ async function renderTimeSlots(sk) {
   const sidx = parseInt(parts[2]);
   const sName = getSeatNameSync(fid, aname, sidx);
 
-  let html = `<div class="seat-header"><span class="seat-header-label">座位编号：</span><span class="seat-name-text" data-action="edit-seat-name" data-seat-key="${sk}">${sName}</span><span class="seat-name-hint">（点击修改）</span></div>`;
+  let html = `<div class="seat-header">`;
+  html += `<span class="seat-header-label">座位编号：</span>`;
+  html += `<span class="seat-name-text" data-action="edit-seat-name" data-seat-key="${sk}">${sName}</span>`;
+  html += `<span class="seat-name-hint">（点击修改）</span>`;
+  html += `<button class="btn-delete-seat" data-action="delete-seat" data-seat-key="${sk}">删除座位</button>`;
+  html += `</div>`;
 
   for (let t = 0; t < TIME_SLOTS.length; t++) {
     const ck = cellKey(fid, aname, sidx, t);
@@ -449,25 +429,17 @@ async function renderTimeSlots(sk) {
 /** 更新某个座位按钮的视觉提示 */
 function updateSeatVisual(sk) {
   document.querySelectorAll('.seat-btn').forEach(btn => {
-    const fid = btn.dataset.floor;
-    const aname = btn.dataset.area;
-    const sidx = btn.dataset.seat;
-    if (!fid || !aname || sidx === undefined) return;
-    const k = seatKey(parseInt(fid), aname, parseInt(sidx));
+    const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
     if (k !== sk) return;
-    if (state.seatHasImages.has(sk)) {
-      btn.classList.add('has-images');
-    } else {
-      btn.classList.remove('has-images');
-    }
+    btn.classList.toggle('has-images', state.seatHasImages.has(sk));
   });
 }
 
 // ============================================================
-// 五、图片处理（水印等）
+// 五、图片水印
 // ============================================================
 
-/** 为图片添加水印（左下角，座位编号，80px，白色文本+半透明背景，无描边） */
+/** 添加水印（左下角，座位编号，80px，白色文本+半透明圆角背景，无描边） */
 function addWatermark(imageData, seatName) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -476,38 +448,30 @@ function addWatermark(imageData, seatName) {
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext('2d');
-      // 绘制原图
       ctx.drawImage(img, 0, 0);
-      // 水印参数
       const fontSize = 80;
       const padding = 16;
       ctx.font = `bold ${fontSize}px sans-serif`;
-      const metrics = ctx.measureText(seatName);
-      const tw = metrics.width;
+      const tw = ctx.measureText(seatName).width;
       const th = fontSize;
-      // 左下角位置
       const x = padding;
       const y = canvas.height - th - padding * 2;
       // 半透明圆角背景
-      const bgX = x - padding;
-      const bgY = y - padding;
-      const bgW = tw + padding * 2;
-      const bgH = th + padding * 2;
-      const radius = 12;
+      const bgX = x - padding, bgY = y - padding, bgW = tw + padding * 2, bgH = th + padding * 2, r = 12;
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.beginPath();
-      ctx.moveTo(bgX + radius, bgY);
-      ctx.lineTo(bgX + bgW - radius, bgY);
-      ctx.quadraticCurveTo(bgX + bgW, bgY, bgX + bgW, bgY + radius);
-      ctx.lineTo(bgX + bgW, bgY + bgH - radius);
-      ctx.quadraticCurveTo(bgX + bgW, bgY + bgH, bgX + bgW - radius, bgY + bgH);
-      ctx.lineTo(bgX + radius, bgY + bgH);
-      ctx.quadraticCurveTo(bgX, bgY + bgH, bgX, bgY + bgH - radius);
-      ctx.lineTo(bgX, bgY + radius);
-      ctx.quadraticCurveTo(bgX, bgY, bgX + radius, bgY);
+      ctx.moveTo(bgX + r, bgY);
+      ctx.lineTo(bgX + bgW - r, bgY);
+      ctx.quadraticCurveTo(bgX + bgW, bgY, bgX + bgW, bgY + r);
+      ctx.lineTo(bgX + bgW, bgY + bgH - r);
+      ctx.quadraticCurveTo(bgX + bgW, bgY + bgH, bgX + bgW - r, bgY + bgH);
+      ctx.lineTo(bgX + r, bgY + bgH);
+      ctx.quadraticCurveTo(bgX, bgY + bgH, bgX, bgY + bgH - r);
+      ctx.lineTo(bgX, bgY + r);
+      ctx.quadraticCurveTo(bgX, bgY, bgX + r, bgY);
       ctx.closePath();
       ctx.fill();
-      // 白色文本（无描边）
+      // 白色文本
       ctx.textBaseline = 'top';
       ctx.fillStyle = '#ffffff';
       ctx.fillText(seatName, x, y);
@@ -522,132 +486,92 @@ function addWatermark(imageData, seatName) {
 // 六、文件输入处理
 // ============================================================
 
-// 拍照文件输入
 const captureInput = document.createElement('input');
-captureInput.type = 'file';
-captureInput.capture = 'environment';
-captureInput.accept = 'image/*';
-captureInput.style.display = 'none';
+captureInput.type = 'file'; captureInput.capture = 'environment'; captureInput.accept = 'image/*'; captureInput.style.display = 'none';
 document.body.appendChild(captureInput);
 
-// 上传文件输入
 const uploadInput = document.createElement('input');
-uploadInput.type = 'file';
-uploadInput.accept = 'image/*';
-uploadInput.style.display = 'none';
+uploadInput.type = 'file'; uploadInput.accept = 'image/*'; uploadInput.style.display = 'none';
 document.body.appendChild(uploadInput);
 
 let currentCaptureCellKey = null;
 let currentUploadCellKey = null;
 
-/** 拍照输入变化 */
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+/** 处理拍照 */
 captureInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file || !currentCaptureCellKey) { captureInput.value = ''; return; }
   const ck = currentCaptureCellKey;
   currentCaptureCellKey = null;
-
   try {
-    const originalBase64 = await readFileAsDataURL(file);
+    const original = await readFileAsDataURL(file);
     const cellData = await getCellData(ck);
     const images = (cellData && cellData.images) ? [...cellData.images] : [];
-    if (images.length >= MAX_IMAGES) {
-      showToast('该时段图片已满');
-      captureInput.value = '';
-      return;
-    }
-    // 获取座位编号
+    if (images.length >= MAX_IMAGES) { showToast('该时段图片已满'); captureInput.value = ''; return; }
     const parts = ck.split('-');
-    const fid = parseInt(parts[0]);
-    const aname = parts[1];
-    const sidx = parseInt(parts[2]);
+    const fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
     const sName = getSeatNameSync(fid, aname, sidx);
-    // 添加水印
-    const watermarked = await addWatermark(originalBase64, sName);
-    // 存储：带水印版本 + 原始图片（用于座位编号变更时重新生成水印）
-    images.push({ data: watermarked, original: originalBase64, type: 'capture' });
+    const watermarked = await addWatermark(original, sName);
+    images.push({ data: watermarked, original, type: 'capture', createdAt: Date.now() });
     await saveCellData(ck, images);
     const sk = cellToSeatKey(ck);
     state.seatHasImages.add(sk);
     updateSeatVisual(sk);
     await renderTimeSlots(sk);
   } catch (err) {
-    if (err.name === 'QuotaExceededError') {
-      showToast('存储空间不足，请删除一些旧图片后再试！');
-    } else {
-      console.error('拍照处理出错:', err);
-      showToast('拍照处理出错，请重试');
-    }
+    if (err.name === 'QuotaExceededError') showToast('存储空间不足，请删除一些旧图片后再试！');
+    else { console.error('拍照处理出错:', err); showToast('拍照处理出错，请重试'); }
   }
   captureInput.value = '';
 });
 
-/** 上传输入变化（现在也添加水印） */
+/** 处理上传（也添加水印） */
 uploadInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file || !currentUploadCellKey) { uploadInput.value = ''; return; }
   const ck = currentUploadCellKey;
   currentUploadCellKey = null;
-
   try {
-    const originalBase64 = await readFileAsDataURL(file);
+    const original = await readFileAsDataURL(file);
     const cellData = await getCellData(ck);
     const images = (cellData && cellData.images) ? [...cellData.images] : [];
-    if (images.length >= MAX_IMAGES) {
-      showToast('该时段图片已满');
-      uploadInput.value = '';
-      return;
-    }
-    // 获取座位编号
+    if (images.length >= MAX_IMAGES) { showToast('该时段图片已满'); uploadInput.value = ''; return; }
     const parts = ck.split('-');
-    const fid = parseInt(parts[0]);
-    const aname = parts[1];
-    const sidx = parseInt(parts[2]);
+    const fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
     const sName = getSeatNameSync(fid, aname, sidx);
-    // 上传图片也添加水印
-    const watermarked = await addWatermark(originalBase64, sName);
-    images.push({ data: watermarked, original: originalBase64, type: 'upload' });
+    const watermarked = await addWatermark(original, sName);
+    images.push({ data: watermarked, original, type: 'upload', createdAt: Date.now() });
     await saveCellData(ck, images);
     const sk = cellToSeatKey(ck);
     state.seatHasImages.add(sk);
     updateSeatVisual(sk);
     await renderTimeSlots(sk);
   } catch (err) {
-    if (err.name === 'QuotaExceededError') {
-      showToast('存储空间不足，请删除一些旧图片后再试！');
-    } else {
-      console.error('上传处理出错:', err);
-      showToast('上传处理出错，请重试');
-    }
+    if (err.name === 'QuotaExceededError') showToast('存储空间不足，请删除一些旧图片后再试！');
+    else { console.error('上传处理出错:', err); showToast('上传处理出错，请重试'); }
   }
   uploadInput.value = '';
 });
-
-/** 读取文件为 Data URL */
-function readFileAsDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
 
 // ============================================================
 // 七、下载功能
 // ============================================================
 
-/** 触发浏览器下载 Data URL */
 function downloadDataUrl(dataUrl, filename) {
   const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.href = dataUrl; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-/** 加载图片为 Image 对象 */
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -663,23 +587,15 @@ async function downloadIndividually() {
   let delay = 0;
   for (const ck of state.selectedCells) {
     const cellData = await getCellData(ck);
-    if (!cellData || !cellData.images || cellData.images.length === 0) continue;
+    if (!cellData || !cellData.images || !cellData.images.length === 0) continue;
     const parts = ck.split('-');
-    const fid = parseInt(parts[0]);
-    const aname = parts[1];
-    const sidx = parseInt(parts[2]);
-    const tidx = parseInt(parts[3]);
+    const fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]), tidx = parseInt(parts[3]);
     const sName = getSeatNameSync(fid, aname, sidx);
     const timeSlot = TIME_SLOTS[tidx];
-
     for (let i = 0; i < cellData.images.length; i++) {
       const imgObj = cellData.images[i];
       let data = imgObj.data;
-      // 从原始图重新生成水印（座位编号可能已变更）
-      if (imgObj.original) {
-        const currentSeatName = getSeatNameSync(fid, aname, sidx);
-        data = await addWatermark(imgObj.original, currentSeatName);
-      }
+      if (imgObj.original) data = await addWatermark(imgObj.original, getSeatNameSync(fid, aname, sidx));
       const filename = `${sName}_${timeSlot}_${i + 1}.jpg`;
       setTimeout(() => downloadDataUrl(data, filename), delay);
       delay += 400;
@@ -691,76 +607,38 @@ async function downloadIndividually() {
 /** 拼接下载 */
 async function downloadConcatenated() {
   if (state.selectedCells.length === 0) return;
-
   const allImageData = [];
-
   for (const ck of state.selectedCells) {
     const cellData = await getCellData(ck);
     if (!cellData || !cellData.images || cellData.images.length === 0) continue;
     const parts = ck.split('-');
-    const fid = parseInt(parts[0]);
-    const aname = parts[1];
-    const sidx = parseInt(parts[2]);
-    for (const imgObj of cellData.images) {
-      allImageData.push({ ...imgObj, fid, aname, sidx });
-    }
+    const fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
+    for (const imgObj of cellData.images) allImageData.push({ ...imgObj, fid, aname, sidx });
   }
-
   if (allImageData.length === 0) { showToast('无图片可拼接'); return; }
-
-  // 为有原始图的重新生成水印
   const processedImages = [];
   for (const imgObj of allImageData) {
     let data = imgObj.data;
-    if (imgObj.original) {
-      const currentSeatName = getSeatNameSync(imgObj.fid, imgObj.aname, imgObj.sidx);
-      data = await addWatermark(imgObj.original, currentSeatName);
-    }
+    if (imgObj.original) data = await addWatermark(imgObj.original, getSeatNameSync(imgObj.fid, imgObj.aname, imgObj.sidx));
     processedImages.push(data);
   }
-
-  // 加载所有图片
   const imgs = await Promise.all(processedImages.map(loadImage));
-
-  // 计算最大宽度
   const maxWidth = Math.max(...imgs.map(img => img.naturalWidth));
-
-  // 计算每张图缩放后的高度
-  const scaledHeights = imgs.map(img => {
-    const scale = maxWidth / img.naturalWidth;
-    return Math.round(img.naturalHeight * scale);
-  });
-
+  const scaledHeights = imgs.map(img => Math.round(img.naturalHeight * maxWidth / img.naturalWidth));
   const totalHeight = scaledHeights.reduce((a, b) => a + b, 0);
-
-  // 创建 Canvas 拼接
   const canvas = document.createElement('canvas');
-  canvas.width = maxWidth;
-  canvas.height = totalHeight;
+  canvas.width = maxWidth; canvas.height = totalHeight;
   const ctx = canvas.getContext('2d');
-
-  // 白色背景
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, maxWidth, totalHeight);
-
-  // 逐张绘制
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, maxWidth, totalHeight);
   let y = 0;
-  for (let i = 0; i < imgs.length; i++) {
-    const h = scaledHeights[i];
-    ctx.drawImage(imgs[i], 0, y, maxWidth, h);
-    y += h;
-  }
-
-  // 导出并下载
-  const resultUrl = canvas.toDataURL('image/jpeg', 0.92);
-  const ts = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })
-    .replace(/[\/:]/g, '').replace(/\s/g, '_');
-  downloadDataUrl(resultUrl, `拼接结果_${ts}.jpg`);
+  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], 0, y, maxWidth, scaledHeights[i]); y += scaledHeights[i]; }
+  const ts = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false }).replace(/[\/:]/g, '').replace(/\s/g, '_');
+  downloadDataUrl(canvas.toDataURL('image/jpeg', 0.92), `拼接结果_${ts}.jpg`);
   showToast('拼接下载完成');
 }
 
 // ============================================================
-// 八、全屏预览（支持双指缩放）
+// 八、全屏预览（双指缩放：缩放中心跟随手指中点）
 // ============================================================
 
 const previewModal = document.getElementById('preview-modal');
@@ -768,78 +646,44 @@ const previewImage = document.getElementById('preview-image');
 const previewClose = document.getElementById('preview-close');
 const previewWrap = document.getElementById('preview-image-wrap');
 
-// 缩放状态
-let pvScale = 1;
-let pvTranslateX = 0;
-let pvTranslateY = 0;
-let pvLastDist = 0;
-let pvLastX = 0;
-let pvLastY = 0;
-let pvIsDragging = false;
-let pvPinching = false;
+let pvScale = 1, pvTX = 0, pvTY = 0;
+let pvLastDist = 0, pvLastX = 0, pvLastY = 0;
+let pvDragging = false, pvPinching = false;
 
-/** 应用变换 */
-function pvApplyTransform() {
-  previewImage.style.transform = `translate(${pvTranslateX}px, ${pvTranslateY}px) scale(${pvScale})`;
+function pvApply() {
+  previewImage.style.transform = `translate(${pvTX}px, ${pvTY}px) scale(${pvScale})`;
 }
 
-/** 重置预览状态 */
-function pvReset() {
-  pvScale = 1;
-  pvTranslateX = 0;
-  pvTranslateY = 0;
-  pvApplyTransform();
-}
+function pvReset() { pvScale = 1; pvTX = 0; pvTY = 0; pvApply(); }
 
-/** 显示全屏预览 */
 async function showPreview(cellKeyStr, imgIdx) {
   const cellData = await getCellData(cellKeyStr);
   if (!cellData || !cellData.images || !cellData.images[imgIdx]) return;
   const imgObj = cellData.images[imgIdx];
   let data = imgObj.data;
-  // 从原始图重新生成水印（座位编号可能已变更）
   if (imgObj.original) {
     const parts = cellKeyStr.split('-');
-    const fid = parseInt(parts[0]);
-    const aname = parts[1];
-    const sidx = parseInt(parts[2]);
-    const currentSeatName = getSeatNameSync(fid, aname, sidx);
-    data = await addWatermark(imgObj.original, currentSeatName);
+    data = await addWatermark(imgObj.original, getSeatNameSync(parseInt(parts[0]), parts[1], parseInt(parts[2])));
   }
   previewImage.src = data;
   pvReset();
   previewModal.classList.add('show');
 }
 
-/** 关闭预览 */
-function closePreview() {
-  previewModal.classList.remove('show');
-  previewImage.src = '';
-}
-
+function closePreview() { previewModal.classList.remove('show'); previewImage.src = ''; }
 previewClose.addEventListener('click', closePreview);
+previewWrap.addEventListener('click', (e) => { if (e.target === previewWrap) closePreview(); });
 
-// 点击空白区域关闭
-previewWrap.addEventListener('click', (e) => {
-  if (e.target === previewWrap) closePreview();
-});
-
-// 触摸事件：支持双指缩放和单指拖动
 previewWrap.addEventListener('touchstart', (e) => {
   if (e.touches.length === 2) {
-    // 双指：开始缩放
     e.preventDefault();
-    pvPinching = true;
-    pvIsDragging = false;
+    pvPinching = true; pvDragging = false;
     const dx = e.touches[0].clientX - e.touches[1].clientX;
     const dy = e.touches[0].clientY - e.touches[1].clientY;
     pvLastDist = Math.sqrt(dx * dx + dy * dy);
   } else if (e.touches.length === 1) {
-    // 单指：开始拖动
-    pvIsDragging = true;
-    pvPinching = false;
-    pvLastX = e.touches[0].clientX;
-    pvLastY = e.touches[0].clientY;
+    pvDragging = true; pvPinching = false;
+    pvLastX = e.touches[0].clientX; pvLastY = e.touches[0].clientY;
   }
 }, { passive: false });
 
@@ -851,55 +695,102 @@ previewWrap.addEventListener('touchmove', (e) => {
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (pvLastDist > 0) {
       const ratio = dist / pvLastDist;
-      pvScale = Math.max(0.5, Math.min(5, pvScale * ratio));
-      pvApplyTransform();
+      const newScale = Math.max(0.5, Math.min(5, pvScale * ratio));
+      // 缩放中心 = 双指中点
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      // 调整平移，使中点下的图像点保持不动
+      pvTX = midX - (midX - pvTX) * (newScale / pvScale);
+      pvTY = midY - (midY - pvTY) * (newScale / pvScale);
+      pvScale = newScale;
+      pvApply();
     }
     pvLastDist = dist;
-  } else if (pvIsDragging && e.touches.length === 1) {
+  } else if (pvDragging && e.touches.length === 1) {
     e.preventDefault();
-    const dx = e.touches[0].clientX - pvLastX;
-    const dy = e.touches[0].clientY - pvLastY;
-    pvTranslateX += dx;
-    pvTranslateY += dy;
-    pvApplyTransform();
-    pvLastX = e.touches[0].clientX;
-    pvLastY = e.touches[0].clientY;
+    pvTX += e.touches[0].clientX - pvLastX;
+    pvTY += e.touches[0].clientY - pvLastY;
+    pvApply();
+    pvLastX = e.touches[0].clientX; pvLastY = e.touches[0].clientY;
   }
 }, { passive: false });
 
 previewWrap.addEventListener('touchend', (e) => {
-  if (e.touches.length < 2) {
-    pvPinching = false;
-    pvLastDist = 0;
-  }
-  if (e.touches.length === 0) {
-    pvIsDragging = false;
-  }
+  if (e.touches.length < 2) { pvPinching = false; pvLastDist = 0; }
+  if (e.touches.length === 0) pvDragging = false;
 });
 
-// 鼠标滚轮缩放（桌面端）
 previewWrap.addEventListener('wheel', (e) => {
   e.preventDefault();
-  const delta = e.deltaY > 0 ? 0.9 : 1.1;
-  pvScale = Math.max(0.5, Math.min(5, pvScale * delta));
-  pvApplyTransform();
+  const factor = e.deltaY > 0 ? 0.9 : 1.1;
+  const newScale = Math.max(0.5, Math.min(5, pvScale * factor));
+  // 以鼠标位置为中心缩放
+  const rect = previewWrap.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  pvTX = mx - (mx - pvTX) * (newScale / pvScale);
+  pvTY = my - (my - pvTY) * (newScale / pvScale);
+  pvScale = newScale;
+  pvApply();
 }, { passive: false });
 
 // ============================================================
-// 九、提示信息
+// 九、批量清理
+// ============================================================
+
+const cleanupModal = document.getElementById('cleanup-modal');
+const cleanupDate = document.getElementById('cleanup-date');
+
+document.getElementById('cleanup-cancel-btn').addEventListener('click', () => {
+  cleanupModal.classList.remove('show');
+});
+
+document.getElementById('cleanup-exec-btn').addEventListener('click', async () => {
+  const dateVal = cleanupDate.value;
+  if (!dateVal) { showToast('请选择日期'); return; }
+  const threshold = new Date(dateVal + 'T00:00:00+08:00').getTime();
+  if (isNaN(threshold)) { showToast('日期格式无效'); return; }
+
+  cleanupModal.classList.remove('show');
+  showToast('正在清理，请稍候...');
+
+  try {
+    const all = await dbGetAll('cells');
+    let totalDeleted = 0;
+    for (const record of all) {
+      if (!record.images) continue;
+      const filtered = record.images.filter(img => {
+        const ts = img.createdAt || 0;
+        return ts >= threshold;
+      });
+      if (filtered.length < record.images.length) {
+        totalDeleted += record.images.length - filtered.length;
+        if (filtered.length > 0) {
+          await saveCellData(record.key, filtered);
+        } else {
+          await dbDelete('cells', record.key);
+        }
+      }
+    }
+    await buildSeatHasImages();
+    renderMain();
+    showToast(`已清理 ${totalDeleted} 张图片`);
+  } catch (err) {
+    console.error('清理出错:', err);
+    showToast('清理出错，请重试');
+  }
+});
+
+// ============================================================
+// 十、提示与底部栏
 // ============================================================
 
 function showToast(msg) {
   const t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = msg;
+  t.className = 'toast'; t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2100);
 }
-
-// ============================================================
-// 十、底部操作栏
-// ============================================================
 
 const bottomBar = document.getElementById('bottom-bar');
 const selectedCount = document.getElementById('selected-count');
@@ -908,9 +799,7 @@ function updateBottomBar() {
   if (state.selectedCells.length > 0) {
     bottomBar.classList.add('show');
     selectedCount.textContent = `已选 ${state.selectedCells.length} 个时段`;
-  } else {
-    bottomBar.classList.remove('show');
-  }
+  } else { bottomBar.classList.remove('show'); }
 }
 
 document.getElementById('btn-download-separate').addEventListener('click', downloadIndividually);
@@ -922,262 +811,203 @@ document.getElementById('btn-clear-select').addEventListener('click', () => {
 });
 
 // ============================================================
-// 十一、事件委托（核心交互）
+// 十一、事件委托
 // ============================================================
 
 app.addEventListener('click', async (e) => {
   const target = e.target;
 
-  // ----- 楼层按钮 -----
+  // 楼层
   const floorBtn = target.closest('[data-action="toggle-floor"]');
   if (floorBtn) {
     const fid = parseInt(floorBtn.dataset.floor);
-    if (state.expandedFloors.has(fid)) {
-      state.expandedFloors.delete(fid);
-    } else {
-      state.expandedFloors.add(fid);
-    }
-    saveUIState();
-    renderMain();
-    return;
+    state.expandedFloors.has(fid) ? state.expandedFloors.delete(fid) : state.expandedFloors.add(fid);
+    saveUIState(); renderMain(); return;
   }
 
-  // ----- 区域按钮 -----
+  // 区域
   const areaBtn = target.closest('[data-action="toggle-area"]');
   if (areaBtn) {
-    const fid = parseInt(areaBtn.dataset.floor);
-    const aname = areaBtn.dataset.area;
+    const fid = parseInt(areaBtn.dataset.floor), aname = areaBtn.dataset.area;
     const ak = areaKey(fid, aname);
-    if (state.expandedAreas.has(ak)) {
-      state.expandedAreas.delete(ak);
-    } else {
-      state.expandedAreas.add(ak);
-    }
-    saveUIState();
-    renderMain();
-    return;
+    state.expandedAreas.has(ak) ? state.expandedAreas.delete(ak) : state.expandedAreas.add(ak);
+    saveUIState(); renderMain(); return;
   }
 
-  // ----- 座位按钮 -----
+  // 座位
   const seatBtn = target.closest('[data-action="toggle-seat"]');
   if (seatBtn) {
-    const fid = parseInt(seatBtn.dataset.floor);
-    const aname = seatBtn.dataset.area;
-    const sidx = parseInt(seatBtn.dataset.seat);
+    const fid = parseInt(seatBtn.dataset.floor), aname = seatBtn.dataset.area, sidx = parseInt(seatBtn.dataset.seat);
     const sk = seatKey(fid, aname, sidx);
-    // 收起之前展开的座位
-    const prevExpanded = [...state.expandedSeats];
+    const prev = [...state.expandedSeats];
     state.expandedSeats.clear();
-    // 如果点击的不是之前展开的，则展开它
-    if (!prevExpanded.includes(sk)) {
-      state.expandedSeats.add(sk);
-    }
-    saveUIState();
-    renderMain();
-    return;
+    if (!prev.includes(sk)) state.expandedSeats.add(sk);
+    saveUIState(); renderMain(); return;
   }
 
-  // ----- 新增座位 -----
+  // 新增座位
   const addBtn = target.closest('[data-action="add-seat"]');
   if (addBtn) {
-    const fid = parseInt(addBtn.dataset.floor);
-    const aname = addBtn.dataset.area;
+    const fid = parseInt(addBtn.dataset.floor), aname = addBtn.dataset.area;
     const ak = areaKey(fid, aname);
-    const currentCount = getAreaSeatCount(fid, aname);
-    const newCount = currentCount + 1;
+    const newCount = getAreaSeatCount(fid, aname) + 1;
     state.areaSeatCounts[ak] = newCount;
     await saveAreaSeatCount(ak, newCount);
-    // 重新渲染该区域的座位网格
     const seatContainer = document.getElementById('seats-' + ak);
     if (seatContainer) {
-      seatContainer.innerHTML = renderSeatGrid(fid, aname);
-      // 渲染已展开座位的时间段
-      state.expandedSeats.forEach(sk => {
-        renderTimeSlots(sk);
-      });
+      seatContainer.innerHTML = renderSeatFlow(fid, aname);
+      state.expandedSeats.forEach(sk => renderTimeSlots(sk));
     }
     showToast(`已新增座位 ${getSeatNameSync(fid, aname, newCount - 1)}`);
     return;
   }
 
-  // ----- 复选框 -----
+  // 删除座位
+  const delSeatBtn = target.closest('[data-action="delete-seat"]');
+  if (delSeatBtn) {
+    const sk = delSeatBtn.dataset.seatKey;
+    if (!confirm('确定删除该座位及其所有图片？')) return;
+    const parts = sk.split('-');
+    const fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
+    // 删除该座位所有单元格数据
+    for (let t = 0; t < TIME_SLOTS.length; t++) {
+      await dbDelete('cells', cellKey(fid, aname, sidx, t));
+    }
+    // 删除自定义名称
+    await dbDelete('seatNames', sk);
+    delete state.seatNames[sk];
+    // 标记为已删除
+    state.deletedSeats.add(sk);
+    await saveDeletedSeat(sk);
+    // 更新状态
+    state.seatHasImages.delete(sk);
+    state.expandedSeats.delete(sk);
+    // 从选中列表移除相关
+    state.selectedCells = state.selectedCells.filter(ck => cellToSeatKey(ck) !== sk);
+    updateBottomBar();
+    saveUIState(); renderMain();
+    showToast('座位已删除');
+    return;
+  }
+
+  // 复选框
   const checkbox = target.closest('[data-action="toggle-select"]');
   if (checkbox) {
     const ck = checkbox.dataset.cellKey;
     const idx = state.selectedCells.indexOf(ck);
-    if (idx >= 0) {
-      state.selectedCells.splice(idx, 1);
-      checkbox.classList.remove('checked');
-    } else {
-      state.selectedCells.push(ck);
-      checkbox.classList.add('checked');
-    }
-    updateBottomBar();
-    return;
+    if (idx >= 0) { state.selectedCells.splice(idx, 1); checkbox.classList.remove('checked'); }
+    else { state.selectedCells.push(ck); checkbox.classList.add('checked'); }
+    updateBottomBar(); return;
   }
 
-  // ----- 拍照按钮 -----
+  // 拍照
   const captureBtn = target.closest('[data-action="capture"]');
   if (captureBtn) {
     const ck = captureBtn.dataset.cellKey;
     const cellData = await getCellData(ck);
-    const images = (cellData && cellData.images) ? cellData.images : [];
-    if (images.length >= MAX_IMAGES) {
-      showToast('该时段图片已满');
-      return;
-    }
-    currentCaptureCellKey = ck;
-    captureInput.value = '';
-    captureInput.click();
-    return;
+    if (cellData && cellData.images && cellData.images.length >= MAX_IMAGES) { showToast('该时段图片已满'); return; }
+    currentCaptureCellKey = ck; captureInput.value = ''; captureInput.click(); return;
   }
 
-  // ----- 上传按钮 -----
+  // 上传
   const uploadBtn = target.closest('[data-action="upload"]');
   if (uploadBtn) {
     const ck = uploadBtn.dataset.cellKey;
     const cellData = await getCellData(ck);
-    const images = (cellData && cellData.images) ? cellData.images : [];
-    if (images.length >= MAX_IMAGES) {
-      showToast('该时段图片已满');
-      return;
-    }
-    currentUploadCellKey = ck;
-    uploadInput.value = '';
-    uploadInput.click();
-    return;
+    if (cellData && cellData.images && cellData.images.length >= MAX_IMAGES) { showToast('该时段图片已满'); return; }
+    currentUploadCellKey = ck; uploadInput.value = ''; uploadInput.click(); return;
   }
 
-  // ----- 删除图片 -----
+  // 删除图片
   const delBtn = target.closest('[data-action="delete-img"]');
   if (delBtn) {
-    const ck = delBtn.dataset.cellKey;
-    const imgIdx = parseInt(delBtn.dataset.imgIdx);
+    const ck = delBtn.dataset.cellKey, imgIdx = parseInt(delBtn.dataset.imgIdx);
     const cellData = await getCellData(ck);
     let images = (cellData && cellData.images) ? [...cellData.images] : [];
     if (imgIdx >= 0 && imgIdx < images.length) {
       images.splice(imgIdx, 1);
-      if (images.length > 0) {
-        await saveCellData(ck, images);
-      } else {
-        await dbDelete('cells', ck);
-      }
-      // 更新视觉提示
+      if (images.length > 0) await saveCellData(ck, images);
+      else await dbDelete('cells', ck);
       const sk = cellToSeatKey(ck);
-      const skParts = ck.split('-');
-      const skFid = skParts[0];
-      const skAname = skParts[1];
-      const skSidx = skParts[2];
-      let seatStillHasImages = false;
+      const p = ck.split('-');
+      let still = false;
       for (let t = 0; t < TIME_SLOTS.length; t++) {
-        const tck = `${skFid}-${skAname}-${skSidx}-${t}`;
-        const td = await getCellData(tck);
-        if (td && td.images && td.images.length > 0) {
-          seatStillHasImages = true;
-          break;
-        }
+        const td = await getCellData(`${p[0]}-${p[1]}-${p[2]}-${t}`);
+        if (td && td.images && td.images.length > 0) { still = true; break; }
       }
-      if (seatStillHasImages) {
-        state.seatHasImages.add(sk);
-      } else {
-        state.seatHasImages.delete(sk);
-      }
+      still ? state.seatHasImages.add(sk) : state.seatHasImages.delete(sk);
       updateSeatVisual(sk);
       await renderTimeSlots(sk);
     }
     return;
   }
 
-  // ----- 预览图片 -----
+  // 预览
   const previewBtn = target.closest('[data-action="preview"]');
-  if (previewBtn) {
-    const ck = previewBtn.dataset.cellKey;
-    const imgIdx = parseInt(previewBtn.dataset.imgIdx);
-    showPreview(ck, imgIdx);
-    return;
-  }
+  if (previewBtn) { showPreview(previewBtn.dataset.cellKey, parseInt(previewBtn.dataset.imgIdx)); return; }
 
-  // ----- 编辑座位编号 -----
+  // 编辑座位编号
   const nameEl = target.closest('[data-action="edit-seat-name"]');
   if (nameEl) {
-    const sk = nameEl.dataset.seatKey;
-    const currentName = nameEl.textContent;
+    const sk = nameEl.dataset.seatKey, curName = nameEl.textContent;
     const input = document.createElement('input');
-    input.type = 'text';
-    input.value = currentName;
-    input.className = 'seat-name-edit-input';
-
+    input.type = 'text'; input.value = curName; input.className = 'seat-name-edit-input';
     const doSave = async () => {
-      const newName = input.value.trim() || currentName;
-      if (newName === currentName) {
+      const newName = input.value.trim() || curName;
+      if (newName === curName) {
         const span = document.createElement('span');
-        span.className = 'seat-name-text';
-        span.dataset.action = 'edit-seat-name';
-        span.dataset.seatKey = sk;
-        span.textContent = newName;
+        span.className = 'seat-name-text'; span.dataset.action = 'edit-seat-name'; span.dataset.seatKey = sk; span.textContent = newName;
         if (input.parentNode) input.replaceWith(span);
         return;
       }
       state.seatNames[sk] = newName;
       await saveSeatName(sk, newName);
       const span = document.createElement('span');
-      span.className = 'seat-name-text';
-      span.dataset.action = 'edit-seat-name';
-      span.dataset.seatKey = sk;
-      span.textContent = newName;
+      span.className = 'seat-name-text'; span.dataset.action = 'edit-seat-name'; span.dataset.seatKey = sk; span.textContent = newName;
       if (input.parentNode) input.replaceWith(span);
       updateSeatButtonText(sk, newName);
       await regenerateWatermarksForSeat(sk);
     };
-
     input.addEventListener('blur', doSave);
-    input.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter') input.blur();
-    });
-    nameEl.replaceWith(input);
-    input.focus();
-    input.select();
+    input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') input.blur(); });
+    nameEl.replaceWith(input); input.focus(); input.select();
+    return;
+  }
+
+  // 打开批量清理
+  const cleanupBtn = target.closest('[data-action="open-cleanup"]');
+  if (cleanupBtn) {
+    // 默认日期设为30天前
+    const d = new Date(); d.setDate(d.getDate() - 30);
+    cleanupDate.value = d.toISOString().split('T')[0];
+    cleanupModal.classList.add('show');
     return;
   }
 });
 
-/** 更新座位按钮上的文字 */
 function updateSeatButtonText(sk, newName) {
   document.querySelectorAll('.seat-btn').forEach(btn => {
-    const fid = btn.dataset.floor;
-    const aname = btn.dataset.area;
-    const sidx = btn.dataset.seat;
-    if (!fid || !aname || sidx === undefined) return;
-    const k = seatKey(parseInt(fid), aname, parseInt(sidx));
-    if (k === sk) {
-      btn.textContent = newName;
-    }
+    const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
+    if (k === sk) btn.textContent = newName;
   });
 }
 
-/** 座位编号变更后，重新生成该座位所有图片的水印 */
 async function regenerateWatermarksForSeat(sk) {
   const parts = sk.split('-');
-  const fid = parseInt(parts[0]);
-  const aname = parts[1];
-  const sidx = parseInt(parts[2]);
+  const fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
   const sName = getSeatNameSync(fid, aname, sidx);
-
   for (let t = 0; t < TIME_SLOTS.length; t++) {
     const ck = cellKey(fid, aname, sidx, t);
     const cellData = await getCellData(ck);
     if (!cellData || !cellData.images) continue;
     let changed = false;
     for (let i = 0; i < cellData.images.length; i++) {
-      const img = cellData.images[i];
-      if (img.original) {
-        img.data = await addWatermark(img.original, sName);
+      if (cellData.images[i].original) {
+        cellData.images[i].data = await addWatermark(cellData.images[i].original, sName);
         changed = true;
       }
     }
-    if (changed) {
-      await saveCellData(ck, cellData.images);
-    }
+    if (changed) await saveCellData(ck, cellData.images);
   }
   await renderTimeSlots(sk);
 }
@@ -1191,6 +1021,7 @@ async function init() {
     await openDB();
     state.seatNames = await getAllSeatNames();
     state.areaSeatCounts = await getAllAreaSeatCounts();
+    state.deletedSeats = await getAllDeletedSeats();
     await buildSeatHasImages();
     loadUIState();
     renderMain();
