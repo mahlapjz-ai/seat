@@ -811,6 +811,24 @@ function highlightPickerCol(colEl) {
   return val;
 }
 
+/** 获取某年某月的真实天数 */
+function getDaysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
+}
+
+/** 更新日期列（当年月变化时调用） */
+function updateDayPicker() {
+  const y = readPickerCol(pickerYear) || cleanupYear;
+  const m = readPickerCol(pickerMonth) || cleanupMonth;
+  const maxDay = getDaysInMonth(y, m);
+  const days = [];
+  for (let dd = 1; dd <= maxDay; dd++) days.push(dd);
+  // 如果当前选中的日超过了最大天数，修正
+  const curDay = readPickerCol(pickerDay) || cleanupDay;
+  const newDay = Math.min(curDay, maxDay);
+  fillPickerCol(pickerDay, days, newDay);
+}
+
 /** 初始化清理日期选择器 */
 function initCleanupDate() {
   const d = new Date();
@@ -829,19 +847,33 @@ function initCleanupDate() {
   for (let m = 1; m <= 12; m++) months.push(m);
   fillPickerCol(pickerMonth, months, cleanupMonth);
 
-  // 日期
+  // 日期（按实际天数）
+  const maxDay = getDaysInMonth(cleanupYear, cleanupMonth);
   const days = [];
-  for (let dd = 1; dd <= 31; dd++) days.push(dd);
+  for (let dd = 1; dd <= maxDay; dd++) days.push(dd);
   fillPickerCol(pickerDay, days, cleanupDay);
 }
 
-// 监听滚动，更新选中项
+// 监听滚动，更新选中项；年月变化时刷新日期列
+let pickerScrollTimer = null;
 [pickerYear, pickerMonth, pickerDay].forEach(col => {
-  col.addEventListener('scroll', () => { highlightPickerCol(col); }, { passive: true });
-  // 点击某项直接跳转
+  col.addEventListener('scroll', () => {
+    highlightPickerCol(col);
+    // 年或月滚动时，延迟刷新日期列
+    if (col === pickerYear || col === pickerMonth) {
+      clearTimeout(pickerScrollTimer);
+      pickerScrollTimer = setTimeout(updateDayPicker, 200);
+    }
+  }, { passive: true });
   col.addEventListener('click', (e) => {
     const item = e.target.closest('.picker-item');
-    if (item) item.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    if (item) {
+      item.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      // 点击年月项后也刷新日期
+      if (col === pickerYear || col === pickerMonth) {
+        setTimeout(updateDayPicker, 300);
+      }
+    }
   });
 });
 
