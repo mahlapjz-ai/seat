@@ -109,16 +109,21 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 /* ===== 批量清理弹窗 ===== */
 #cleanup-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:250;align-items:center;justify-content:center}
 #cleanup-modal.show{display:flex}
-.cleanup-box{background:#fff;border-radius:12px;padding:24px 20px;width:90%;max-width:360px;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)}
-.cleanup-box h3{font-size:18px;margin-bottom:16px;text-align:center}
-.cleanup-box p{font-size:14px;color:#666;margin-bottom:12px}
-.cleanup-date-row{display:flex;gap:6px;margin-bottom:20px;justify-content:center}
-.cleanup-field{display:flex;flex-direction:column;align-items:center;gap:4px}
-.cleanup-field label{font-size:12px;color:#999}
-.cleanup-stepper{display:flex;align-items:center;border:1px solid #d9d9d9;border-radius:6px;overflow:hidden}
-.cleanup-stepper button{width:32px;height:36px;font-size:18px;font-weight:700;border:none;background:#f5f5f5;color:#333;cursor:pointer;-webkit-user-select:none;user-select:none}
-.cleanup-stepper button:active{background:#e0e0e0}
-.cleanup-stepper span{min-width:40px;height:36px;line-height:36px;text-align:center;font-size:15px;font-weight:700;background:#fff}
+.cleanup-box{background:#fff;border-radius:12px;padding:20px 16px;width:92%;max-width:360px;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)}
+.cleanup-box h3{font-size:18px;margin-bottom:12px;text-align:center}
+.cleanup-box p{font-size:13px;color:#666;margin-bottom:14px;text-align:center}
+
+/* ===== 自定义滚轮日期选择器 ===== */
+.picker-row{display:flex;gap:4px;margin-bottom:16px;height:160px;position:relative;background:#f5f5f5;border-radius:8px;overflow:hidden}
+.picker-col{flex:1;height:100%;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;position:relative}
+.picker-col::-webkit-scrollbar{display:none}
+.picker-pad{height:60px}
+.picker-item{height:40px;line-height:40px;text-align:center;font-size:16px;scroll-snap-align:center;cursor:pointer;color:#666;transition:color .15s}
+.picker-item.active{color:#1890ff;font-weight:700;font-size:18px}
+/* 中间选中行高亮 */
+.picker-highlight{position:absolute;top:60px;left:0;right:0;height:40px;border-top:1px solid #d9d9d9;border-bottom:1px solid #d9d9d9;background:rgba(24,144,255,.06);pointer-events:none;z-index:1}
+.picker-col-label{position:absolute;top:4px;width:100%;text-align:center;font-size:11px;color:#999;z-index:2;pointer-events:none}
+
 .cleanup-btns{display:flex;gap:10px}
 .cleanup-btns button{flex:1;padding:12px;font-size:15px;font-weight:600;border:none;border-radius:8px;cursor:pointer}
 .cleanup-btns button:active{opacity:.8}
@@ -155,32 +160,12 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 <div id="cleanup-modal">
   <div class="cleanup-box">
     <h3>批量清理图片</h3>
-    <p>删除所选日期<strong>之前</strong>添加的所有图片，释放存储空间。</p>
-    <div class="cleanup-date-row">
-      <div class="cleanup-field">
-        <label>年</label>
-        <div class="cleanup-stepper">
-          <button data-action="step-year-down">−</button>
-          <span id="cleanup-year-val">2026</span>
-          <button data-action="step-year-up">+</button>
-        </div>
-      </div>
-      <div class="cleanup-field">
-        <label>月</label>
-        <div class="cleanup-stepper">
-          <button data-action="step-month-down">−</button>
-          <span id="cleanup-month-val">6</span>
-          <button data-action="step-month-up">+</button>
-        </div>
-      </div>
-      <div class="cleanup-field">
-        <label>日</label>
-        <div class="cleanup-stepper">
-          <button data-action="step-day-down">−</button>
-          <span id="cleanup-day-val">10</span>
-          <button data-action="step-day-up">+</button>
-        </div>
-      </div>
+    <p>删除所选日期<strong>之前</strong>添加的所有图片</p>
+    <div class="picker-row">
+      <div class="picker-highlight"></div>
+      <div class="picker-col" id="picker-year"><div class="picker-col-label">年</div><div class="picker-pad"></div></div>
+      <div class="picker-col" id="picker-month"><div class="picker-col-label">月</div><div class="picker-pad"></div></div>
+      <div class="picker-col" id="picker-day"><div class="picker-col-label">日</div><div class="picker-pad"></div></div>
     </div>
     <div class="cleanup-btns">
       <button class="cleanup-cancel" id="cleanup-cancel-btn">取消</button>
@@ -766,51 +751,98 @@ previewWrap.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 // ============================================================
-// 九、批量清理（自定义步进器日期选择，避免移动端原生控件覆盖）
+// 九、批量清理（自定义滚轮日期选择器）
 // ============================================================
 
 const cleanupModal = document.getElementById('cleanup-modal');
-const cleanupYearVal = document.getElementById('cleanup-year-val');
-const cleanupMonthVal = document.getElementById('cleanup-month-val');
-const cleanupDayVal = document.getElementById('cleanup-day-val');
+const pickerYear = document.getElementById('picker-year');
+const pickerMonth = document.getElementById('picker-month');
+const pickerDay = document.getElementById('picker-day');
 
 let cleanupYear = 2026, cleanupMonth = 6, cleanupDay = 10;
 
-/** 初始化清理日期为1天前 */
+/** 填充选择器列 */
+function fillPickerCol(colEl, items, selectedVal) {
+  // 保留 label 和顶部 padding
+  const label = colEl.querySelector('.picker-col-label');
+  const pad = colEl.querySelector('.picker-pad');
+  colEl.innerHTML = '';
+  colEl.appendChild(label);
+  colEl.appendChild(pad);
+  items.forEach(val => {
+    const div = document.createElement('div');
+    div.className = 'picker-item' + (val === selectedVal ? ' active' : '');
+    div.textContent = val;
+    div.dataset.val = val;
+    colEl.appendChild(div);
+  });
+  // 底部 padding
+  const padBottom = document.createElement('div');
+  padBottom.className = 'picker-pad';
+  colEl.appendChild(padBottom);
+  // 滚动到选中项
+  requestAnimationFrame(() => {
+    const active = colEl.querySelector('.picker-item.active');
+    if (active) active.scrollIntoView({ block: 'center', behavior: 'auto' });
+  });
+}
+
+/** 从选择器列读取当前选中值 */
+function readPickerCol(colEl) {
+  const items = colEl.querySelectorAll('.picker-item');
+  const scrollTop = colEl.scrollTop;
+  const colHeight = colEl.clientHeight;
+  const center = scrollTop + colHeight / 2;
+  let closest = null, minDist = Infinity;
+  items.forEach(item => {
+    const mid = item.offsetTop + item.offsetHeight / 2;
+    const dist = Math.abs(mid - center);
+    if (dist < minDist) { minDist = dist; closest = item; }
+  });
+  return closest ? parseInt(closest.dataset.val) : null;
+}
+
+/** 高亮选中项 */
+function highlightPickerCol(colEl) {
+  const val = readPickerCol(colEl);
+  colEl.querySelectorAll('.picker-item').forEach(item => {
+    item.classList.toggle('active', parseInt(item.dataset.val) === val);
+  });
+  return val;
+}
+
+/** 初始化清理日期选择器 */
 function initCleanupDate() {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   cleanupYear = d.getFullYear();
   cleanupMonth = d.getMonth() + 1;
   cleanupDay = d.getDate();
-  updateCleanupDisplay();
+
+  // 年份：当前年往前5年
+  const years = [];
+  for (let y = d.getFullYear() + 1; y >= d.getFullYear() - 5; y--) years.push(y);
+  fillPickerCol(pickerYear, years, cleanupYear);
+
+  // 月份
+  const months = [];
+  for (let m = 1; m <= 12; m++) months.push(m);
+  fillPickerCol(pickerMonth, months, cleanupMonth);
+
+  // 日期
+  const days = [];
+  for (let dd = 1; dd <= 31; dd++) days.push(dd);
+  fillPickerCol(pickerDay, days, cleanupDay);
 }
 
-/** 更新显示 */
-function updateCleanupDisplay() {
-  cleanupYearVal.textContent = cleanupYear;
-  cleanupMonthVal.textContent = cleanupMonth;
-  cleanupDayVal.textContent = cleanupDay;
-}
-
-/** 获取清理日期值 */
-function getCleanupDateValue() {
-  return `${cleanupYear}-${String(cleanupMonth).padStart(2, '0')}-${String(cleanupDay).padStart(2, '0')}`;
-}
-
-// 步进器按钮事件（挂在弹窗上，避免被主事件委托拦截）
-cleanupModal.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-action^="step-"]');
-  if (!btn) return;
-  e.stopPropagation();
-  const action = btn.dataset.action;
-  if (action === 'step-year-up') cleanupYear++;
-  else if (action === 'step-year-down') cleanupYear = Math.max(2020, cleanupYear - 1);
-  else if (action === 'step-month-up') { cleanupMonth++; if (cleanupMonth > 12) cleanupMonth = 1; }
-  else if (action === 'step-month-down') { cleanupMonth--; if (cleanupMonth < 1) cleanupMonth = 12; }
-  else if (action === 'step-day-up') { cleanupDay++; if (cleanupDay > 31) cleanupDay = 1; }
-  else if (action === 'step-day-down') { cleanupDay--; if (cleanupDay < 1) cleanupDay = 31; }
-  updateCleanupDisplay();
+// 监听滚动，更新选中项
+[pickerYear, pickerMonth, pickerDay].forEach(col => {
+  col.addEventListener('scroll', () => { highlightPickerCol(col); }, { passive: true });
+  // 点击某项直接跳转
+  col.addEventListener('click', (e) => {
+    const item = e.target.closest('.picker-item');
+    if (item) item.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  });
 });
 
 document.getElementById('cleanup-cancel-btn').addEventListener('click', () => {
@@ -818,8 +850,11 @@ document.getElementById('cleanup-cancel-btn').addEventListener('click', () => {
 });
 
 document.getElementById('cleanup-exec-btn').addEventListener('click', async () => {
-  const dateVal = getCleanupDateValue();
-  if (!dateVal) { showToast('请选择日期'); return; }
+  // 读取当前选中值
+  cleanupYear = readPickerCol(pickerYear) || cleanupYear;
+  cleanupMonth = readPickerCol(pickerMonth) || cleanupMonth;
+  cleanupDay = readPickerCol(pickerDay) || cleanupDay;
+  const dateVal = `${cleanupYear}-${String(cleanupMonth).padStart(2, '0')}-${String(cleanupDay).padStart(2, '0')}`;
   const threshold = new Date(dateVal + 'T00:00:00+08:00').getTime();
   if (isNaN(threshold)) { showToast('日期格式无效'); return; }
 
@@ -831,17 +866,11 @@ document.getElementById('cleanup-exec-btn').addEventListener('click', async () =
     let totalDeleted = 0;
     for (const record of all) {
       if (!record.images) continue;
-      const filtered = record.images.filter(img => {
-        const ts = img.createdAt || 0;
-        return ts >= threshold;
-      });
+      const filtered = record.images.filter(img => (img.createdAt || 0) >= threshold);
       if (filtered.length < record.images.length) {
         totalDeleted += record.images.length - filtered.length;
-        if (filtered.length > 0) {
-          await saveCellData(record.key, filtered);
-        } else {
-          await dbDelete('cells', record.key);
-        }
+        if (filtered.length > 0) await saveCellData(record.key, filtered);
+        else await dbDelete('cells', record.key);
       }
     }
     await buildSeatHasImages();
