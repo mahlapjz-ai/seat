@@ -41,6 +41,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .area-btn .area-count{font-size:11px;font-weight:400;color:#999;margin-top:2px}
 .area-btn.expanded .arrow{transform:rotate(90deg)}
 .area-btn.expanded{background:#e6f7ff;box-shadow:0 2px 8px rgba(24,144,255,.2)}
+.area-btn.has-images{border:2px solid #52c41a;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
+.area-btn.has-images.expanded{border-color:#1890ff;background:#e6f7ff;color:#333}
 
 .seat-container{display:none;padding:8px 0}
 .seat-container.show{display:block}
@@ -63,20 +65,20 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .btn-delete-seat{padding:4px 12px;font-size:12px;font-weight:600;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;cursor:pointer;margin-left:auto}
 .btn-delete-seat:active{background:#fff1f0}
 
-.timeslot-card{background:#fff;border-radius:8px;margin:8px 0;padding:10px 10px 8px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer}
-.ts-top{display:flex;align-items:center;gap:8px}
+.timeslot-card{background:#fff;border-radius:8px;margin:6px 0;padding:6px 10px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;display:flex;align-items:center;gap:6px;min-height:44px;flex-wrap:wrap}
+.ts-top{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
 .ts-checkbox{width:22px;height:22px;border-radius:50%;border:2px solid #bbb;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .ts-checkbox.checked{background:#1890ff;border-color:#1890ff}
 .ts-checkbox.checked::after{content:'✓';color:#fff;font-size:14px;font-weight:700}
 .ts-checkbox.disabled{border-color:#e0e0e0;background:#f5f5f5;cursor:not-allowed;opacity:.5}
-.ts-time{font-size:16px;font-weight:600;color:#333}
-.ts-btns{display:flex;gap:8px;margin:8px 0 4px 10px}
-.ts-btn{padding:8px 16px;font-size:14px;font-weight:500;border:none;border-radius:6px;cursor:pointer;transition:opacity .15s}
+.ts-time{font-size:15px;font-weight:600;color:#333;white-space:nowrap}
+.ts-btns{display:flex;gap:4px;flex-shrink:0;margin-left:auto}
+.ts-btn{padding:0 10px;font-size:13px;font-weight:600;border:none;border-radius:5px;cursor:pointer;transition:opacity .15s;min-height:36px;min-width:44px;display:flex;align-items:center;justify-content:center}
 .ts-btn:active{opacity:.7}
 .ts-btn-capture{background:#1890ff;color:#fff}
 .ts-btn-upload{background:#52c41a;color:#fff}
 .ts-btn:disabled{opacity:.4;cursor:not-allowed}
-.ts-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;padding-left:10px}
+.ts-thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;padding-left:28px;width:100%}
 .thumb-wrap{position:relative;width:80px;height:80px;border-radius:6px;overflow:hidden;border:1px solid #e8e8e8;flex-shrink:0}
 .thumb-wrap img{width:100%;height:100%;object-fit:cover;cursor:pointer;background:#f0f0f0}
 .thumb-wrap img[data-thumb-src]:not([src]){min-width:80px;min-height:80px}
@@ -97,9 +99,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 #preview-close{position:absolute;top:12px;right:16px;font-size:32px;color:#fff;cursor:pointer;z-index:201;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:50%}
 #preview-image-wrap{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
 #preview-image{max-width:95vw;max-height:85vh;object-fit:contain;border-radius:4px;transform-origin:0 0;transition:opacity .2s ease;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-#preview-save-btn{display:none;position:absolute;bottom:80px;left:50%;transform:translateX(-50%);padding:12px 32px;font-size:15px;font-weight:600;border:none;border-radius:8px;background:#1890ff;color:#fff;cursor:pointer;z-index:202;box-shadow:0 2px 12px rgba(24,144,255,.4)}
+#preview-save-btn{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);padding:10px 28px;font-size:14px;font-weight:600;border:none;border-radius:8px;background:rgba(24,144,255,.9);color:#fff;cursor:pointer;z-index:202;box-shadow:0 2px 12px rgba(24,144,255,.4)}
 #preview-save-btn:active{opacity:.8}
-#preview-indicator{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:201}
+#preview-indicator{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:201}
 #preview-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.4);font-size:12px;pointer-events:none}
 
 .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:250;align-items:center;justify-content:center}
@@ -180,9 +182,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
   <div id="preview-close">&times;</div>
   <div id="preview-image-wrap"><img id="preview-image" /></div>
   <div id="preview-indicator"></div>
-  <div id="preview-hint">双指缩放 · 左右滑动切换 · 长按保存</div>
+  <button id="preview-save-btn">保存图片</button>
+  <div id="preview-hint">双指缩放 · 左右滑动 · 下滑关闭</div>
 </div>
-<button id="preview-save-btn">保存图片</button>
 <div class="modal-overlay" id="batch-modal">
   <div class="modal-box">
     <h3>批量下载</h3>
@@ -401,7 +403,12 @@ function renderMain() {
     floor.areas.forEach(area => {
       const aname = area.name, ak = areaKey(fid, aname), aExp = state.expandedAreas.has(ak);
       const areaTotal = getAreaSeatCount(fid, aname) - [...state.deletedSeats].filter(sk => sk.startsWith(`${fid}-${aname}-`)).length;
-      html += `<button class="area-btn ${aExp ? 'expanded' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow">▶</span></span><span class="area-count">${areaTotal}座</span></button>`;
+      // 判断区域是否有图片：遍历该区域所有座位检查 seatHasImages
+      let areaHasImages = false;
+      for (let si = 0; si < getAreaSeatCount(fid, aname); si++) {
+        if (state.seatHasImages.has(seatKey(fid, aname, si))) { areaHasImages = true; break; }
+      }
+      html += `<button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow">▶</span></span><span class="area-count">${areaTotal}座</span></button>`;
       html += `<div class="seat-container ${aExp ? 'show' : ''}" id="seats-${ak}">${renderSeatFlow(fid, aname)}</div>`;
     });
     html += '</div>';
@@ -438,8 +445,7 @@ async function renderTimeSlots(sk) {
     const images = (cellData && cellData.images) ? cellData.images : [];
     const hasImages = images.length > 0, isFull = images.length >= MAX_IMAGES, isSel = state.selectedCells.includes(ck);
     const cbClass = hasImages ? `ts-checkbox ${isSel ? 'checked' : ''}` : 'ts-checkbox disabled';
-    html += `<div class="timeslot-card" data-action="toggle-card" data-cell-key="${ck}" data-has-images="${hasImages ? '1' : '0'}"><div class="ts-top"><div class="${cbClass}" data-action="toggle-select" data-cell-key="${ck}"></div><span class="ts-time">${TIME_SLOTS[t]}</span></div>`;
-    html += `<div class="ts-btns"><button class="ts-btn ts-btn-capture" ${isFull ? 'disabled' : ''} data-action="capture" data-cell-key="${ck}">拍照</button><button class="ts-btn ts-btn-upload" ${isFull ? 'disabled' : ''} data-action="upload" data-cell-key="${ck}">上传</button></div>`;
+    html += `<div class="timeslot-card" data-action="toggle-card" data-cell-key="${ck}" data-has-images="${hasImages ? '1' : '0'}"><div class="ts-top"><div class="${cbClass}" data-action="toggle-select" data-cell-key="${ck}"></div><span class="ts-time">${TIME_SLOTS[t]}</span><div class="ts-btns"><button class="ts-btn ts-btn-capture" ${isFull ? 'disabled' : ''} data-action="capture" data-cell-key="${ck}">拍照</button><button class="ts-btn ts-btn-upload" ${isFull ? 'disabled' : ''} data-action="upload" data-cell-key="${ck}">上传</button></div></div>`;
     if (images.length > 0) {
       html += '<div class="ts-thumbs">';
       images.forEach((img, idx) => {
@@ -460,6 +466,19 @@ function updateSeatVisual(sk) {
   document.querySelectorAll('.seat-btn').forEach(btn => {
     const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
     if (k === sk) btn.classList.toggle('has-images', state.seatHasImages.has(sk));
+  });
+  // 同步更新区域按钮视觉
+  const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1];
+  updateAreaVisual(fid, aname);
+}
+/** 更新区域按钮的 has-images 状态 */
+function updateAreaVisual(fid, aname) {
+  let areaHasImages = false;
+  for (let si = 0; si < getAreaSeatCount(fid, aname); si++) {
+    if (state.seatHasImages.has(seatKey(fid, aname, si))) { areaHasImages = true; break; }
+  }
+  document.querySelectorAll(`.area-btn[data-floor="${fid}"][data-area="${aname}"]`).forEach(btn => {
+    btn.classList.toggle('has-images', areaHasImages);
   });
 }
 
@@ -762,18 +781,33 @@ const batchAreasDiv = document.getElementById('batch-areas');
 const batchTimesDiv = document.getElementById('batch-times');
 let batchSelectedAreas = new Set(), batchSelectedTimes = new Set();
 
-function initBatchModal() {
+async function initBatchModal() {
   batchSelectedAreas = new Set(); batchSelectedTimes = new Set();
+  // 扫描 IndexedDB，仅显示有图片的区域和时段
+  const allCells = await dbGetAll('cells');
+  const areasWithImages = new Set(); // 存储有图片的 areaKey
+  const timesWithImages = new Set(); // 存储有图片的时段索引
+  allCells.forEach(r => {
+    if (r.images && r.images.length > 0) {
+      const p = r.key.split('-');
+      areasWithImages.add(`${p[0]}-${p[1]}`);
+      timesWithImages.add(parseInt(p[3]));
+    }
+  });
   let ahtml = '';
   FLOORS.forEach(floor => {
     floor.areas.forEach(area => {
       const ak = areaKey(floor.id, area.name);
+      if (!areasWithImages.has(ak)) return; // 跳过无图片的区域
       ahtml += `<div class="batch-chip" data-ak="${ak}">${floor.name}${area.name}</div>`;
     });
   });
   batchAreasDiv.innerHTML = ahtml;
   let thtml = '';
-  TIME_SLOTS.forEach((ts, idx) => { thtml += `<div class="batch-chip" data-tidx="${idx}">${ts}</div>`; });
+  TIME_SLOTS.forEach((ts, idx) => {
+    if (!timesWithImages.has(idx)) return; // 跳过无图片的时段
+    thtml += `<div class="batch-chip" data-tidx="${idx}">${ts}</div>`;
+  });
   batchTimesDiv.innerHTML = thtml;
 }
 
@@ -844,8 +878,8 @@ const previewIndicator = document.getElementById('preview-indicator');
 const previewSaveBtn = document.getElementById('preview-save-btn');
 let pvImages = [], pvIndex = 0;
 let pvScale = 1, pvTX = 0, pvTY = 0, pvLastDist = 0, pvLastX = 0, pvLastY = 0;
-let pvPinching = false, pvSwiping = false, pvSwipeStartX = 0;
-let pvLongPressTimer = null, pvLongPressed = false;
+let pvPinching = false, pvSwiping = false, pvSwipeStartX = 0, pvSwipeStartY = 0;
+let pvSwipingDown = false; // 下滑关闭标记
 // 图片 URL 缓存，避免重复从 IndexedDB 读取
 const pvCache = new Map();
 
@@ -855,10 +889,8 @@ function pvReset() { pvScale = 1; pvTX = 0; pvTY = 0; pvApply(); }
 async function pvShowImage(idx) {
   if (idx < 0 || idx >= pvImages.length) return;
   pvIndex = idx;
-  // 添加淡出效果
   previewImage.style.opacity = '0';
   let data = pvImages[idx].data;
-  // 使用缓存的 URL
   const cacheKey = `${pvImages[idx]._cellKey}_${idx}`;
   if (pvCache.has(cacheKey)) {
     data = pvCache.get(cacheKey);
@@ -874,10 +906,8 @@ async function pvShowImage(idx) {
   }
   previewImage.src = data;
   pvReset();
-  // 淡入
   requestAnimationFrame(() => { previewImage.style.opacity = '1'; });
   previewIndicator.textContent = pvImages.length > 1 ? `${idx + 1} / ${pvImages.length}` : '';
-  previewSaveBtn.style.display = 'none';
 }
 
 async function showPreview(cellKeyStr, imgIdx) {
@@ -890,9 +920,6 @@ async function showPreview(cellKeyStr, imgIdx) {
 function closePreview() {
   previewModal.classList.remove('show');
   previewImage.src = ''; pvImages = [];
-  previewSaveBtn.style.display = 'none';
-  clearTimeout(pvLongPressTimer);
-  // 清理缓存 Object URL
   pvCache.clear();
 }
 previewClose.addEventListener('click', closePreview);
@@ -900,25 +927,18 @@ previewWrap.addEventListener('click', (e) => { if (e.target === previewWrap) clo
 
 previewWrap.addEventListener('touchstart', (e) => {
   if (e.touches.length === 2) {
-    e.preventDefault(); pvPinching = true; pvSwiping = false;
-    clearTimeout(pvLongPressTimer); previewSaveBtn.style.display = 'none';
+    e.preventDefault(); pvPinching = true; pvSwiping = false; pvSwipingDown = false;
     const dx = e.touches[0].clientX - e.touches[1].clientX, dy = e.touches[0].clientY - e.touches[1].clientY;
     pvLastDist = Math.sqrt(dx * dx + dy * dy);
   } else if (e.touches.length === 1) {
-    pvSwiping = true; pvPinching = false; pvLongPressed = false;
-    pvLastX = e.touches[0].clientX; pvLastY = e.touches[0].clientY; pvSwipeStartX = e.touches[0].clientX;
-    // 长按检测：500ms 后显示保存按钮
-    clearTimeout(pvLongPressTimer);
-    pvLongPressTimer = setTimeout(() => {
-      pvLongPressed = true; pvSwiping = false;
-      previewSaveBtn.style.display = 'block';
-    }, 500);
+    pvSwiping = true; pvPinching = false; pvSwipingDown = false;
+    pvLastX = e.touches[0].clientX; pvLastY = e.touches[0].clientY;
+    pvSwipeStartX = e.touches[0].clientX; pvSwipeStartY = e.touches[0].clientY;
   }
 }, { passive: false });
 previewWrap.addEventListener('touchmove', (e) => {
   if (pvPinching && e.touches.length === 2) {
     e.preventDefault();
-    clearTimeout(pvLongPressTimer); previewSaveBtn.style.display = 'none';
     const dx = e.touches[0].clientX - e.touches[1].clientX, dy = e.touches[0].clientY - e.touches[1].clientY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (pvLastDist > 0) {
@@ -929,23 +949,74 @@ previewWrap.addEventListener('touchmove', (e) => {
     }
     pvLastDist = dist; pvSwiping = false;
   } else if (e.touches.length === 1 && pvSwiping) {
-    pvLastX = e.touches[0].clientX; pvLastY = e.touches[0].clientY;
-    // 移动超过 10px 取消长按
-    if (Math.abs(pvLastX - pvSwipeStartX) > 10) { clearTimeout(pvLongPressTimer); previewSaveBtn.style.display = 'none'; }
+    const curX = e.touches[0].clientX, curY = e.touches[0].clientY;
+    const dx = curX - pvSwipeStartX, dy = curY - pvSwipeStartY;
+    // 判断是否为下滑手势（未缩放时）
+    if (pvScale <= 1.05 && Math.abs(dy) > Math.abs(dx) && dy > 0) {
+      pvSwipingDown = true;
+      // 图片跟随手指下移
+      previewImage.style.transform = `translate(0, ${dy}px) scale(1)`;
+      previewImage.style.transition = 'none';
+      previewImage.style.opacity = Math.max(0.3, 1 - dy / 400);
+    }
+    pvLastX = curX; pvLastY = curY;
   }
 }, { passive: false });
 previewWrap.addEventListener('touchend', (e) => {
-  clearTimeout(pvLongPressTimer);
   if (pvPinching && e.touches.length < 2) { pvPinching = false; pvLastDist = 0; }
   if (e.touches.length === 0) {
-    if (!pvLongPressed && pvSwiping && pvScale <= 1.05 && pvImages.length > 1) {
+    // 下滑关闭判断
+    if (pvSwipingDown) {
+      const dy = pvLastY - pvSwipeStartY;
+      if (dy > 80) {
+        closePreview();
+      } else {
+        // 回弹
+        previewImage.style.transition = 'transform .3s ease, opacity .3s ease';
+        pvReset();
+        previewImage.style.opacity = '1';
+      }
+      pvSwipingDown = false; pvSwiping = false;
+      return;
+    }
+    // 左右滑动切换（多图且未缩放时）
+    if (pvSwiping && pvScale <= 1.05 && pvImages.length > 1) {
       const dx = pvLastX - pvSwipeStartX;
       if (Math.abs(dx) > 60) {
         if (dx < 0 && pvIndex < pvImages.length - 1) pvShowImage(pvIndex + 1);
         else if (dx > 0 && pvIndex > 0) pvShowImage(pvIndex - 1);
       }
     }
-    pvSwiping = false; pvLongPressed = false;
+    pvSwiping = false;
+  }
+});
+
+/** 双击缩放/还原 */
+let pvLastTapTime = 0, pvLastTapX = 0, pvLastTapY = 0;
+previewWrap.addEventListener('touchend', (e) => {
+  if (e.touches.length > 0 || pvPinching || pvSwipingDown) return;
+  const now = Date.now();
+  const touch = e.changedTouches[0];
+  if (!touch) return;
+  const tx = touch.clientX, ty = touch.clientY;
+  if (now - pvLastTapTime < 300 && Math.abs(tx - pvLastTapX) < 30 && Math.abs(ty - pvLastTapY) < 30) {
+    // 双击
+    e.preventDefault();
+    if (pvScale > 1.05) {
+      // 还原
+      pvScale = 1; pvTX = 0; pvTY = 0; pvApply();
+    } else {
+      // 以双击点为中心放大至 2.5 倍
+      const rect = previewWrap.getBoundingClientRect();
+      const cx = tx - rect.left, cy = ty - rect.top;
+      const newScale = 2.5;
+      pvTX = cx - (cx - pvTX) * (newScale / pvScale);
+      pvTY = cy - (cy - pvTY) * (newScale / pvScale);
+      pvScale = newScale; pvApply();
+    }
+    pvLastTapTime = 0;
+  } else {
+    pvLastTapTime = now; pvLastTapX = tx; pvLastTapY = ty;
   }
 });
 previewWrap.addEventListener('wheel', (e) => {
@@ -957,7 +1028,8 @@ previewWrap.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 /** 保存当前预览图片到本地 */
-previewSaveBtn.addEventListener('click', () => {
+previewSaveBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
   if (pvImages.length === 0) return;
   const img = pvImages[pvIndex];
   const ck = img._cellKey;
@@ -970,7 +1042,6 @@ previewSaveBtn.addEventListener('click', () => {
   const filename = `${sName || '图片'}_${bTime.replace(/[: ]/g, '-')}.jpg`;
   const blob = dataURLtoBlob(previewImage.src);
   downloadBlob(blob, filename);
-  previewSaveBtn.style.display = 'none';
   showToast('已保存');
 });
 
