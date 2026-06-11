@@ -26,6 +26,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .floor-btn:active{transform:scale(.97)}
 .floor-btn .arrow{float:right;font-size:14px;transition:transform .25s;display:inline-block}
 .floor-btn.expanded .arrow{transform:rotate(90deg)}
+.floor-btn .floor-count{float:right;font-size:13px;font-weight:400;margin-right:8px;opacity:.85}
 .floor-1{background:linear-gradient(135deg,#667eea,#764ba2)}
 .floor-2{background:linear-gradient(135deg,#f093fb,#f5576c)}
 .floor-3{background:linear-gradient(135deg,#4facfe,#00f2fe)}
@@ -34,9 +35,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 
 .area-container{display:none;padding:4px 0 8px 16px}
 .area-container.show{display:block}
-.area-btn{display:inline-block;padding:12px 20px;margin:5px 4px;font-size:16px;font-weight:600;border:none;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s}
+.area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:12px 20px;margin:5px 4px;font-size:16px;font-weight:600;border:none;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s}
 .area-btn:active{transform:scale(.95)}
 .area-btn .arrow{margin-left:6px;font-size:12px;transition:transform .25s;display:inline-block}
+.area-btn .area-count{font-size:11px;font-weight:400;color:#999;margin-top:2px}
 .area-btn.expanded .arrow{transform:rotate(90deg)}
 .area-btn.expanded{background:#e6f7ff;box-shadow:0 2px 8px rgba(24,144,255,.2)}
 
@@ -61,11 +63,12 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .btn-delete-seat{padding:4px 12px;font-size:12px;font-weight:600;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;cursor:pointer;margin-left:auto}
 .btn-delete-seat:active{background:#fff1f0}
 
-.timeslot-card{background:#fff;border-radius:8px;margin:8px 0;padding:10px 10px 8px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.timeslot-card{background:#fff;border-radius:8px;margin:8px 0;padding:10px 10px 8px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer}
 .ts-top{display:flex;align-items:center;gap:8px}
 .ts-checkbox{width:22px;height:22px;border-radius:50%;border:2px solid #bbb;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .ts-checkbox.checked{background:#1890ff;border-color:#1890ff}
 .ts-checkbox.checked::after{content:'✓';color:#fff;font-size:14px;font-weight:700}
+.ts-checkbox.disabled{border-color:#e0e0e0;background:#f5f5f5;cursor:not-allowed;opacity:.5}
 .ts-time{font-size:16px;font-weight:600;color:#333}
 .ts-btns{display:flex;gap:8px;margin:8px 0 4px 10px}
 .ts-btn{padding:8px 16px;font-size:14px;font-weight:500;border:none;border-radius:6px;cursor:pointer;transition:opacity .15s}
@@ -93,7 +96,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 #preview-modal.show{display:block}
 #preview-close{position:absolute;top:12px;right:16px;font-size:32px;color:#fff;cursor:pointer;z-index:201;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:50%}
 #preview-image-wrap{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-#preview-image{max-width:95vw;max-height:85vh;object-fit:contain;border-radius:4px;transform-origin:0 0;transition:none}
+#preview-image{max-width:95vw;max-height:85vh;object-fit:contain;border-radius:4px;transform-origin:0 0;transition:opacity .2s ease;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#preview-save-btn{display:none;position:absolute;bottom:80px;left:50%;transform:translateX(-50%);padding:12px 32px;font-size:15px;font-weight:600;border:none;border-radius:8px;background:#1890ff;color:#fff;cursor:pointer;z-index:202;box-shadow:0 2px 12px rgba(24,144,255,.4)}
+#preview-save-btn:active{opacity:.8}
 #preview-indicator{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:201}
 #preview-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.4);font-size:12px;pointer-events:none}
 
@@ -175,8 +180,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
   <div id="preview-close">&times;</div>
   <div id="preview-image-wrap"><img id="preview-image" /></div>
   <div id="preview-indicator"></div>
-  <div id="preview-hint">双指缩放 · 左右滑动切换</div>
+  <div id="preview-hint">双指缩放 · 左右滑动切换 · 长按保存</div>
 </div>
+<button id="preview-save-btn">保存图片</button>
 <div class="modal-overlay" id="batch-modal">
   <div class="modal-box">
     <h3>批量下载</h3>
@@ -188,7 +194,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 <div class="modal-overlay" id="cleanup-modal">
   <div class="modal-box">
     <h3>批量清理图片</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:14px;text-align:center">删除所选日期<strong>之前</strong>添加的所有图片</p>
+    <p style="font-size:13px;color:#666;margin-bottom:14px;text-align:center">删除所选日期<strong>之前</strong>添加的所有图片（默认今天）</p>
     <div class="picker-row">
       <div class="picker-highlight"></div>
       <div class="picker-col" id="picker-year"><div class="picker-col-label">年</div><div class="picker-pad"></div></div>
@@ -357,7 +363,7 @@ function saveFilterState() { try { localStorage.setItem('seat_time_filter', JSON
 /** 加载时段筛选设置 */
 function loadFilterState() { try { const o = JSON.parse(localStorage.getItem('seat_time_filter')); if (o && Array.isArray(o.slots)) { state.visibleTimeSlots = new Set(o.slots); state._filterNone = !!o.none; } } catch (e) {} }
 
-/** 判断某时段索引是否在当前北京时间已过 */
+/** 判断某时段索引是否在当前北京时间已过（严格大于时段时间为已过） */
 function isTimeSlotPassed(tIdx) {
   const now = new Date();
   const opts = { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false };
@@ -368,6 +374,7 @@ function isTimeSlotPassed(tIdx) {
   const slot = TIME_SLOTS[tIdx];
   const [sh, sm] = slot.split(':').map(Number);
   const slotMinutes = sh * 60 + sm;
+  // 当前时间 > 时段时间表示该时段已过
   return nowMinutes > slotMinutes;
 }
 
@@ -386,11 +393,15 @@ function renderMain() {
   let html = '<div class="page-header"><span class="page-title">图书馆座位图片管理</span><button class="header-btn btn-filter" data-action="open-filter"><span class="filter-icon">⏳</span>时段筛选</button><button class="header-btn btn-batch-dl" data-action="open-batch-dl">批量下载</button><button class="header-btn btn-cleanup" data-action="open-cleanup">批量清理</button></div>';
   FLOORS.forEach(floor => {
     const fid = floor.id, expanded = state.expandedFloors.has(fid);
-    html += `<button class="floor-btn floor-${fid} ${expanded ? 'expanded' : ''}" data-action="toggle-floor" data-floor="${fid}">${floor.name}<span class="arrow">▶</span></button>`;
+    // 计算楼层总座位数
+    let floorTotal = 0;
+    floor.areas.forEach(area => { floorTotal += getAreaSeatCount(fid, area.name) - (state.deletedSeats.size ? [...state.deletedSeats].filter(sk => sk.startsWith(`${fid}-${area.name}-`)).length : 0); });
+    html += `<button class="floor-btn floor-${fid} ${expanded ? 'expanded' : ''}" data-action="toggle-floor" data-floor="${fid}">${floor.name}<span class="floor-count">${floorTotal}座</span><span class="arrow">▶</span></button>`;
     html += `<div class="area-container ${expanded ? 'show' : ''}" id="areas-${fid}">`;
     floor.areas.forEach(area => {
       const aname = area.name, ak = areaKey(fid, aname), aExp = state.expandedAreas.has(ak);
-      html += `<button class="area-btn ${aExp ? 'expanded' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}">${aname}<span class="arrow">▶</span></button>`;
+      const areaTotal = getAreaSeatCount(fid, aname) - [...state.deletedSeats].filter(sk => sk.startsWith(`${fid}-${aname}-`)).length;
+      html += `<button class="area-btn ${aExp ? 'expanded' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow">▶</span></span><span class="area-count">${areaTotal}座</span></button>`;
       html += `<div class="seat-container ${aExp ? 'show' : ''}" id="seats-${ak}">${renderSeatFlow(fid, aname)}</div>`;
     });
     html += '</div>';
@@ -425,8 +436,9 @@ async function renderTimeSlots(sk) {
     const ck = cellKey(fid, aname, sidx, t);
     const cellData = await getCellData(ck);
     const images = (cellData && cellData.images) ? cellData.images : [];
-    const isFull = images.length >= MAX_IMAGES, isSel = state.selectedCells.includes(ck);
-    html += `<div class="timeslot-card"><div class="ts-top"><div class="ts-checkbox ${isSel ? 'checked' : ''}" data-action="toggle-select" data-cell-key="${ck}"></div><span class="ts-time">${TIME_SLOTS[t]}</span></div>`;
+    const hasImages = images.length > 0, isFull = images.length >= MAX_IMAGES, isSel = state.selectedCells.includes(ck);
+    const cbClass = hasImages ? `ts-checkbox ${isSel ? 'checked' : ''}` : 'ts-checkbox disabled';
+    html += `<div class="timeslot-card" data-action="toggle-card" data-cell-key="${ck}" data-has-images="${hasImages ? '1' : '0'}"><div class="ts-top"><div class="${cbClass}" data-action="toggle-select" data-cell-key="${ck}"></div><span class="ts-time">${TIME_SLOTS[t]}</span></div>`;
     html += `<div class="ts-btns"><button class="ts-btn ts-btn-capture" ${isFull ? 'disabled' : ''} data-action="capture" data-cell-key="${ck}">拍照</button><button class="ts-btn ts-btn-upload" ${isFull ? 'disabled' : ''} data-action="upload" data-cell-key="${ck}">上传</button></div>`;
     if (images.length > 0) {
       html += '<div class="ts-thumbs">';
@@ -716,6 +728,9 @@ async function shareSelectedImages() {
 
 async function downloadConcatenated() {
   if (state.selectedCells.length === 0) return;
+  // 拼接功能最多选择 2 个时段
+  const uniqueTimeSlots = new Set(state.selectedCells.map(ck => ck.split('-')[3]));
+  if (uniqueTimeSlots.size > 2) { showToast('拼接功能只能选择 2 个时段'); return; }
   const allImageData = [];
   for (const ck of state.selectedCells) {
     const cellData = await getCellData(ck);
@@ -826,9 +841,13 @@ const previewImage = document.getElementById('preview-image');
 const previewClose = document.getElementById('preview-close');
 const previewWrap = document.getElementById('preview-image-wrap');
 const previewIndicator = document.getElementById('preview-indicator');
+const previewSaveBtn = document.getElementById('preview-save-btn');
 let pvImages = [], pvIndex = 0;
 let pvScale = 1, pvTX = 0, pvTY = 0, pvLastDist = 0, pvLastX = 0, pvLastY = 0;
 let pvPinching = false, pvSwiping = false, pvSwipeStartX = 0;
+let pvLongPressTimer = null, pvLongPressed = false;
+// 图片 URL 缓存，避免重复从 IndexedDB 读取
+const pvCache = new Map();
 
 function pvApply() { previewImage.style.transform = `translate(${pvTX}px, ${pvTY}px) scale(${pvScale})`; }
 function pvReset() { pvScale = 1; pvTX = 0; pvTY = 0; pvApply(); }
@@ -836,18 +855,29 @@ function pvReset() { pvScale = 1; pvTX = 0; pvTY = 0; pvApply(); }
 async function pvShowImage(idx) {
   if (idx < 0 || idx >= pvImages.length) return;
   pvIndex = idx;
+  // 添加淡出效果
+  previewImage.style.opacity = '0';
   let data = pvImages[idx].data;
-  if (pvImages[idx].original) {
+  // 使用缓存的 URL
+  const cacheKey = `${pvImages[idx]._cellKey}_${idx}`;
+  if (pvCache.has(cacheKey)) {
+    data = pvCache.get(cacheKey);
+  } else if (pvImages[idx].original) {
     const ck = pvImages[idx]._cellKey;
     if (ck) {
       const parts = ck.split('-');
       const sName = getSeatNameSync(parseInt(parts[0]), parts[1], parseInt(parts[2]));
       const bTime = pvImages[idx].beijingTime || getBeijingTime();
       data = await addWatermark(pvImages[idx].original, sName, bTime);
+      pvCache.set(cacheKey, data);
     }
   }
-  previewImage.src = data; pvReset();
+  previewImage.src = data;
+  pvReset();
+  // 淡入
+  requestAnimationFrame(() => { previewImage.style.opacity = '1'; });
   previewIndicator.textContent = pvImages.length > 1 ? `${idx + 1} / ${pvImages.length}` : '';
+  previewSaveBtn.style.display = 'none';
 }
 
 async function showPreview(cellKeyStr, imgIdx) {
@@ -857,24 +887,38 @@ async function showPreview(cellKeyStr, imgIdx) {
   await pvShowImage(imgIdx);
   previewModal.classList.add('show');
 }
-function closePreview() { previewModal.classList.remove('show'); previewImage.src = ''; pvImages = []; }
+function closePreview() {
+  previewModal.classList.remove('show');
+  previewImage.src = ''; pvImages = [];
+  previewSaveBtn.style.display = 'none';
+  clearTimeout(pvLongPressTimer);
+  // 清理缓存 Object URL
+  pvCache.clear();
+}
 previewClose.addEventListener('click', closePreview);
 previewWrap.addEventListener('click', (e) => { if (e.target === previewWrap) closePreview(); });
 
 previewWrap.addEventListener('touchstart', (e) => {
   if (e.touches.length === 2) {
     e.preventDefault(); pvPinching = true; pvSwiping = false;
+    clearTimeout(pvLongPressTimer); previewSaveBtn.style.display = 'none';
     const dx = e.touches[0].clientX - e.touches[1].clientX, dy = e.touches[0].clientY - e.touches[1].clientY;
     pvLastDist = Math.sqrt(dx * dx + dy * dy);
   } else if (e.touches.length === 1) {
-    // 单指：仅用于左右滑动切换（多图时），禁止拖动平移
-    pvSwiping = true; pvPinching = false;
+    pvSwiping = true; pvPinching = false; pvLongPressed = false;
     pvLastX = e.touches[0].clientX; pvLastY = e.touches[0].clientY; pvSwipeStartX = e.touches[0].clientX;
+    // 长按检测：500ms 后显示保存按钮
+    clearTimeout(pvLongPressTimer);
+    pvLongPressTimer = setTimeout(() => {
+      pvLongPressed = true; pvSwiping = false;
+      previewSaveBtn.style.display = 'block';
+    }, 500);
   }
 }, { passive: false });
 previewWrap.addEventListener('touchmove', (e) => {
   if (pvPinching && e.touches.length === 2) {
     e.preventDefault();
+    clearTimeout(pvLongPressTimer); previewSaveBtn.style.display = 'none';
     const dx = e.touches[0].clientX - e.touches[1].clientX, dy = e.touches[0].clientY - e.touches[1].clientY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (pvLastDist > 0) {
@@ -885,22 +929,23 @@ previewWrap.addEventListener('touchmove', (e) => {
     }
     pvLastDist = dist; pvSwiping = false;
   } else if (e.touches.length === 1 && pvSwiping) {
-    // 单指移动时仅记录位置，不执行平移
     pvLastX = e.touches[0].clientX; pvLastY = e.touches[0].clientY;
+    // 移动超过 10px 取消长按
+    if (Math.abs(pvLastX - pvSwipeStartX) > 10) { clearTimeout(pvLongPressTimer); previewSaveBtn.style.display = 'none'; }
   }
 }, { passive: false });
 previewWrap.addEventListener('touchend', (e) => {
+  clearTimeout(pvLongPressTimer);
   if (pvPinching && e.touches.length < 2) { pvPinching = false; pvLastDist = 0; }
   if (e.touches.length === 0) {
-    // 多图时支持左右滑动切换
-    if (pvSwiping && pvScale <= 1.05 && pvImages.length > 1) {
+    if (!pvLongPressed && pvSwiping && pvScale <= 1.05 && pvImages.length > 1) {
       const dx = pvLastX - pvSwipeStartX;
       if (Math.abs(dx) > 60) {
         if (dx < 0 && pvIndex < pvImages.length - 1) pvShowImage(pvIndex + 1);
         else if (dx > 0 && pvIndex > 0) pvShowImage(pvIndex - 1);
       }
     }
-    pvSwiping = false;
+    pvSwiping = false; pvLongPressed = false;
   }
 });
 previewWrap.addEventListener('wheel', (e) => {
@@ -910,6 +955,24 @@ previewWrap.addEventListener('wheel', (e) => {
   pvTX = mx - (mx - pvTX) * (newScale / pvScale); pvTY = my - (my - pvTY) * (newScale / pvScale);
   pvScale = newScale; pvApply();
 }, { passive: false });
+
+/** 保存当前预览图片到本地 */
+previewSaveBtn.addEventListener('click', () => {
+  if (pvImages.length === 0) return;
+  const img = pvImages[pvIndex];
+  const ck = img._cellKey;
+  let sName = '', bTime = '';
+  if (ck) {
+    const parts = ck.split('-');
+    sName = getSeatNameSync(parseInt(parts[0]), parts[1], parseInt(parts[2]));
+  }
+  bTime = img.beijingTime || getBeijingTime();
+  const filename = `${sName || '图片'}_${bTime.replace(/[: ]/g, '-')}.jpg`;
+  const blob = dataURLtoBlob(previewImage.src);
+  downloadBlob(blob, filename);
+  previewSaveBtn.style.display = 'none';
+  showToast('已保存');
+});
 
 // ============================================================
 // 十、批量清理
@@ -931,7 +994,7 @@ function readPickerCol(colEl) { const items = colEl.querySelectorAll('.picker-it
 function highlightPickerCol(colEl) { const val = readPickerCol(colEl); colEl.querySelectorAll('.picker-item').forEach(item => item.classList.toggle('active', parseInt(item.dataset.val) === val)); return val; }
 function getDaysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
 function updateDayPicker() { const y = readPickerCol(pickerYear) || cleanupYear, m = readPickerCol(pickerMonth) || cleanupMonth; const maxDay = getDaysInMonth(y, m), days = []; for (let dd = 1; dd <= maxDay; dd++) days.push(dd); fillPickerCol(pickerDay, days, Math.min(readPickerCol(pickerDay) || cleanupDay, maxDay)); }
-function initCleanupDate() { const d = new Date(); d.setDate(d.getDate() - 1); cleanupYear = d.getFullYear(); cleanupMonth = d.getMonth() + 1; cleanupDay = d.getDate(); const years = []; for (let y = d.getFullYear() + 1; y >= d.getFullYear() - 5; y--) years.push(y); fillPickerCol(pickerYear, years, cleanupYear); const months = []; for (let m = 1; m <= 12; m++) months.push(m); fillPickerCol(pickerMonth, months, cleanupMonth); const maxDay = getDaysInMonth(cleanupYear, cleanupMonth), days = []; for (let dd = 1; dd <= maxDay; dd++) days.push(dd); fillPickerCol(pickerDay, days, cleanupDay); }
+function initCleanupDate() { const d = new Date(); cleanupYear = d.getFullYear(); cleanupMonth = d.getMonth() + 1; cleanupDay = d.getDate(); const years = []; for (let y = d.getFullYear() + 1; y >= d.getFullYear() - 5; y--) years.push(y); fillPickerCol(pickerYear, years, cleanupYear); const months = []; for (let m = 1; m <= 12; m++) months.push(m); fillPickerCol(pickerMonth, months, cleanupMonth); const maxDay = getDaysInMonth(cleanupYear, cleanupMonth), days = []; for (let dd = 1; dd <= maxDay; dd++) days.push(dd); fillPickerCol(pickerDay, days, cleanupDay); }
 let pickerScrollTimer = null;
 [pickerYear, pickerMonth, pickerDay].forEach(col => {
   col.addEventListener('scroll', () => { highlightPickerCol(col); if (col === pickerYear || col === pickerMonth) { clearTimeout(pickerScrollTimer); pickerScrollTimer = setTimeout(updateDayPicker, 200); } }, { passive: true });
@@ -993,7 +1056,7 @@ app.addEventListener('click', async (e) => {
     updateBottomBar(); saveUIState(); renderMain(); showToast('座位已删除'); return;
   }
   const checkbox = target.closest('[data-action="toggle-select"]');
-  if (checkbox) { const ck = checkbox.dataset.cellKey, idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); checkbox.classList.remove('checked'); } else { state.selectedCells.push(ck); checkbox.classList.add('checked'); } updateBottomBar(); return; }
+  if (checkbox) { if (checkbox.classList.contains('disabled')) return; const ck = checkbox.dataset.cellKey, idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); checkbox.classList.remove('checked'); } else { state.selectedCells.push(ck); checkbox.classList.add('checked'); } updateBottomBar(); return; }
   const captureBtn = target.closest('[data-action="capture"]');
   if (captureBtn) { const ck = captureBtn.dataset.cellKey, cd = await getCellData(ck); if (cd && cd.images && cd.images.length >= MAX_IMAGES) { showToast('该时段图片已满'); return; } currentCaptureCellKey = ck; captureInput.value = ''; captureInput.click(); return; }
   const uploadBtn = target.closest('[data-action="upload"]');
@@ -1002,6 +1065,9 @@ app.addEventListener('click', async (e) => {
   if (delBtn) { const ck = delBtn.dataset.cellKey, imgIdx = parseInt(delBtn.dataset.imgIdx), cd = await getCellData(ck); let imgs = (cd && cd.images) ? [...cd.images] : []; if (imgIdx >= 0 && imgIdx < imgs.length) { imgs.splice(imgIdx, 1); if (imgs.length > 0) await saveCellData(ck, imgs); else await dbDelete('cells', ck); const sk = cellToSeatKey(ck), p = ck.split('-'); let still = false; for (let t = 0; t < TIME_SLOTS.length; t++) { const td = await getCellData(`${p[0]}-${p[1]}-${p[2]}-${t}`); if (td && td.images && td.images.length > 0) { still = true; break; } } still ? state.seatHasImages.add(sk) : state.seatHasImages.delete(sk); updateSeatVisual(sk); await renderTimeSlots(sk); updateBottomBar(); } return; }
   const previewBtn = target.closest('[data-action="preview"]');
   if (previewBtn) { showPreview(previewBtn.dataset.cellKey, parseInt(previewBtn.dataset.imgIdx)); return; }
+  // 点击时段卡片空白区域切换勾选
+  const card = target.closest('[data-action="toggle-card"]');
+  if (card) { if (card.dataset.hasImages !== '1') return; const ck = card.dataset.cellKey, cb = card.querySelector('.ts-checkbox'); if (!cb || cb.classList.contains('disabled')) return; const idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); cb.classList.remove('checked'); } else { state.selectedCells.push(ck); cb.classList.add('checked'); } updateBottomBar(); return; }
   const nameEl = target.closest('[data-action="edit-seat-name"]');
   if (nameEl) { const sk = nameEl.dataset.seatKey, curName = nameEl.textContent; const input = document.createElement('input'); input.type = 'text'; input.value = curName; input.className = 'seat-name-edit-input'; const doSave = async () => { const newName = input.value.trim() || curName; if (newName === curName) { const sp = document.createElement('span'); sp.className = 'seat-name-text'; sp.dataset.action = 'edit-seat-name'; sp.dataset.seatKey = sk; sp.textContent = newName; if (input.parentNode) input.replaceWith(sp); return; } state.seatNames[sk] = newName; await saveSeatName(sk, newName); const sp = document.createElement('span'); sp.className = 'seat-name-text'; sp.dataset.action = 'edit-seat-name'; sp.dataset.seatKey = sk; sp.textContent = newName; if (input.parentNode) input.replaceWith(sp); updateSeatButtonText(sk, newName); await regenerateWatermarksForSeat(sk); }; input.addEventListener('blur', doSave); input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') input.blur(); }); nameEl.replaceWith(input); input.focus(); input.select(); return; }
   const cleanupBtn = target.closest('[data-action="open-cleanup"]');
@@ -1076,6 +1142,10 @@ document.getElementById('filter-hide-passed').addEventListener('click', () => {
   state._filterNone = false;
   for (let i = 0; i < TIME_SLOTS.length; i++) {
     if (!isTimeSlotPassed(i)) state.visibleTimeSlots.add(i);
+  }
+  // 如果所有时段都已过（如 21:00 之后），至少保留最后一个时段
+  if (state.visibleTimeSlots.size === 0) {
+    state.visibleTimeSlots.add(TIME_SLOTS.length - 1);
   }
   saveFilterState();
   renderFilterBody();
