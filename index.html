@@ -84,9 +84,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 #bottom-bar.show{display:flex;align-items:center;gap:8px}
 #selected-count{font-size:13px;color:#666;flex-shrink:0;white-space:nowrap}
 #btn-clear-select{padding:8px 12px;font-size:13px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;color:#666;cursor:pointer;flex-shrink:0}
-.bar-btn{padding:12px 14px;font-size:14px;font-weight:600;border:none;border-radius:8px;cursor:pointer;flex:1;min-width:0;white-space:nowrap}
+.bar-btn{padding:12px 10px;font-size:14px;font-weight:600;border:none;border-radius:8px;cursor:pointer;flex:1;min-width:0;white-space:nowrap}
 .bar-btn:active{opacity:.8}
-#btn-download-separate{background:#1890ff;color:#fff}
+#btn-download-separate{background:#1890ff;color:#fff;flex-shrink:0;min-width:auto}
 #btn-download-concat{background:#fa8c16;color:#fff}
 
 #preview-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:200;overflow:hidden;touch-action:none}
@@ -175,7 +175,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
   <div id="preview-close">&times;</div>
   <div id="preview-image-wrap"><img id="preview-image" /></div>
   <div id="preview-indicator"></div>
-  <div id="preview-hint">双指缩放 · 单指拖动 · 左右滑动切换</div>
+  <div id="preview-hint">双指缩放 · 左右滑动切换</div>
 </div>
 <div class="modal-overlay" id="batch-modal">
   <div class="modal-box">
@@ -200,7 +200,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 </div>
 <div class="filter-sheet-overlay" id="filter-overlay"></div>
 <div class="filter-sheet" id="filter-sheet">
-  <div class="filter-sheet-header"><span class="filter-sheet-title">选择显示时段</span><button class="filter-sheet-close" id="filter-close">&times;</button></div>
+  <div class="filter-sheet-header"><span class="filter-sheet-title">选择显示时段（打勾为显示时段）</span><button class="filter-sheet-close" id="filter-close">&times;</button></div>
   <div class="filter-sheet-actions">
     <button class="filter-action-btn primary" id="filter-hide-passed">隐藏已过时段</button>
     <button class="filter-action-btn" id="filter-select-all">全选</button>
@@ -601,6 +601,15 @@ captureInput.addEventListener('change', async (e) => {
     const sk = cellToSeatKey(ck);
     state.seatHasImages.add(sk); updateSeatVisual(sk);
     await renderTimeSlots(sk); updateBottomBar();
+    // 拍照后自动弹窗保存到本地相册
+    const shareName = `${sName}_${bTime.replace(/[: ]/g, '-')}.jpg`;
+    const shareBlob = dataURLtoBlob(watermarked);
+    if (navigator.share && navigator.canShare) {
+      const shareFile = new File([shareBlob], shareName, { type: 'image/jpeg' });
+      if (navigator.canShare({ files: [shareFile] })) {
+        try { await navigator.share({ files: [shareFile] }); } catch (err) { if (err.name !== 'AbortError') console.error('分享出错:', err); }
+      } else { downloadBlob(shareBlob, shareName); }
+    } else { downloadBlob(shareBlob, shareName); }
   } catch (err) {
     if (err.name === 'QuotaExceededError') showToast('存储空间不足！');
     else { console.error('拍照处理出错:', err); showToast('拍照处理出错'); }
@@ -664,7 +673,8 @@ async function getProcessedData(imgObj, fid, aname, sidx) {
 
 async function shareSelectedImages() {
   if (state.selectedCells.length === 0) return;
-  const files = [];
+  // 收集所有图片 blob 和文件名
+  const items = [];
   for (const ck of state.selectedCells) {
     const cellData = await getCellData(ck);
     if (!cellData || !cellData.images || cellData.images.length === 0) continue;
@@ -673,19 +683,34 @@ async function shareSelectedImages() {
     for (let i = 0; i < cellData.images.length; i++) {
       const data = await getProcessedData(cellData.images[i], fid, aname, sidx);
       const blob = dataURLtoBlob(data);
-      files.push(new File([blob], `${sName}_${timeSlot}_${i + 1}.jpg`, { type: 'image/jpeg' }));
+      const filename = `${sName}_${timeSlot}_${i + 1}.jpg`;
+      items.push({ blob, filename });
     }
   }
-  if (files.length === 0) { showToast('无图片可分享'); return; }
-  if (navigator.share && navigator.canShare && navigator.canShare({ files })) {
-    try {
-      await navigator.share({ files });
-    } catch (err) {
-      if (err.name !== 'AbortError') { console.error('分享出错:', err); showToast('分享失败'); }
+  if (items.length === 0) { showToast('无图片可分享'); return; }
+
+  // 优先使用系统分享
+  if (navigator.share && navigator.canShare) {
+    const files = items.map(it => new File([it.blob], it.filename, { type: 'image/jpeg' }));
+    if (navigator.canShare({ files })) {
+      try { await navigator.share({ files }); return; }
+      catch (err) { if (err.name === 'AbortError') return; }
     }
+  }
+
+  // 回退：单张直接下载，多张打包 zip
+  if (items.length === 1) {
+    downloadBlob(items[0].blob, items[0].filename);
+    showToast('已开始下载');
   } else {
-    showToast('当前浏览器不支持批量分享，将依次下载');
-    for (const f of files) downloadBlob(f, f.name);
+    showToast('正在打包...');
+    try {
+      const zip = new JSZip();
+      items.forEach(it => zip.file(it.filename, it.blob));
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      downloadBlob(zipBlob, `图片导出_${Date.now()}.zip`);
+      showToast(`已下载 ${items.length} 张图片`);
+    } catch (err) { console.error('打包出错:', err); showToast('打包出错'); }
   }
 }
 
@@ -803,7 +828,7 @@ const previewWrap = document.getElementById('preview-image-wrap');
 const previewIndicator = document.getElementById('preview-indicator');
 let pvImages = [], pvIndex = 0;
 let pvScale = 1, pvTX = 0, pvTY = 0, pvLastDist = 0, pvLastX = 0, pvLastY = 0;
-let pvDragging = false, pvPinching = false, pvSwiping = false, pvSwipeStartX = 0;
+let pvPinching = false, pvSwiping = false, pvSwipeStartX = 0;
 
 function pvApply() { previewImage.style.transform = `translate(${pvTX}px, ${pvTY}px) scale(${pvScale})`; }
 function pvReset() { pvScale = 1; pvTX = 0; pvTY = 0; pvApply(); }
@@ -838,11 +863,12 @@ previewWrap.addEventListener('click', (e) => { if (e.target === previewWrap) clo
 
 previewWrap.addEventListener('touchstart', (e) => {
   if (e.touches.length === 2) {
-    e.preventDefault(); pvPinching = true; pvDragging = false; pvSwiping = false;
+    e.preventDefault(); pvPinching = true; pvSwiping = false;
     const dx = e.touches[0].clientX - e.touches[1].clientX, dy = e.touches[0].clientY - e.touches[1].clientY;
     pvLastDist = Math.sqrt(dx * dx + dy * dy);
   } else if (e.touches.length === 1) {
-    pvDragging = true; pvSwiping = true; pvPinching = false;
+    // 单指：仅用于左右滑动切换（多图时），禁止拖动平移
+    pvSwiping = true; pvPinching = false;
     pvLastX = e.touches[0].clientX; pvLastY = e.touches[0].clientY; pvSwipeStartX = e.touches[0].clientX;
   }
 }, { passive: false });
@@ -858,15 +884,15 @@ previewWrap.addEventListener('touchmove', (e) => {
       pvScale = newScale; pvApply();
     }
     pvLastDist = dist; pvSwiping = false;
-  } else if (pvDragging && e.touches.length === 1) {
-    e.preventDefault();
-    pvTX += e.touches[0].clientX - pvLastX; pvTY += e.touches[0].clientY - pvLastY;
-    pvApply(); pvLastX = e.touches[0].clientX; pvLastY = e.touches[0].clientY;
+  } else if (e.touches.length === 1 && pvSwiping) {
+    // 单指移动时仅记录位置，不执行平移
+    pvLastX = e.touches[0].clientX; pvLastY = e.touches[0].clientY;
   }
 }, { passive: false });
 previewWrap.addEventListener('touchend', (e) => {
   if (pvPinching && e.touches.length < 2) { pvPinching = false; pvLastDist = 0; }
   if (e.touches.length === 0) {
+    // 多图时支持左右滑动切换
     if (pvSwiping && pvScale <= 1.05 && pvImages.length > 1) {
       const dx = pvLastX - pvSwipeStartX;
       if (Math.abs(dx) > 60) {
@@ -874,7 +900,7 @@ previewWrap.addEventListener('touchend', (e) => {
         else if (dx > 0 && pvIndex > 0) pvShowImage(pvIndex - 1);
       }
     }
-    pvDragging = false; pvSwiping = false;
+    pvSwiping = false;
   }
 });
 previewWrap.addEventListener('wheel', (e) => {
