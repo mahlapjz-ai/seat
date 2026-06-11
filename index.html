@@ -109,10 +109,16 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 /* ===== 批量清理弹窗 ===== */
 #cleanup-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:250;align-items:center;justify-content:center}
 #cleanup-modal.show{display:flex}
-.cleanup-box{background:#fff;border-radius:12px;padding:24px 20px;width:90%;max-width:360px;max-height:85vh;overflow-y:auto;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)}
+.cleanup-box{background:#fff;border-radius:12px;padding:24px 20px;width:90%;max-width:360px;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%)}
 .cleanup-box h3{font-size:18px;margin-bottom:16px;text-align:center}
 .cleanup-box p{font-size:14px;color:#666;margin-bottom:12px}
-.cleanup-box input[type="date"]{width:100%;padding:10px;font-size:16px;border:1px solid #d9d9d9;border-radius:6px;margin-bottom:16px}
+.cleanup-date-row{display:flex;gap:10px;margin-bottom:20px;justify-content:center}
+.cleanup-field{display:flex;flex-direction:column;align-items:center;gap:6px}
+.cleanup-field label{font-size:13px;color:#999}
+.cleanup-stepper{display:flex;align-items:center;gap:0;border:1px solid #d9d9d9;border-radius:6px;overflow:hidden}
+.cleanup-stepper button{width:40px;height:44px;font-size:22px;font-weight:700;border:none;background:#f5f5f5;color:#333;cursor:pointer;-webkit-user-select:none;user-select:none}
+.cleanup-stepper button:active{background:#e0e0e0}
+.cleanup-stepper span{width:56px;height:44px;line-height:44px;text-align:center;font-size:18px;font-weight:700;background:#fff}
 .cleanup-btns{display:flex;gap:10px}
 .cleanup-btns button{flex:1;padding:12px;font-size:15px;font-weight:600;border:none;border-radius:8px;cursor:pointer}
 .cleanup-btns button:active{opacity:.8}
@@ -150,7 +156,32 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
   <div class="cleanup-box">
     <h3>批量清理图片</h3>
     <p>删除所选日期<strong>之前</strong>添加的所有图片，释放存储空间。</p>
-    <input type="date" id="cleanup-date" />
+    <div class="cleanup-date-row">
+      <div class="cleanup-field">
+        <label>年</label>
+        <div class="cleanup-stepper">
+          <button data-action="step-year-down">−</button>
+          <span id="cleanup-year-val">2026</span>
+          <button data-action="step-year-up">+</button>
+        </div>
+      </div>
+      <div class="cleanup-field">
+        <label>月</label>
+        <div class="cleanup-stepper">
+          <button data-action="step-month-down">−</button>
+          <span id="cleanup-month-val">6</span>
+          <button data-action="step-month-up">+</button>
+        </div>
+      </div>
+      <div class="cleanup-field">
+        <label>日</label>
+        <div class="cleanup-stepper">
+          <button data-action="step-day-down">−</button>
+          <span id="cleanup-day-val">10</span>
+          <button data-action="step-day-up">+</button>
+        </div>
+      </div>
+    </div>
     <div class="cleanup-btns">
       <button class="cleanup-cancel" id="cleanup-cancel-btn">取消</button>
       <button class="cleanup-exec" id="cleanup-exec-btn">执行清理</button>
@@ -735,18 +766,59 @@ previewWrap.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 // ============================================================
-// 九、批量清理
+// 九、批量清理（自定义步进器日期选择，避免移动端原生控件覆盖）
 // ============================================================
 
 const cleanupModal = document.getElementById('cleanup-modal');
-const cleanupDate = document.getElementById('cleanup-date');
+const cleanupYearVal = document.getElementById('cleanup-year-val');
+const cleanupMonthVal = document.getElementById('cleanup-month-val');
+const cleanupDayVal = document.getElementById('cleanup-day-val');
+
+let cleanupYear = 2026, cleanupMonth = 6, cleanupDay = 10;
+
+/** 初始化清理日期为1天前 */
+function initCleanupDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  cleanupYear = d.getFullYear();
+  cleanupMonth = d.getMonth() + 1;
+  cleanupDay = d.getDate();
+  updateCleanupDisplay();
+}
+
+/** 更新显示 */
+function updateCleanupDisplay() {
+  cleanupYearVal.textContent = cleanupYear;
+  cleanupMonthVal.textContent = cleanupMonth;
+  cleanupDayVal.textContent = cleanupDay;
+}
+
+/** 获取清理日期值 */
+function getCleanupDateValue() {
+  return `${cleanupYear}-${String(cleanupMonth).padStart(2, '0')}-${String(cleanupDay).padStart(2, '0')}`;
+}
+
+// 步进器按钮事件（挂在弹窗上，避免被主事件委托拦截）
+cleanupModal.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action^="step-"]');
+  if (!btn) return;
+  e.stopPropagation();
+  const action = btn.dataset.action;
+  if (action === 'step-year-up') cleanupYear++;
+  else if (action === 'step-year-down') cleanupYear = Math.max(2020, cleanupYear - 1);
+  else if (action === 'step-month-up') { cleanupMonth++; if (cleanupMonth > 12) cleanupMonth = 1; }
+  else if (action === 'step-month-down') { cleanupMonth--; if (cleanupMonth < 1) cleanupMonth = 12; }
+  else if (action === 'step-day-up') { cleanupDay++; if (cleanupDay > 31) cleanupDay = 1; }
+  else if (action === 'step-day-down') { cleanupDay--; if (cleanupDay < 1) cleanupDay = 31; }
+  updateCleanupDisplay();
+});
 
 document.getElementById('cleanup-cancel-btn').addEventListener('click', () => {
   cleanupModal.classList.remove('show');
 });
 
 document.getElementById('cleanup-exec-btn').addEventListener('click', async () => {
-  const dateVal = cleanupDate.value;
+  const dateVal = getCleanupDateValue();
   if (!dateVal) { showToast('请选择日期'); return; }
   const threshold = new Date(dateVal + 'T00:00:00+08:00').getTime();
   if (isNaN(threshold)) { showToast('日期格式无效'); return; }
@@ -977,9 +1049,7 @@ app.addEventListener('click', async (e) => {
   // 打开批量清理
   const cleanupBtn = target.closest('[data-action="open-cleanup"]');
   if (cleanupBtn) {
-    // 默认日期设为1天前
-    const d = new Date(); d.setDate(d.getDate() - 1);
-    cleanupDate.value = d.toISOString().split('T')[0];
+    initCleanupDate();
     cleanupModal.classList.add('show');
     return;
   }
