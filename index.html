@@ -21,6 +21,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .header-btn:active{opacity:.7}
 .btn-cleanup{background:#ff4d4f}
 .btn-batch-dl{background:#722ed1}
+/* 【修改3】拍照后分享开关按钮 */
+.btn-share-toggle{background:#52c41a;font-size:12px;padding:6px 10px;font-weight:600;border:none;border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap;min-height:32px;min-width:44px;transition:background .15s}
+.btn-share-toggle.off{background:#bfbfbf}
 
 .floor-btn{display:block;width:100%;padding:16px 20px;margin:8px 0;font-size:18px;font-weight:600;border:none;border-radius:10px;color:#fff;cursor:pointer;text-align:left;transition:transform .1s}
 .floor-btn:active{transform:scale(.97)}
@@ -177,7 +180,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
   <span id="selected-count">已选 0 个时段</span>
   <button id="btn-clear-select">取消全选</button>
   <button class="bar-btn" id="btn-download-separate">分享选中图片</button>
-  <button class="bar-btn" id="btn-download-concat">拼接下载</button>
+  <button class="bar-btn" id="btn-download-concat">拼接预览</button>
 </div>
 <div id="preview-modal">
   <div id="preview-close">&times;</div>
@@ -324,6 +327,7 @@ const state = {
   selectedCells: [], seatNames: {}, seatHasImages: new Set(),
   extraSeats: {}, deletedSeats: new Set(),
   visibleTimeSlots: new Set(), _filterNone: false, // 时段筛选：空集+!_filterNone=全显，空集+_filterNone=全不显
+  autoShare: false, // 【修改3】拍照后自动分享开关，默认关闭
 };
 
 /** 生成区域 key */
@@ -382,6 +386,9 @@ function getBeijingTime() {
 async function buildSeatHasImages() { const a = await dbGetAll('cells'); state.seatHasImages = new Set(); a.forEach(r => { if (r.images && r.images.length > 0) state.seatHasImages.add(r.key.split('-').slice(0, 3).join('-')); }); }
 function saveUIState() { try { localStorage.setItem('seat_ui_state', JSON.stringify({ f: [...state.expandedFloors], a: [...state.expandedAreas], s: [...state.expandedSeats] })); } catch (e) {} }
 function loadUIState() { try { const o = JSON.parse(localStorage.getItem('seat_ui_state')); if (o.f) state.expandedFloors = new Set(o.f); if (o.a) state.expandedAreas = new Set(o.a); if (o.s) state.expandedSeats = new Set(o.s); } catch (e) {} }
+// 【修改3】拍照后分享开关状态持久化
+function saveAutoShareState() { try { localStorage.setItem('seat_auto_share', state.autoShare ? '1' : '0'); } catch (e) {} }
+function loadAutoShareState() { try { state.autoShare = localStorage.getItem('seat_auto_share') === '1'; } catch (e) {} }
 
 /** 保存时段筛选设置到 localStorage */
 function saveFilterState() { try { localStorage.setItem('seat_time_filter', JSON.stringify({ slots: [...state.visibleTimeSlots], none: state._filterNone })); } catch (e) {} }
@@ -416,7 +423,7 @@ function isTimeSlotVisible(tIdx) {
 // ============================================================
 const app = document.getElementById('app');
 function renderMain() {
-  let html = '<div class="page-header"><span class="page-title">图书馆座位图片管理</span><button class="header-btn btn-filter" data-action="open-filter"><span class="filter-icon">⏳</span>时段筛选</button><button class="header-btn btn-batch-dl" data-action="open-batch-dl">批量下载</button><button class="header-btn btn-cleanup" data-action="open-cleanup">批量清理</button></div>';
+  let html = '<div class="page-header"><span class="page-title">图书馆座位图片管理</span><button class="btn-share-toggle ' + (state.autoShare ? '' : 'off') + '" data-action="toggle-auto-share">' + (state.autoShare ? '分享开' : '分享关') + '</button><button class="header-btn btn-filter" data-action="open-filter"><span class="filter-icon">⏳</span>时段筛选</button><button class="header-btn btn-batch-dl" data-action="open-batch-dl">批量下载</button><button class="header-btn btn-cleanup" data-action="open-cleanup">批量清理</button></div>';
   // 【优化】预计算每个区域的已删除座位数，避免每个区域都遍历全量 deletedSeats
   const deletedCountMap = {};
   state.deletedSeats.forEach(sk => {
@@ -678,15 +685,17 @@ captureInput.addEventListener('change', async (e) => {
     const sk = cellToSeatKey(ck);
     state.seatHasImages.add(sk); updateSeatVisual(sk);
     await renderTimeSlots(sk); updateBottomBar();
-    // 拍照后自动弹窗保存到本地相册
-    const shareName = `${sName}_${bTime.replace(/[: ]/g, '-')}.jpg`;
-    const shareBlob = dataURLtoBlob(watermarked);
-    if (navigator.share && navigator.canShare) {
-      const shareFile = new File([shareBlob], shareName, { type: 'image/jpeg' });
-      if (navigator.canShare({ files: [shareFile] })) {
-        try { await navigator.share({ files: [shareFile] }); } catch (err) { if (err.name !== 'AbortError') console.error('分享出错:', err); }
+    // 【修改3】拍照后自动分享受开关控制，默认关闭
+    if (state.autoShare) {
+      const shareName = `${sName}_${bTime.replace(/[: ]/g, '-')}.jpg`;
+      const shareBlob = dataURLtoBlob(watermarked);
+      if (navigator.share && navigator.canShare) {
+        const shareFile = new File([shareBlob], shareName, { type: 'image/jpeg' });
+        if (navigator.canShare({ files: [shareFile] })) {
+          try { await navigator.share({ files: [shareFile] }); } catch (err) { if (err.name !== 'AbortError') console.error('分享出错:', err); }
+        } else { downloadBlob(shareBlob, shareName); }
       } else { downloadBlob(shareBlob, shareName); }
-    } else { downloadBlob(shareBlob, shareName); }
+    }
   } catch (err) {
     if (err.name === 'QuotaExceededError') showToast('存储空间不足！');
     else { console.error('拍照处理出错:', err); showToast('拍照处理出错'); }
@@ -795,7 +804,7 @@ async function shareSelectedImages() {
   }
 }
 
-// 【优化】拼接下载：一次性读取所有数据，避免逐条异步读取
+// 【修改1】拼接下载改为拼接预览：拼接后打开全屏预览，不直接下载
 async function downloadConcatenated() {
   if (state.selectedCells.length === 0) return;
   // 拼接功能最多选择 2 个时段
@@ -812,6 +821,7 @@ async function downloadConcatenated() {
     for (const imgObj of cellData.images) allImageData.push({ ...imgObj, fid, aname, sidx });
   }
   if (allImageData.length === 0) { showToast('无图片可拼接'); return; }
+  showToast('正在拼接...');
   const processedImages = [];
   for (const imgObj of allImageData) {
     processedImages.push(await getProcessedData(imgObj, imgObj.fid, imgObj.aname, imgObj.sidx));
@@ -824,7 +834,9 @@ async function downloadConcatenated() {
   const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, maxW, totalH);
   let y = 0;
   for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], 0, y, maxW, scaledH[i]); y += scaledH[i]; }
-  canvas.toBlob(blob => { downloadBlob(blob, `拼接结果_${Date.now()}.jpg`); showToast('拼接下载完成'); }, 'image/jpeg', 0.95);
+  // 【修改1】拼接后打开预览而非直接下载
+  const dataURL = canvas.toDataURL('image/jpeg', 0.95);
+  showPreviewFromDataURL(dataURL, '拼接结果');
 }
 
 // ============================================================
@@ -1214,6 +1226,31 @@ async function showPreview(cellKeyStr, imgIdx) {
   }
 }
 
+/** 【修改1】用 dataURL 直接打开预览（用于拼接预览等场景，单张图禁用左右切换） */
+function showPreviewFromDataURL(dataURL, title) {
+  pvImages = [{ data: dataURL, _cellKey: '', _concatTitle: title || '图片' }];
+  pvIndex = 0;
+  pvStates.length = 0;
+  pvStates.push({ scale: 1, tx: 0, ty: 0 });
+
+  previewScroller.innerHTML = '';
+  const slide = document.createElement('div');
+  slide.className = 'pv-slide';
+  const imgEl = document.createElement('img');
+  imgEl.src = dataURL;
+  slide.dataset.loaded = '1';
+  slide.appendChild(imgEl);
+  previewScroller.appendChild(slide);
+
+  pvSlideOffset = 0;
+  pvGesture = 'idle';
+  pvEdgeOverflow = 0;
+
+  previewModal.classList.add('show');
+  pvApplySlideOffset();
+  pvUpdateIndicator();
+}
+
 function closePreview() {
   if (pvAnimId) { cancelAnimationFrame(pvAnimId); pvAnimId = null; }
   previewModal.classList.remove('show');
@@ -1567,6 +1604,14 @@ previewSaveBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   if (pvImages.length === 0) return;
   const img = pvImages[pvIndex];
+  // 【修改1】拼接预览时用 _concatTitle 作文件名
+  if (img._concatTitle) {
+    const imgEl = pvCurrentImg();
+    const blob = dataURLtoBlob(imgEl ? imgEl.src : '');
+    downloadBlob(blob, `${img._concatTitle}_${Date.now()}.jpg`);
+    showToast('已保存');
+    return;
+  }
   const ck = img._cellKey;
   let sName = '', bTime = '';
   if (ck) {
@@ -1669,8 +1714,36 @@ app.addEventListener('click', async (e) => {
   const uploadBtn = target.closest('[data-action="upload"]');
   if (uploadBtn) { const ck = uploadBtn.dataset.cellKey, cd = await getCellData(ck); if (cd && cd.images && cd.images.length >= MAX_IMAGES) { showToast('该时段图片已满'); return; } currentUploadCellKey = ck; uploadInput.value = ''; uploadInput.click(); return; }
   const delBtn = target.closest('[data-action="delete-img"]');
-  // 【优化】删除图片后，若该时段仍有图片则无需扫描其他时段
-  if (delBtn) { const ck = delBtn.dataset.cellKey, imgIdx = parseInt(delBtn.dataset.imgIdx), cd = await getCellData(ck); let imgs = (cd && cd.images) ? [...cd.images] : []; if (imgIdx >= 0 && imgIdx < imgs.length) { imgs.splice(imgIdx, 1); const sk = cellToSeatKey(ck); if (imgs.length > 0) { await saveCellData(ck, imgs); state.seatHasImages.add(sk); } else { await dbDelete('cells', ck); const p = ck.split('-'); let still = false; for (let t = 0; t < TIME_SLOTS.length; t++) { const td = await getCellData(`${p[0]}-${p[1]}-${p[2]}-${t}`); if (td && td.images && td.images.length > 0) { still = true; break; } } still ? state.seatHasImages.add(sk) : state.seatHasImages.delete(sk); } updateSeatVisual(sk); await renderTimeSlots(sk); updateBottomBar(); } return; }
+  // 【修改2】删除图片后，若该时段图片清零则自动取消勾选并更新UI
+  if (delBtn) {
+    const ck = delBtn.dataset.cellKey, imgIdx = parseInt(delBtn.dataset.imgIdx);
+    const cd = await getCellData(ck);
+    let imgs = (cd && cd.images) ? [...cd.images] : [];
+    if (imgIdx >= 0 && imgIdx < imgs.length) {
+      imgs.splice(imgIdx, 1);
+      const sk = cellToSeatKey(ck);
+      if (imgs.length > 0) {
+        await saveCellData(ck, imgs);
+        state.seatHasImages.add(sk);
+      } else {
+        await dbDelete('cells', ck);
+        // 【修改2】图片删光后，从勾选集合中移除该时段
+        const selIdx = state.selectedCells.indexOf(ck);
+        if (selIdx >= 0) state.selectedCells.splice(selIdx, 1);
+        const p = ck.split('-');
+        let still = false;
+        for (let t = 0; t < TIME_SLOTS.length; t++) {
+          const td = await getCellData(`${p[0]}-${p[1]}-${p[2]}-${t}`);
+          if (td && td.images && td.images.length > 0) { still = true; break; }
+        }
+        still ? state.seatHasImages.add(sk) : state.seatHasImages.delete(sk);
+      }
+      updateSeatVisual(sk);
+      await renderTimeSlots(sk);
+      updateBottomBar();
+    }
+    return;
+  }
   const previewBtn = target.closest('[data-action="preview"]');
   if (previewBtn) { showPreview(previewBtn.dataset.cellKey, parseInt(previewBtn.dataset.imgIdx)); return; }
   // 点击时段卡片空白区域切换勾选
@@ -1684,6 +1757,9 @@ app.addEventListener('click', async (e) => {
   if (batchDlBtn) { initBatchModal(); batchModal.classList.add('show'); return; }
   const filterBtn = target.closest('[data-action="open-filter"]');
   if (filterBtn) { openFilterSheet(); return; }
+  // 【修改3】切换拍照后分享开关
+  const shareToggle = target.closest('[data-action="toggle-auto-share"]');
+  if (shareToggle) { state.autoShare = !state.autoShare; saveAutoShareState(); renderMain(); return; }
 });
 
 // ============================================================
@@ -1823,6 +1899,7 @@ async function init() {
     await buildSeatHasImages();
     loadUIState();
     loadFilterState();
+    loadAutoShareState(); // 【修改3】加载拍照分享开关状态
     renderMain();
   } catch (err) {
     console.error('初始化失败:', err);
