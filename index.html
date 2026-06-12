@@ -21,9 +21,37 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .header-btn:active{opacity:.7}
 .btn-cleanup{background:#ff4d4f}
 .btn-batch-dl{background:#722ed1}
-/* 【修改3】拍照后分享开关按钮 */
-.btn-share-toggle{background:#52c41a;font-size:12px;padding:6px 10px;font-weight:600;border:none;border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap;min-height:32px;min-width:44px;transition:background .15s}
-.btn-share-toggle.off{background:#bfbfbf}
+
+/* 【修改1】删除座位按钮受开关控制 */
+.btn-delete-seat{padding:4px 12px;font-size:12px;font-weight:600;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;cursor:pointer;margin-left:auto;display:none}
+.btn-delete-seat.visible{display:inline-block}
+.btn-delete-seat:active{background:#fff1f0}
+
+/* 【修改3】功能面板 */
+.func-panel-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:260}
+.func-panel-overlay.show{display:block}
+.func-panel{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:261;transform:translateY(100%);transition:transform .3s ease;max-width:480px;margin:0 auto;padding-bottom:env(safe-area-inset-bottom)}
+.func-panel.show{transform:translateY(0)}
+.func-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #f0f0f0}
+.func-panel-title{font-size:17px;font-weight:700;color:#1a1a1a}
+.func-panel-close{width:36px;height:36px;border:none;background:#f5f5f5;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#999;min-width:44px;min-height:44px}
+.func-panel-close:active{background:#e8e8e8}
+.func-panel-body{padding:8px 20px 24px}
+.func-item{display:flex;align-items:center;justify-content:space-between;padding:14px 0;min-height:48px;border-bottom:1px solid #f5f5f5;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.func-item:last-child{border-bottom:none}
+.func-item:active{background:#fafafa;border-radius:8px}
+.func-item-label{font-size:15px;color:#333;font-weight:500}
+.func-item-label .func-item-desc{font-size:12px;color:#999;font-weight:400;margin-top:2px}
+/* 开关样式 */
+.func-toggle{width:48px;height:28px;border-radius:14px;background:#bfbfbf;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.func-toggle.on{background:#52c41a}
+.func-toggle::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}
+.func-toggle.on::after{transform:translateX(20px)}
+
+/* 【修改4】预览保存按钮淡出 */
+#preview-save-btn{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);padding:10px 28px;font-size:14px;font-weight:600;border:none;border-radius:8px;background:rgba(24,144,255,.9);color:#fff;cursor:pointer;z-index:202;box-shadow:0 2px 12px rgba(24,144,255,.4);transition:opacity .5s ease}
+#preview-save-btn:active{opacity:.8}
+#preview-save-btn.faded{opacity:.1}
 
 .floor-btn{display:block;width:100%;padding:16px 20px;margin:8px 0;font-size:18px;font-weight:600;border:none;border-radius:10px;color:#fff;cursor:pointer;text-align:left;transition:transform .1s}
 .floor-btn:active{transform:scale(.97)}
@@ -65,8 +93,6 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .seat-name-text{font-size:17px;font-weight:700;color:#1890ff;cursor:pointer;border-bottom:1px dashed #1890ff;padding-bottom:1px}
 .seat-name-hint{font-size:12px;color:#999;margin-left:4px}
 .seat-name-edit-input{font-size:17px;font-weight:700;color:#1890ff;border:none;border-bottom:2px solid #1890ff;outline:none;background:transparent;width:120px;padding-bottom:1px}
-.btn-delete-seat{padding:4px 12px;font-size:12px;font-weight:600;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;cursor:pointer;margin-left:auto}
-.btn-delete-seat:active{background:#fff1f0}
 
 .timeslot-card{background:#fff;border-radius:8px;margin:6px 0;padding:6px 10px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;display:flex;align-items:center;gap:6px;min-height:44px;flex-wrap:wrap}
 .ts-top{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
@@ -103,8 +129,6 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 #preview-scroller{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;will-change:transform}
 .pv-slide{flex:0 0 100%;width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
 .pv-slide img{max-width:100vw;max-height:100vh;object-fit:contain;border-radius:4px;transform-origin:center center;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:none;will-change:transform}
-#preview-save-btn{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);padding:10px 28px;font-size:14px;font-weight:600;border:none;border-radius:8px;background:rgba(24,144,255,.9);color:#fff;cursor:pointer;z-index:202;box-shadow:0 2px 12px rgba(24,144,255,.4)}
-#preview-save-btn:active{opacity:.8}
 #preview-indicator{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:201}
 #preview-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.4);font-size:12px;pointer-events:none}
 
@@ -220,6 +244,12 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
   </div>
   <div class="filter-sheet-body" id="filter-body"></div>
 </div>
+<!-- 【修改3】功能面板 -->
+<div class="func-panel-overlay" id="func-panel-overlay"></div>
+<div class="func-panel" id="func-panel">
+  <div class="func-panel-header"><span class="func-panel-title">功能</span><button class="func-panel-close" id="func-panel-close">&times;</button></div>
+  <div class="func-panel-body" id="func-panel-body"></div>
+</div>
 <script>
 // ============================================================
 // 一、楼层/区域/座位配置
@@ -327,7 +357,8 @@ const state = {
   selectedCells: [], seatNames: {}, seatHasImages: new Set(),
   extraSeats: {}, deletedSeats: new Set(),
   visibleTimeSlots: new Set(), _filterNone: false, // 时段筛选：空集+!_filterNone=全显，空集+_filterNone=全不显
-  autoShare: false, // 【修改3】拍照后自动分享开关，默认关闭
+  autoShare: false, // 拍照后自动分享开关，默认关闭
+  allowDeleteSeat: false, // 【修改1】允许删除座位开关，默认关闭
 };
 
 /** 生成区域 key */
@@ -386,9 +417,12 @@ function getBeijingTime() {
 async function buildSeatHasImages() { const a = await dbGetAll('cells'); state.seatHasImages = new Set(); a.forEach(r => { if (r.images && r.images.length > 0) state.seatHasImages.add(r.key.split('-').slice(0, 3).join('-')); }); }
 function saveUIState() { try { localStorage.setItem('seat_ui_state', JSON.stringify({ f: [...state.expandedFloors], a: [...state.expandedAreas], s: [...state.expandedSeats] })); } catch (e) {} }
 function loadUIState() { try { const o = JSON.parse(localStorage.getItem('seat_ui_state')); if (o.f) state.expandedFloors = new Set(o.f); if (o.a) state.expandedAreas = new Set(o.a); if (o.s) state.expandedSeats = new Set(o.s); } catch (e) {} }
-// 【修改3】拍照后分享开关状态持久化
+// 拍照后分享开关状态持久化
 function saveAutoShareState() { try { localStorage.setItem('seat_auto_share', state.autoShare ? '1' : '0'); } catch (e) {} }
 function loadAutoShareState() { try { state.autoShare = localStorage.getItem('seat_auto_share') === '1'; } catch (e) {} }
+// 【修改1】允许删除座位开关状态持久化
+function saveAllowDeleteState() { try { localStorage.setItem('seat_allow_delete', state.allowDeleteSeat ? '1' : '0'); } catch (e) {} }
+function loadAllowDeleteState() { try { state.allowDeleteSeat = localStorage.getItem('seat_allow_delete') === '1'; } catch (e) {} }
 
 /** 保存时段筛选设置到 localStorage */
 function saveFilterState() { try { localStorage.setItem('seat_time_filter', JSON.stringify({ slots: [...state.visibleTimeSlots], none: state._filterNone })); } catch (e) {} }
@@ -423,7 +457,8 @@ function isTimeSlotVisible(tIdx) {
 // ============================================================
 const app = document.getElementById('app');
 function renderMain() {
-  let html = '<div class="page-header"><span class="page-title">图书馆座位图片管理</span><button class="btn-share-toggle ' + (state.autoShare ? '' : 'off') + '" data-action="toggle-auto-share">' + (state.autoShare ? '分享开' : '分享关') + '</button><button class="header-btn btn-filter" data-action="open-filter"><span class="filter-icon">⏳</span>时段筛选</button><button class="header-btn btn-batch-dl" data-action="open-batch-dl">批量下载</button><button class="header-btn btn-cleanup" data-action="open-cleanup">批量清理</button></div>';
+  // 【修改3】顶部只保留标题和功能按钮
+  let html = '<div class="page-header"><span class="page-title">图书馆座位图片管理</span><button class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">功能</button></div>';
   // 【优化】预计算每个区域的已删除座位数，避免每个区域都遍历全量 deletedSeats
   const deletedCountMap = {};
   state.deletedSeats.forEach(sk => {
@@ -474,7 +509,9 @@ async function renderTimeSlots(sk) {
   if (!container) return;
   const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
   const sName = getSeatNameSync(fid, aname, sidx);
-  let html = `<div class="seat-header"><span class="seat-header-label">座位编号：</span><span class="seat-name-text" data-action="edit-seat-name" data-seat-key="${sk}">${sName}</span><span class="seat-name-hint">（点击修改）</span><button class="btn-delete-seat" data-action="delete-seat" data-seat-key="${sk}">删除座位</button></div>`;
+  // 【修改1】删除座位按钮受开关控制
+  const delBtnClass = state.allowDeleteSeat ? 'btn-delete-seat visible' : 'btn-delete-seat';
+  let html = `<div class="seat-header"><span class="seat-header-label">座位编号：</span><span class="seat-name-text" data-action="edit-seat-name" data-seat-key="${sk}">${sName}</span><span class="seat-name-hint">（点击修改）</span><button class="${delBtnClass}" data-action="delete-seat" data-seat-key="${sk}">删除座位</button></div>`;
   // 【优化】批量读取该座位所有可见时段的数据，单事务避免多次异步
   const visibleKeys = [];
   for (let t = 0; t < TIME_SLOTS.length; t++) {
@@ -963,6 +1000,17 @@ let pvDownStartY = 0, pvDownOffset = 0;
 // 边缘溢出累积：放大平移到边缘后，继续拖动的距离累积，超过阈值才触发切换
 let pvEdgeOverflow = 0;
 const PV_EDGE_THRESHOLD = 20; // 边缘触发切换的阈值（px）
+let pvSaveBtnTimer = null; // 【修改4】保存按钮淡出计时器
+
+// 【修改4】保存按钮淡出控制
+function pvShowSaveBtn() {
+  previewSaveBtn.classList.remove('faded');
+  clearTimeout(pvSaveBtnTimer);
+  pvSaveBtnTimer = setTimeout(() => { previewSaveBtn.classList.add('faded'); }, 3000);
+}
+function pvHideSaveBtnNow() {
+  previewSaveBtn.classList.add('faded');
+}
 
 // 双击检测
 let pvLastTapTime = 0, pvLastTapX = 0, pvLastTapY = 0;
@@ -1220,13 +1268,14 @@ async function showPreview(cellKeyStr, imgIdx) {
     previewModal.classList.add('show');
     pvApplySlideOffset();
     pvUpdateIndicator();
+    pvShowSaveBtn(); // 【修改4】打开预览后启动保存按钮淡出计时
   } catch (err) {
     console.error('打开预览失败:', err);
     showToast('预览打开失败');
   }
 }
 
-/** 【修改1】用 dataURL 直接打开预览（用于拼接预览等场景，单张图禁用左右切换） */
+/** 用 dataURL 直接打开预览（用于拼接预览等场景，单张图禁用左右切换） */
 function showPreviewFromDataURL(dataURL, title) {
   pvImages = [{ data: dataURL, _cellKey: '', _concatTitle: title || '图片' }];
   pvIndex = 0;
@@ -1249,10 +1298,12 @@ function showPreviewFromDataURL(dataURL, title) {
   previewModal.classList.add('show');
   pvApplySlideOffset();
   pvUpdateIndicator();
+  pvShowSaveBtn(); // 【修改4】打开预览后启动保存按钮淡出计时
 }
 
 function closePreview() {
   if (pvAnimId) { cancelAnimationFrame(pvAnimId); pvAnimId = null; }
+  clearTimeout(pvSaveBtnTimer); // 【修改4】清除保存按钮计时器
   previewModal.classList.remove('show');
   previewScroller.innerHTML = '';
   pvImages = [];
@@ -1269,6 +1320,7 @@ previewModal.addEventListener('contextmenu', (e) => e.preventDefault());
 
 previewModal.addEventListener('touchstart', (e) => {
   if (pvAnimId) { cancelAnimationFrame(pvAnimId); pvAnimId = null; }
+  pvShowSaveBtn(); // 【修改4】触摸时立即显示保存按钮
   if (e.touches.length === 2) {
     e.preventDefault();
     pvGesture = 'pinch';
@@ -1289,6 +1341,11 @@ previewModal.addEventListener('touchstart', (e) => {
 }, { passive: false });
 
 previewModal.addEventListener('touchmove', (e) => {
+  // 【修改2】双指缩放期间，忽略单指移动，防止误触发平移/滑动
+  if (pvGesture === 'pinch' && e.touches.length < 2) {
+    e.preventDefault();
+    return;
+  }
   // ---- 双指缩放 ----
   if (e.touches.length === 2 && pvGesture === 'pinch') {
     e.preventDefault();
@@ -1416,20 +1473,22 @@ previewModal.addEventListener('touchmove', (e) => {
 previewModal.addEventListener('touchend', (e) => {
   // ---- 双指缩放结束 ----
   if (pvGesture === 'pinch' && e.touches.length < 2) {
-    pvGesture = 'idle';
     pvLastDist = 0;
     const st = pvCurState();
     if (st.scale < 1.05) {
-      // 回弹到原始尺寸
       pvAnimatePanBounce({ scale: 1, tx: 0, ty: 0 }, 200);
     } else {
       pvClampPan(st);
       pvApplyImg();
     }
+    // 【修改2】如果还有手指在屏幕上，保持 pinch 状态防止误触发平移/滑动
+    if (e.touches.length > 0) return;
+    pvGesture = 'idle';
     return;
   }
 
   if (e.touches.length > 0) return;
+  pvShowSaveBtn(); // 【修改4】手指全部抬起后重启3秒淡出计时
   const st = pvCurState();
 
   // ---- 下滑关闭结束 ----
@@ -1525,6 +1584,7 @@ let pvMouseDrag = false;
 previewModal.addEventListener('mousedown', (e) => {
   if (e.target.closest('#preview-close') || e.target.closest('#preview-save-btn')) return;
   if (pvAnimId) { cancelAnimationFrame(pvAnimId); pvAnimId = null; }
+  pvShowSaveBtn(); // 【修改4】鼠标操作时显示保存按钮
   pvMouseDrag = true;
   pvStartX = e.clientX; pvStartY = e.clientY;
   pvLastX = e.clientX; pvLastY = e.clientY;
@@ -1579,6 +1639,7 @@ window.addEventListener('mousemove', (e) => {
 window.addEventListener('mouseup', () => {
   if (!pvMouseDrag) return;
   pvMouseDrag = false;
+  pvShowSaveBtn(); // 【修改4】鼠标释放后重启3秒淡出计时
   const st = pvCurState();
   if (pvGesture === 'slide') {
     const sw = window.innerWidth;
@@ -1602,6 +1663,7 @@ window.addEventListener('mouseup', () => {
 // ---- 保存当前预览图片 ----
 previewSaveBtn.addEventListener('click', (e) => {
   e.stopPropagation();
+  pvShowSaveBtn(); // 【修改4】点击保存后重新显示按钮
   if (pvImages.length === 0) return;
   const img = pvImages[pvIndex];
   // 【修改1】拼接预览时用 _concatTitle 作文件名
@@ -1757,9 +1819,9 @@ app.addEventListener('click', async (e) => {
   if (batchDlBtn) { initBatchModal(); batchModal.classList.add('show'); return; }
   const filterBtn = target.closest('[data-action="open-filter"]');
   if (filterBtn) { openFilterSheet(); return; }
-  // 【修改3】切换拍照后分享开关
-  const shareToggle = target.closest('[data-action="toggle-auto-share"]');
-  if (shareToggle) { state.autoShare = !state.autoShare; saveAutoShareState(); renderMain(); return; }
+  // 【修改3】功能面板入口
+  const funcPanelBtn = target.closest('[data-action="open-func-panel"]');
+  if (funcPanelBtn) { openFuncPanel(); return; }
 });
 
 // ============================================================
@@ -1888,6 +1950,77 @@ async function regenerateWatermarksForSeat(sk) {
 }
 
 // ============================================================
+// 十二-C、【修改3】功能面板
+// ============================================================
+const funcPanelOverlay = document.getElementById('func-panel-overlay');
+const funcPanel = document.getElementById('func-panel');
+const funcPanelBody = document.getElementById('func-panel-body');
+const funcPanelClose = document.getElementById('func-panel-close');
+
+function renderFuncPanelBody() {
+  funcPanelBody.innerHTML = `
+    <div class="func-item" data-func="open-filter">
+      <div class="func-item-label">时段筛选<div class="func-item-desc">选择显示的时段范围</div></div>
+      <span style="color:#bfbfbf;font-size:18px">›</span>
+    </div>
+    <div class="func-item" data-func="open-batch-dl">
+      <div class="func-item-label">批量下载<div class="func-item-desc">下载选中时段的图片</div></div>
+      <span style="color:#bfbfbf;font-size:18px">›</span>
+    </div>
+    <div class="func-item" data-func="open-cleanup">
+      <div class="func-item-label">批量清理<div class="func-item-desc">按日期清理图片数据</div></div>
+      <span style="color:#bfbfbf;font-size:18px">›</span>
+    </div>
+    <div class="func-item" data-func="toggle-auto-share">
+      <div class="func-item-label">拍照后分享<div class="func-item-desc">拍照完成后弹出分享面板</div></div>
+      <div class="func-toggle ${state.autoShare ? 'on' : ''}" id="func-toggle-share"></div>
+    </div>
+    <div class="func-item" data-func="toggle-allow-delete">
+      <div class="func-item-label">允许删除座位<div class="func-item-desc">开启后显示座位删除按钮</div></div>
+      <div class="func-toggle ${state.allowDeleteSeat ? 'on' : ''}" id="func-toggle-delete"></div>
+    </div>`;
+}
+
+function openFuncPanel() {
+  renderFuncPanelBody();
+  funcPanelOverlay.classList.add('show');
+  funcPanel.classList.add('show');
+}
+
+function closeFuncPanel() {
+  funcPanelOverlay.classList.remove('show');
+  funcPanel.classList.remove('show');
+}
+
+funcPanelOverlay.addEventListener('click', closeFuncPanel);
+funcPanelClose.addEventListener('click', closeFuncPanel);
+
+funcPanelBody.addEventListener('click', (e) => {
+  const item = e.target.closest('.func-item');
+  if (!item) return;
+  const func = item.dataset.func;
+  if (func === 'open-filter') { closeFuncPanel(); setTimeout(() => openFilterSheet(), 300); }
+  else if (func === 'open-batch-dl') { closeFuncPanel(); setTimeout(() => { initBatchModal(); batchModal.classList.add('show'); }, 300); }
+  else if (func === 'open-cleanup') { closeFuncPanel(); setTimeout(() => { initCleanupDate(); cleanupModal.classList.add('show'); }, 300); }
+  else if (func === 'toggle-auto-share') {
+    state.autoShare = !state.autoShare;
+    saveAutoShareState();
+    const toggle = document.getElementById('func-toggle-share');
+    if (toggle) toggle.classList.toggle('on', state.autoShare);
+  }
+  else if (func === 'toggle-allow-delete') {
+    state.allowDeleteSeat = !state.allowDeleteSeat;
+    saveAllowDeleteState();
+    const toggle = document.getElementById('func-toggle-delete');
+    if (toggle) toggle.classList.toggle('on', state.allowDeleteSeat);
+    // 立即更新所有删除座位按钮的可见性
+    document.querySelectorAll('.btn-delete-seat').forEach(btn => {
+      btn.classList.toggle('visible', state.allowDeleteSeat);
+    });
+  }
+});
+
+// ============================================================
 // 十三、初始化
 // ============================================================
 async function init() {
@@ -1899,7 +2032,8 @@ async function init() {
     await buildSeatHasImages();
     loadUIState();
     loadFilterState();
-    loadAutoShareState(); // 【修改3】加载拍照分享开关状态
+    loadAutoShareState();
+    loadAllowDeleteState(); // 【修改1】加载允许删除座位开关状态
     renderMain();
   } catch (err) {
     console.error('初始化失败:', err);
