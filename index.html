@@ -99,7 +99,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 #preview-close{position:absolute;top:12px;right:16px;font-size:32px;color:#fff;cursor:pointer;z-index:201;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:50%}
 #preview-scroller{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;overflow:hidden;will-change:transform}
 .pv-slide{flex:0 0 100%;width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
-.pv-slide img{max-width:95vw;max-height:85vh;object-fit:contain;border-radius:4px;transform-origin:0 0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:none;will-change:transform}
+.pv-slide img{max-width:100vw;max-height:100vh;object-fit:contain;border-radius:4px;transform-origin:0 0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:none;will-change:transform}
 #preview-save-btn{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);padding:10px 28px;font-size:14px;font-weight:600;border:none;border-radius:8px;background:rgba(24,144,255,.9);color:#fff;cursor:pointer;z-index:202;box-shadow:0 2px 12px rgba(24,144,255,.4)}
 #preview-save-btn:active{opacity:.8}
 #preview-indicator{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:201}
@@ -937,21 +937,20 @@ const previewSaveBtn = document.getElementById('preview-save-btn');
 // ---- 预览状态 ----
 let pvImages = [], pvIndex = 0;
 const pvCache = new Map();
-
-// 每张图片独立的变换状态
-const pvStates = []; // { scale, tx, ty }
+const pvStates = []; // 每张图片独立的变换状态 { scale, tx, ty }
 
 // 手势状态
 let pvGesture = 'idle'; // 'idle' | 'pinch' | 'pan' | 'swipe-down' | 'slide'
 let pvStartX = 0, pvStartY = 0;
 let pvLastX = 0, pvLastY = 0;
 let pvLastDist = 0;
-let pvPinchMidX = 0, pvPinchMidY = 0;
-let pvStartScale = 1, pvStartTX = 0, pvStartTY = 0;
 let pvSlideOffset = 0; // 容器水平偏移量（px）
-let pvSlideVelocity = 0; // 滑动速度
+let pvSlideVelocity = 0;
 let pvLastSlideTime = 0;
-let pvDownStartY = 0, pvDownOffset = 0; // 下滑关闭相关
+let pvDownStartY = 0, pvDownOffset = 0;
+// 边缘溢出累积：放大平移到边缘后，继续拖动的距离累积，超过阈值才触发切换
+let pvEdgeOverflow = 0;
+const PV_EDGE_THRESHOLD = 20; // 边缘触发切换的阈值（px）
 
 // 双击检测
 let pvLastTapTime = 0, pvLastTapX = 0, pvLastTapY = 0;
@@ -961,74 +960,83 @@ let pvAnimId = null;
 
 // ---- 工具函数 ----
 
-/** 获取当前图片的变换状态 */
 function pvCurState() { return pvStates[pvIndex] || { scale: 1, tx: 0, ty: 0 }; }
-
-/** 获取当前 slide 和 img 元素 */
 function pvCurrentSlide() { return previewScroller.children[pvIndex] || null; }
 function pvCurrentImg() { const s = pvCurrentSlide(); return s ? s.querySelector('img') : null; }
 
-/** 获取图片在屏幕上的显示尺寸 */
+/** 获取图片在屏幕上的显示尺寸（受 max-width:100vw max-height:100vh 约束） */
 function pvImgDisplaySize(imgEl) {
-  if (!imgEl) return { w: 0, h: 0 };
-  // 图片自然尺寸与 CSS 限制后的显示尺寸
+  if (!imgEl || !imgEl.naturalWidth) return { w: 0, h: 0 };
   const nw = imgEl.naturalWidth, nh = imgEl.naturalHeight;
-  const maxW = window.innerWidth * 0.95, maxH = window.innerHeight * 0.85;
+  const maxW = window.innerWidth, maxH = window.innerHeight;
   const ratio = Math.min(maxW / nw, maxH / nh, 1);
   return { w: nw * ratio, h: nh * ratio };
 }
 
-/** 计算平移边界：图片边缘不脱离屏幕太远 */
-function pvPanBounds(st) {
+/**
+ * 计算平移边界。
+ * 核心思路：CSS flex 已将图片居中，translate(0,0) scale(1) 时图片居中显示。
+ * 当 scale>1 且图片超出屏幕时，允许平移但边缘不脱离屏幕太远。
+ * @param {boolean} withOverDrag 是否包含过界余量（拖动时用 true，边缘检测用 false）
+ */
+function pvPanBounds(st, withOverDrag) {
   const imgEl = pvCurrentImg();
   if (!imgEl) return { minX: 0, maxX: 0, minY: 0, maxY: 0 };
   const { w, h } = pvImgDisplaySize(imgEl);
   const sw = window.innerWidth, sh = window.innerHeight;
   const scaledW = w * st.scale, scaledH = h * st.scale;
-  // 图片 scale=1 时的居中偏移
-  const baseOffX = (sw - w) / 2, baseOffY = (sh - h) / 2;
-  // 允许过界 50px
-  const overDrag = 50;
+  const over = withOverDrag ? 50 : 0;
+
   // 水平边界
   let minX, maxX;
   if (scaledW <= sw) {
     // 缩放后仍比屏幕窄，居中不可平移
-    const cx = baseOffX + (w - scaledW) / 2;
-    minX = cx; maxX = cx;
+    // 但边缘检测时，tx=0 即可视为同时到达左右边缘
+    minX = 0; maxX = 0;
   } else {
-    // 缩放后比屏幕宽，可平移但边缘不脱离
-    minX = baseOffX - (scaledW - w) / 2 + overDrag;
-    maxX = baseOffX + (scaledW - w) / 2 - overDrag;
+    // 缩放后比屏幕宽，可平移查看
+    minX = -(scaledW - sw) / 2 - over;
+    maxX = (scaledW - sw) / 2 + over;
   }
+
   // 垂直边界
   let minY, maxY;
   if (scaledH <= sh) {
-    const cy = baseOffY + (h - scaledH) / 2;
-    minY = cy; maxY = cy;
+    minY = 0; maxY = 0;
   } else {
-    minY = baseOffY - (scaledH - h) / 2 + overDrag;
-    maxY = baseOffY + (scaledH - h) / 2 - overDrag;
+    minY = -(scaledH - sh) / 2 - over;
+    maxY = (scaledH - sh) / 2 + over;
   }
+
   return { minX, maxX, minY, maxY };
 }
 
-/** 将平移限制在边界内 */
+/**
+ * 判断图片在水平方向是否到达真实边缘（不含 overDrag）
+ * 当 scaledW <= sw 时，图片比屏幕窄，tx=0 即视为同时到达两侧边缘
+ */
+function pvAtRealEdge(st, direction) {
+  const imgEl = pvCurrentImg();
+  if (!imgEl) return false;
+  const { w } = pvImgDisplaySize(imgEl);
+  const sw = window.innerWidth;
+  const scaledW = w * st.scale;
+  // 图片比屏幕窄，任何水平拖动都应触发切换
+  if (scaledW <= sw) return true;
+  // 图片比屏幕宽，检查是否到达指定方向边缘
+  const bounds = pvPanBounds(st, false);
+  if (direction > 0) return st.tx >= bounds.maxX - 1;
+  if (direction < 0) return st.tx <= bounds.minX + 1;
+  return false;
+}
+
 function pvClampPan(st) {
-  const bounds = pvPanBounds(st);
+  const bounds = pvPanBounds(st, true);
   st.tx = Math.max(bounds.minX, Math.min(bounds.maxX, st.tx));
   st.ty = Math.max(bounds.minY, Math.min(bounds.maxY, st.ty));
 }
 
-/** 判断图片在水平方向是否到达边缘 */
-function pvAtHorizontalEdge(st, direction) {
-  // direction: -1 = 左, 1 = 右
-  const bounds = pvPanBounds(st);
-  if (direction < 0) return st.tx <= bounds.minX + 2; // 已到左边缘，还想往左滑
-  if (direction > 0) return st.tx >= bounds.maxX - 2; // 已到右边缘，还想往右滑
-  return false;
-}
-
-/** 应用变换到当前图片 */
+/** 应用变换到指定图片 */
 function pvApplyImg(idx) {
   if (idx === undefined) idx = pvIndex;
   const slide = previewScroller.children[idx];
@@ -1041,40 +1049,28 @@ function pvApplyImg(idx) {
   imgEl.style.transition = 'none';
 }
 
-/** 重置指定图片变换 */
+/** 重置指定图片为原始尺寸居中（tx=0, ty=0，CSS flex 负责居中） */
 function pvResetImg(idx) {
   if (idx === undefined) idx = pvIndex;
-  if (!pvStates[idx]) pvStates[idx] = { scale: 1, tx: 0, ty: 0 };
-  const sw = window.innerWidth, sh = window.innerHeight;
-  const slide = previewScroller.children[idx];
-  const imgEl = slide ? slide.querySelector('img') : null;
-  let offX = 0, offY = 0;
-  if (imgEl) {
-    const { w, h } = pvImgDisplaySize(imgEl);
-    offX = (sw - w) / 2;
-    offY = (sh - h) / 2;
-  }
-  pvStates[idx] = { scale: 1, tx: offX, ty: offY };
+  pvStates[idx] = { scale: 1, tx: 0, ty: 0 };
   pvApplyImg(idx);
 }
 
-/** 更新指示器 */
 function pvUpdateIndicator() {
   previewIndicator.textContent = pvImages.length > 1 ? `${pvIndex + 1} / ${pvImages.length}` : '';
 }
 
-/** 更新容器水平偏移 */
 function pvApplySlideOffset() {
   previewScroller.style.transform = `translateX(${-pvIndex * window.innerWidth + pvSlideOffset}px)`;
   previewScroller.style.transition = 'none';
 }
 
-// ---- 懒加载 ----
+// ---- 异步加载完整水印图 ----
 async function pvLoadFullImage(idx) {
   if (idx < 0 || idx >= pvImages.length) return;
   const slide = previewScroller.children[idx];
   if (!slide || slide.dataset.loaded === '1') return;
-  const imgEl = slide.querySelector('img');
+  const imgEl = slide ? slide.querySelector('img') : null;
   if (!imgEl) return;
   try {
     let data = pvImages[idx].data;
@@ -1096,9 +1092,8 @@ async function pvLoadFullImage(idx) {
   } catch (err) { console.error('预览图片加载失败:', err); }
 }
 
-// ---- 动画：弹性回弹 / 切换 ----
+// ---- 动画 ----
 
-/** 带过渡的动画（用于松手后回弹或切换） */
 function pvAnimateTransition(targetSlideOffset, targetIndex, duration, onDone) {
   if (pvAnimId) { cancelAnimationFrame(pvAnimId); pvAnimId = null; }
   const startOffset = pvSlideOffset;
@@ -1106,7 +1101,6 @@ function pvAnimateTransition(targetSlideOffset, targetIndex, duration, onDone) {
   function frame(now) {
     const elapsed = now - startTime;
     const t = Math.min(elapsed / duration, 1);
-    // ease-out cubic
     const ease = 1 - Math.pow(1 - t, 3);
     pvSlideOffset = startOffset + (targetSlideOffset - startOffset) * ease;
     pvApplySlideOffset();
@@ -1116,11 +1110,11 @@ function pvAnimateTransition(targetSlideOffset, targetIndex, duration, onDone) {
       pvAnimId = null;
       pvSlideOffset = 0;
       if (targetIndex !== pvIndex) {
-        pvResetImg(pvIndex); // 重置旧图片
+        pvResetImg(pvIndex);
         pvIndex = targetIndex;
         pvResetImg(pvIndex);
-        pvApplyImg(pvIndex);
         pvUpdateIndicator();
+        // 异步加载相邻图片
         pvLoadFullImage(pvIndex - 1);
         pvLoadFullImage(pvIndex + 1);
       }
@@ -1131,7 +1125,6 @@ function pvAnimateTransition(targetSlideOffset, targetIndex, duration, onDone) {
   pvAnimId = requestAnimationFrame(frame);
 }
 
-/** 图片变换回弹动画 */
 function pvAnimatePanBounce(targetState, duration, idx) {
   if (idx === undefined) idx = pvIndex;
   if (pvAnimId) { cancelAnimationFrame(pvAnimId); pvAnimId = null; }
@@ -1153,22 +1146,19 @@ function pvAnimatePanBounce(targetState, duration, idx) {
   pvAnimId = requestAnimationFrame(frame);
 }
 
-/** 下滑关闭回弹动画 */
-function pvAnimateDownBounce(idx) {
-  if (idx === undefined) idx = pvIndex;
+function pvAnimateDownBounce() {
   if (pvAnimId) { cancelAnimationFrame(pvAnimId); pvAnimId = null; }
-  const st = pvStates[idx];
+  const st = pvStates[pvIndex];
   if (!st) return;
   const imgEl = pvCurrentImg();
   const startTY = st.ty, startOpacity = imgEl ? parseFloat(imgEl.style.opacity || '1') : 1;
   const startTime = performance.now();
-  const duration = 300;
   function frame(now) {
     const elapsed = now - startTime;
-    const t = Math.min(elapsed / duration, 1);
+    const t = Math.min(elapsed / 300, 1);
     const ease = 1 - Math.pow(1 - t, 3);
     st.ty = startTY * (1 - ease);
-    pvApplyImg(idx);
+    pvApplyImg();
     if (imgEl) imgEl.style.opacity = startOpacity + (1 - startOpacity) * ease;
     if (t < 1) pvAnimId = requestAnimationFrame(frame);
     else pvAnimId = null;
@@ -1180,65 +1170,67 @@ function pvAnimateDownBounce(idx) {
 
 async function showPreview(cellKeyStr, imgIdx) {
   try {
-    const cellData = await getCellData(cellKeyStr);
-    if (!cellData || !cellData.images || !cellData.images[imgIdx]) return;
-    pvImages = cellData.images.map((img, i) => ({ ...img, _cellKey: cellKeyStr }));
+    // 先立即构建弹窗框架，用缩略图快速显示
+    pvImages = [];
     pvIndex = imgIdx;
-
-    // 初始化每张图片的变换状态
     pvStates.length = 0;
-    const sw = window.innerWidth, sh = window.innerHeight;
-    for (let i = 0; i < pvImages.length; i++) {
-      pvStates.push({ scale: 1, tx: 0, ty: 0 });
-    }
+    pvSlideOffset = 0;
+    pvGesture = 'idle';
+    pvEdgeOverflow = 0;
 
-    // 构建 DOM
+    // 先用占位方式立即显示弹窗
+    previewScroller.innerHTML = '';
+    previewModal.classList.add('show');
+    pvApplySlideOffset();
+
+    // 异步读取数据
+    const cellData = await getCellData(cellKeyStr);
+    if (!cellData || !cellData.images || !cellData.images[imgIdx]) {
+      previewModal.classList.remove('show');
+      return;
+    }
+    pvImages = cellData.images.map((img, i) => ({ ...img, _cellKey: cellKeyStr }));
+
+    // 初始化变换状态
+    pvStates.length = 0;
+    for (let i = 0; i < pvImages.length; i++) pvStates.push({ scale: 1, tx: 0, ty: 0 });
+
+    // 构建 DOM：所有图片立即设置 src（优先缩略图实现快速显示）
     previewScroller.innerHTML = '';
     for (let i = 0; i < pvImages.length; i++) {
       const slide = document.createElement('div');
       slide.className = 'pv-slide';
-      slide.dataset.pvIdx = i;
       const imgEl = document.createElement('img');
-      if (Math.abs(i - pvIndex) <= 1) {
-        let data = pvImages[i].data;
-        const cacheKey = `${pvImages[i]._cellKey}_${i}`;
-        if (pvCache.has(cacheKey)) data = pvCache.get(cacheKey);
-        else if (pvImages[i].original) {
-          const ck = pvImages[i]._cellKey;
-          if (ck) {
-            const parts = ck.split('-');
-            const sName = getSeatNameSync(parseInt(parts[0]), parts[1], parseInt(parts[2]));
-            const bTime = pvImages[i].beijingTime || getBeijingTime();
-            data = await addWatermark(pvImages[i].original, sName, bTime);
-            pvCache.set(cacheKey, data);
-          }
-        }
-        imgEl.src = data;
+      // 优先使用缓存的水印图，其次用缩略图（小图快速显示），最后用 data
+      const cacheKey = `${pvImages[i]._cellKey}_${i}`;
+      if (pvCache.has(cacheKey)) {
+        imgEl.src = pvCache.get(cacheKey);
+        slide.dataset.loaded = '1';
+      } else if (pvImages[i].thumbnail || pvImages[i].thumb) {
+        // 先用缩略图快速显示
+        imgEl.src = pvImages[i].thumbnail || pvImages[i].thumb;
+        slide.dataset.loaded = '0';
+      } else if (pvImages[i].data) {
+        imgEl.src = pvImages[i].data;
         slide.dataset.loaded = '1';
       } else {
-        imgEl.src = pvImages[i].thumbnail || pvImages[i].thumb || pvImages[i].data;
         slide.dataset.loaded = '0';
       }
       slide.appendChild(imgEl);
       previewScroller.appendChild(slide);
     }
 
-    pvSlideOffset = 0;
-    pvGesture = 'idle';
-    previewModal.classList.add('show');
+    pvApplySlideOffset();
+    pvUpdateIndicator();
 
-    // 等图片布局完成后初始化位置
-    requestAnimationFrame(() => {
-      pvApplySlideOffset();
-      // 初始化当前图片的居中偏移
-      pvResetImg(pvIndex);
-      pvLoadFullImage(pvIndex - 1);
-      pvLoadFullImage(pvIndex + 1);
-      pvUpdateIndicator();
-    });
+    // 异步加载当前及相邻图片的完整水印图（不阻塞弹窗显示）
+    pvLoadFullImage(pvIndex);
+    pvLoadFullImage(pvIndex - 1);
+    pvLoadFullImage(pvIndex + 1);
   } catch (err) {
     console.error('打开预览失败:', err);
     showToast('预览打开失败');
+    previewModal.classList.remove('show');
   }
 }
 
@@ -1261,17 +1253,11 @@ previewModal.addEventListener('contextmenu', (e) => e.preventDefault());
 previewModal.addEventListener('touchstart', (e) => {
   if (pvAnimId) { cancelAnimationFrame(pvAnimId); pvAnimId = null; }
   if (e.touches.length === 2) {
-    // 双指：进入缩放模式
     e.preventDefault();
     pvGesture = 'pinch';
     const t0 = e.touches[0], t1 = e.touches[1];
     const dx = t1.clientX - t0.clientX, dy = t1.clientY - t0.clientY;
     pvLastDist = Math.sqrt(dx * dx + dy * dy);
-    pvPinchMidX = (t0.clientX + t1.clientX) / 2;
-    pvPinchMidY = (t0.clientY + t1.clientY) / 2;
-    pvStartScale = pvCurState().scale;
-    pvStartTX = pvCurState().tx;
-    pvStartTY = pvCurState().ty;
   } else if (e.touches.length === 1) {
     const t = e.touches[0];
     pvStartX = t.clientX; pvStartY = t.clientY;
@@ -1280,26 +1266,24 @@ previewModal.addEventListener('touchstart', (e) => {
     pvDownOffset = 0;
     pvSlideVelocity = 0;
     pvLastSlideTime = Date.now();
-    // 不立即决定手势类型，等 touchmove 判断方向
+    pvEdgeOverflow = 0;
     pvGesture = 'idle';
   }
 }, { passive: false });
 
 previewModal.addEventListener('touchmove', (e) => {
+  // ---- 双指缩放 ----
   if (e.touches.length === 2 && pvGesture === 'pinch') {
-    // ---- 双指缩放 ----
     e.preventDefault();
     const t0 = e.touches[0], t1 = e.touches[1];
     const dx = t1.clientX - t0.clientX, dy = t1.clientY - t0.clientY;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const midX = (t0.clientX + t1.clientX) / 2;
-    const midY = (t0.clientY + t1.clientY) / 2;
-
     if (pvLastDist > 0) {
       const st = pvCurState();
       const ratio = dist / pvLastDist;
       const newScale = Math.max(1, Math.min(4, st.scale * ratio));
-      // 以双指中点为缩放中心
+      const midX = (t0.clientX + t1.clientX) / 2;
+      const midY = (t0.clientY + t1.clientY) / 2;
       const rect = previewScroller.getBoundingClientRect();
       const cx = midX - rect.left, cy = midY - rect.top;
       st.tx = cx - (cx - st.tx) * (newScale / st.scale);
@@ -1309,7 +1293,6 @@ previewModal.addEventListener('touchmove', (e) => {
       pvApplyImg();
     }
     pvLastDist = dist;
-    pvPinchMidX = midX; pvPinchMidY = midY;
     return;
   }
 
@@ -1320,92 +1303,94 @@ previewModal.addEventListener('touchmove', (e) => {
   const adx = Math.abs(dx), ady = Math.abs(dy);
   const st = pvCurState();
 
-  // ---- 手势方向判定 ----
+  // ---- 手势方向判定（首次移动超过 8px 时判定） ----
   if (pvGesture === 'idle' && (adx > 8 || ady > 8)) {
-    if (ady > adx && dy > 0 && st.scale <= 1.01) {
-      // 未缩放时纵向下滑 → 下滑关闭
-      pvGesture = 'swipe-down';
-    } else if (adx > ady) {
-      // 水平滑动
-      if (st.scale <= 1.01) {
-        // 未缩放 → 切换图片
+    if (st.scale <= 1.01) {
+      // 未缩放：水平→切换，向下→关闭
+      if (ady > adx && dy > 0) pvGesture = 'swipe-down';
+      else pvGesture = 'slide';
+    } else {
+      // 已缩放：检查图片在水平方向是否可以平移
+      const imgEl = pvCurrentImg();
+      const { w } = pvImgDisplaySize(imgEl);
+      const scaledW = w * st.scale;
+      if (scaledW <= window.innerWidth && adx > ady) {
+        // 放大后水平方向仍比屏幕窄，水平拖动直接切换
         pvGesture = 'slide';
       } else {
-        // 已缩放 → 先尝试平移图片，到边缘后切换
+        // 放大后水平方向超出屏幕，先平移图片
         pvGesture = 'pan';
       }
-    } else if (ady > adx) {
-      // 纵向滑动且已缩放 → 平移图片
-      if (st.scale > 1.01) {
-        pvGesture = 'pan';
-      } else if (dy > 0) {
-        pvGesture = 'swipe-down';
-      } else {
-        pvGesture = 'pan';
-      }
-    } else {
-      pvGesture = 'pan';
     }
   }
 
-  // ---- 处理各手势 ----
+  // ---- 下滑关闭 ----
   if (pvGesture === 'swipe-down') {
     e.preventDefault();
     pvDownOffset = curY - pvDownStartY;
     const imgEl = pvCurrentImg();
     if (imgEl) {
-      imgEl.style.transform = `translate(${st.tx}px, ${st.ty + pvDownOffset}px) scale(1)`;
+      imgEl.style.transform = `translate(0px, ${pvDownOffset}px) scale(1)`;
       imgEl.style.transition = 'none';
       imgEl.style.opacity = Math.max(0.3, 1 - pvDownOffset / 400);
     }
-  } else if (pvGesture === 'slide') {
+    return;
+  }
+
+  // ---- 水平滑动切换（未缩放时） ----
+  if (pvGesture === 'slide') {
     e.preventDefault();
-    // 未缩放时水平滑动切换图片
     pvSlideOffset = dx;
     pvApplySlideOffset();
-    // 记录速度
-    const now = Date.now();
-    const dt = now - pvLastSlideTime;
-    if (dt > 0) {
-      pvSlideVelocity = (curX - pvLastX) / dt * 1000; // px/s
-    }
-    pvLastX = curX; pvLastY = curY;
-    pvLastSlideTime = now;
-  } else if (pvGesture === 'pan') {
+    const now = Date.now(), dt = now - pvLastSlideTime;
+    if (dt > 0) pvSlideVelocity = (curX - pvLastX) / dt * 1000;
+    pvLastX = curX; pvLastY = curY; pvLastSlideTime = now;
+    return;
+  }
+
+  // ---- 平移图片（已缩放时） ----
+  if (pvGesture === 'pan') {
     e.preventDefault();
     const moveX = curX - pvLastX;
     const moveY = curY - pvLastY;
 
-    // 检查是否到达水平边缘，应转为切换图片
-    if (st.scale > 1.01 && adx > ady) {
-      const direction = -moveX; // 向左滑 = 想看右边 = direction 正
-      // 简化：判断拖动方向上是否已到边缘
-      if (moveX > 0 && pvAtHorizontalEdge(st, 1)) {
-        // 已到右边缘，继续右滑 → 切换到上一张
-        pvGesture = 'slide';
-        pvSlideOffset = dx - (st.tx - pvStartTX); // 减去已用于平移的部分
-        pvStartX = curX; // 重置起点避免跳变
-        pvApplySlideOffset();
-        pvLastX = curX; pvLastY = curY;
-        pvLastSlideTime = Date.now();
-        return;
-      } else if (moveX < 0 && pvAtHorizontalEdge(st, -1)) {
-        // 已到左边缘，继续左滑 → 切换到下一张
-        pvGesture = 'slide';
-        pvSlideOffset = dx - (st.tx - pvStartTX);
-        pvStartX = curX;
-        pvApplySlideOffset();
-        pvLastX = curX; pvLastY = curY;
-        pvLastSlideTime = Date.now();
-        return;
-      }
-    }
-
-    // 正常平移
+    // 先应用平移
     st.tx += moveX;
     st.ty += moveY;
     pvClampPan(st);
     pvApplyImg();
+
+    // 检查是否到达真实边缘，累积溢出距离
+    if (st.scale > 1.01 && adx > ady) {
+      let atEdge = false;
+      let overflowDir = 0;
+      // 使用 pvAtRealEdge 进行精确边缘检测
+      if (moveX > 0 && pvAtRealEdge(st, 1)) {
+        atEdge = true; overflowDir = 1; // 右边缘，想看上一张
+      } else if (moveX < 0 && pvAtRealEdge(st, -1)) {
+        atEdge = true; overflowDir = -1; // 左边缘，想看下一张
+      }
+
+      if (atEdge) {
+        pvEdgeOverflow += Math.abs(moveX);
+        if (pvEdgeOverflow >= PV_EDGE_THRESHOLD) {
+          // 超过阈值，转为切换图片
+          pvGesture = 'slide';
+          pvSlideOffset = overflowDir * (pvEdgeOverflow - PV_EDGE_THRESHOLD);
+          pvStartX = curX;
+          pvApplySlideOffset();
+          pvLastX = curX; pvLastY = curY;
+          pvLastSlideTime = Date.now();
+          pvEdgeOverflow = 0;
+          return;
+        }
+      } else {
+        pvEdgeOverflow = 0;
+      }
+    } else {
+      pvEdgeOverflow = 0;
+    }
+
     pvLastX = curX; pvLastY = curY;
   }
 }, { passive: false });
@@ -1416,13 +1401,9 @@ previewModal.addEventListener('touchend', (e) => {
     pvGesture = 'idle';
     pvLastDist = 0;
     const st = pvCurState();
-    // 缩放低于 1.05 时回弹到 1
     if (st.scale < 1.05) {
-      const sw = window.innerWidth, sh = window.innerHeight;
-      const imgEl = pvCurrentImg();
-      let offX = 0, offY = 0;
-      if (imgEl) { const { w, h } = pvImgDisplaySize(imgEl); offX = (sw - w) / 2; offY = (sh - h) / 2; }
-      pvAnimatePanBounce({ scale: 1, tx: offX, ty: offY }, 200);
+      // 回弹到原始尺寸
+      pvAnimatePanBounce({ scale: 1, tx: 0, ty: 0 }, 200);
     } else {
       pvClampPan(st);
       pvApplyImg();
@@ -1435,11 +1416,8 @@ previewModal.addEventListener('touchend', (e) => {
 
   // ---- 下滑关闭结束 ----
   if (pvGesture === 'swipe-down') {
-    if (pvDownOffset > 80) {
-      closePreview();
-    } else {
-      pvAnimateDownBounce();
-    }
+    if (pvDownOffset > 80) closePreview();
+    else pvAnimateDownBounce();
     pvGesture = 'idle';
     return;
   }
@@ -1449,29 +1427,28 @@ previewModal.addEventListener('touchend', (e) => {
     const sw = window.innerWidth;
     const velocity = pvSlideVelocity;
     let targetIndex = pvIndex;
-
-    // 判断是否切换：滑动距离超过 30% 或速度足够快
     if (pvSlideOffset < -sw * 0.3 || (pvSlideOffset < -30 && velocity < -300)) {
       if (pvIndex < pvImages.length - 1) targetIndex = pvIndex + 1;
     } else if (pvSlideOffset > sw * 0.3 || (pvSlideOffset > 30 && velocity > 300)) {
       if (pvIndex > 0) targetIndex = pvIndex - 1;
     }
-
     const targetOffset = -(targetIndex - pvIndex) * sw;
     pvAnimateTransition(targetOffset, targetIndex, 250);
     pvGesture = 'idle';
+    pvEdgeOverflow = 0;
     return;
   }
 
   // ---- 平移结束：回弹到边界 ----
   if (pvGesture === 'pan') {
-    const bounds = pvPanBounds(st);
+    const bounds = pvPanBounds(st, true);
     const needsBounce = st.tx < bounds.minX || st.tx > bounds.maxX || st.ty < bounds.minY || st.ty > bounds.maxY;
     if (needsBounce) {
       pvClampPan(st);
       pvAnimatePanBounce(st, 200);
     }
     pvGesture = 'idle';
+    pvEdgeOverflow = 0;
     return;
   }
 
@@ -1486,14 +1463,8 @@ previewModal.addEventListener('touchend', (e) => {
         const rect = previewScroller.getBoundingClientRect();
         const cx = tx - rect.left, cy = ty - rect.top;
         if (st.scale > 1.05) {
-          // 还原
-          const sw = window.innerWidth, sh = window.innerHeight;
-          const imgEl = pvCurrentImg();
-          let offX = 0, offY = 0;
-          if (imgEl) { const { w, h } = pvImgDisplaySize(imgEl); offX = (sw - w) / 2; offY = (sh - h) / 2; }
-          pvAnimatePanBounce({ scale: 1, tx: offX, ty: offY }, 250);
+          pvAnimatePanBounce({ scale: 1, tx: 0, ty: 0 }, 250);
         } else {
-          // 以点击点为中心放大 2.5 倍
           const newScale = 2.5;
           const newTX = cx - (cx - st.tx) * (newScale / st.scale);
           const newTY = cy - (cy - st.ty) * (newScale / st.scale);
@@ -1507,7 +1478,6 @@ previewModal.addEventListener('touchend', (e) => {
       }
     }
   }
-
   pvGesture = 'idle';
 }, { passive: false });
 
@@ -1525,27 +1495,20 @@ previewModal.addEventListener('wheel', (e) => {
   st.scale = newScale;
   pvClampPan(st);
   pvApplyImg();
-  // 缩放到接近 1 时回弹
-  if (st.scale < 1.05 && newScale <= st.scale) {
-    const sw = window.innerWidth, sh = window.innerHeight;
-    const imgEl = pvCurrentImg();
-    let offX = 0, offY = 0;
-    if (imgEl) { const { w, h } = pvImgDisplaySize(imgEl); offX = (sw - w) / 2; offY = (sh - h) / 2; }
-    pvAnimatePanBounce({ scale: 1, tx: offX, ty: offY }, 200);
+  if (st.scale < 1.05 && factor < 1) {
+    pvAnimatePanBounce({ scale: 1, tx: 0, ty: 0 }, 200);
   }
 }, { passive: false });
 
 // ---- 鼠标拖拽（PC 端） ----
-let pvMouseDrag = false, pvMouseStartX = 0, pvMouseStartY = 0;
+let pvMouseDrag = false;
 previewModal.addEventListener('mousedown', (e) => {
-  if (e.target === previewClose || e.target === previewSaveBtn || e.target.closest('#preview-close') || e.target.closest('#preview-save-btn')) return;
+  if (e.target.closest('#preview-close') || e.target.closest('#preview-save-btn')) return;
   if (pvAnimId) { cancelAnimationFrame(pvAnimId); pvAnimId = null; }
   pvMouseDrag = true;
-  pvMouseStartX = e.clientX; pvMouseStartY = e.clientY;
   pvStartX = e.clientX; pvStartY = e.clientY;
   pvLastX = e.clientX; pvLastY = e.clientY;
-  pvSlideOffset = 0;
-  pvSlideVelocity = 0;
+  pvSlideOffset = 0; pvSlideVelocity = 0; pvEdgeOverflow = 0;
   pvLastSlideTime = Date.now();
   const st = pvCurState();
   pvGesture = st.scale > 1.05 ? 'pan' : 'slide';
@@ -1565,54 +1528,55 @@ window.addEventListener('mousemove', (e) => {
     pvLastX = curX; pvLastY = curY; pvLastSlideTime = now;
   } else if (pvGesture === 'pan') {
     const moveX = curX - pvLastX, moveY = curY - pvLastY;
-    // 边缘检测转切换
-    if (Math.abs(dx) > Math.abs(dy)) {
-      if (moveX > 0 && pvAtHorizontalEdge(st, 1) && pvIndex > 0) {
-        pvGesture = 'slide';
-        pvSlideOffset = dx - (st.tx - pvStates[pvIndex].tx);
-        pvStartX = curX;
-        pvApplySlideOffset();
-        pvLastX = curX; pvLastY = curY; pvLastSlideTime = Date.now();
-        return;
-      } else if (moveX < 0 && pvAtHorizontalEdge(st, -1) && pvIndex < pvImages.length - 1) {
-        pvGesture = 'slide';
-        pvSlideOffset = dx - (st.tx - pvStates[pvIndex].tx);
-        pvStartX = curX;
-        pvApplySlideOffset();
-        pvLastX = curX; pvLastY = curY; pvLastSlideTime = Date.now();
-        return;
-      }
-    }
     st.tx += moveX; st.ty += moveY;
     pvClampPan(st);
     pvApplyImg();
+
+    // 边缘溢出检测
+    if (st.scale > 1.01 && Math.abs(dx) > Math.abs(dy)) {
+      const realBounds = pvPanBounds(st, false);
+      let atEdge = false;
+      if (moveX > 0 && st.tx >= realBounds.maxX - 1 && pvIndex > 0) atEdge = true;
+      else if (moveX < 0 && st.tx <= realBounds.minX + 1 && pvIndex < pvImages.length - 1) atEdge = true;
+      if (atEdge) {
+        pvEdgeOverflow += Math.abs(moveX);
+        if (pvEdgeOverflow >= PV_EDGE_THRESHOLD) {
+          pvGesture = 'slide';
+          pvSlideOffset = (moveX > 0 ? 1 : -1) * (pvEdgeOverflow - PV_EDGE_THRESHOLD);
+          pvStartX = curX;
+          pvApplySlideOffset();
+          pvLastX = curX; pvLastY = curY; pvLastSlideTime = Date.now();
+          pvEdgeOverflow = 0;
+          return;
+        }
+      } else {
+        pvEdgeOverflow = 0;
+      }
+    }
     pvLastX = curX; pvLastY = curY;
   }
 });
-window.addEventListener('mouseup', (e) => {
+window.addEventListener('mouseup', () => {
   if (!pvMouseDrag) return;
   pvMouseDrag = false;
   const st = pvCurState();
-
   if (pvGesture === 'slide') {
     const sw = window.innerWidth;
-    const velocity = pvSlideVelocity;
     let targetIndex = pvIndex;
-    if (pvSlideOffset < -sw * 0.3 || (pvSlideOffset < -30 && velocity < -300)) {
+    if (pvSlideOffset < -sw * 0.3 || (pvSlideOffset < -30 && pvSlideVelocity < -300)) {
       if (pvIndex < pvImages.length - 1) targetIndex = pvIndex + 1;
-    } else if (pvSlideOffset > sw * 0.3 || (pvSlideOffset > 30 && velocity > 300)) {
+    } else if (pvSlideOffset > sw * 0.3 || (pvSlideOffset > 30 && pvSlideVelocity > 300)) {
       if (pvIndex > 0) targetIndex = pvIndex - 1;
     }
-    const targetOffset = -(targetIndex - pvIndex) * sw;
-    pvAnimateTransition(targetOffset, targetIndex, 250);
+    pvAnimateTransition(-(targetIndex - pvIndex) * sw, targetIndex, 250);
   } else if (pvGesture === 'pan') {
-    const bounds = pvPanBounds(st);
+    const bounds = pvPanBounds(st, true);
     if (st.tx < bounds.minX || st.tx > bounds.maxX || st.ty < bounds.minY || st.ty > bounds.maxY) {
       pvClampPan(st);
       pvAnimatePanBounce(st, 200);
     }
   }
-  pvGesture = 'idle';
+  pvGesture = 'idle'; pvEdgeOverflow = 0;
 });
 
 // ---- 保存当前预览图片 ----
