@@ -101,7 +101,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 #preview-scroller::-webkit-scrollbar{display:none}
 #preview-scroller.pv-no-scroll{overflow-x:hidden}
 .pv-slide{flex:0 0 100%;width:100%;height:100%;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;position:relative}
-.pv-slide img{max-width:95vw;max-height:85vh;object-fit:contain;border-radius:4px;transform-origin:0 0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:none}
+.pv-slide img{max-width:95vw;max-height:85vh;object-fit:contain;border-radius:4px;transform-origin:0 0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:none;will-change:transform}
 #preview-save-btn{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);padding:10px 28px;font-size:14px;font-weight:600;border:none;border-radius:8px;background:rgba(24,144,255,.9);color:#fff;cursor:pointer;z-index:202;box-shadow:0 2px 12px rgba(24,144,255,.4)}
 #preview-save-btn:active{opacity:.8}
 #preview-indicator{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:201}
@@ -273,20 +273,26 @@ function openDB() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('cells')) db.createObjectStore('cells', { keyPath: 'key' });
-      if (!db.objectStoreNames.contains('seatNames')) db.createObjectStore('seatNames', { keyPath: 'key' });
-      if (!db.objectStoreNames.contains('extraSeats')) db.createObjectStore('extraSeats', { keyPath: 'key' });
-      if (!db.objectStoreNames.contains('deletedSeats')) db.createObjectStore('deletedSeats', { keyPath: 'key' });
+      // 【修复】onupgradeneeded 加 try-catch 防止建表异常导致整个 DB 打开失败
+      try {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('cells')) db.createObjectStore('cells', { keyPath: 'key' });
+        if (!db.objectStoreNames.contains('seatNames')) db.createObjectStore('seatNames', { keyPath: 'key' });
+        if (!db.objectStoreNames.contains('extraSeats')) db.createObjectStore('extraSeats', { keyPath: 'key' });
+        if (!db.objectStoreNames.contains('deletedSeats')) db.createObjectStore('deletedSeats', { keyPath: 'key' });
+      } catch (err) {
+        console.error('IndexedDB onupgradeneeded error:', err);
+      }
     };
     req.onsuccess = (e) => { dbInstance = e.target.result; resolve(dbInstance); };
     req.onerror = (e) => reject(e.target.error);
   });
 }
-async function dbPut(s, d) { const db = await openDB(); return new Promise((r, j) => { const tx = db.transaction(s, 'readwrite'); tx.objectStore(s).put(d); tx.oncomplete = () => r(); tx.onerror = (e) => j(e.target.error); }); }
-async function dbGet(s, k) { const db = await openDB(); return new Promise((r, j) => { const tx = db.transaction(s, 'readonly'); const req = tx.objectStore(s).get(k); req.onsuccess = () => r(req.result || null); req.onerror = (e) => j(e.target.error); }); }
-async function dbDelete(s, k) { const db = await openDB(); return new Promise((r, j) => { const tx = db.transaction(s, 'readwrite'); tx.objectStore(s).delete(k); tx.oncomplete = () => r(); tx.onerror = (e) => j(e.target.error); }); }
-async function dbGetAll(s) { const db = await openDB(); return new Promise((r, j) => { const tx = db.transaction(s, 'readonly'); const req = tx.objectStore(s).getAll(); req.onsuccess = () => r(req.result); req.onerror = (e) => j(e.target.error); }); }
+// 【修复】所有 DB 操作添加 tx.onabort 处理，避免事务中断时 Promise 永远 pending
+async function dbPut(s, d) { const db = await openDB(); return new Promise((r, j) => { const tx = db.transaction(s, 'readwrite'); tx.objectStore(s).put(d); tx.oncomplete = () => r(); tx.onerror = (e) => j(e.target.error); tx.onabort = (e) => j(e.target.error); }); }
+async function dbGet(s, k) { const db = await openDB(); return new Promise((r, j) => { const tx = db.transaction(s, 'readonly'); const req = tx.objectStore(s).get(k); req.onsuccess = () => r(req.result || null); tx.oncomplete = () => r(req.result || null); tx.onerror = (e) => j(e.target.error); tx.onabort = (e) => j(e.target.error); }); }
+async function dbDelete(s, k) { const db = await openDB(); return new Promise((r, j) => { const tx = db.transaction(s, 'readwrite'); tx.objectStore(s).delete(k); tx.oncomplete = () => r(); tx.onerror = (e) => j(e.target.error); tx.onabort = (e) => j(e.target.error); }); }
+async function dbGetAll(s) { const db = await openDB(); return new Promise((r, j) => { const tx = db.transaction(s, 'readonly'); const req = tx.objectStore(s).getAll(); req.onsuccess = () => r(req.result); tx.oncomplete = () => r(req.result || []); tx.onerror = (e) => j(e.target.error); tx.onabort = (e) => j(e.target.error); }); }
 async function saveCellData(k, imgs) { await dbPut('cells', { key: k, images: imgs }); }
 async function getCellData(k) { return await dbGet('cells', k); }
 async function saveSeatName(k, n) { await dbPut('seatNames', { key: k, name: n }); }
@@ -295,6 +301,22 @@ async function saveExtraSeat(k, n) { await dbPut('extraSeats', { key: k, count: 
 async function getAllExtraSeats() { const a = await dbGetAll('extraSeats'); const m = {}; a.forEach(r => m[r.key] = r.count); return m; }
 async function saveDeletedSeat(k) { await dbPut('deletedSeats', { key: k }); }
 async function getAllDeletedSeats() { const a = await dbGetAll('deletedSeats'); return new Set(a.map(r => r.key)); }
+
+// 【优化】批量读取多个 key 的图片数据（单事务），避免逐条异步读取
+async function getCellDataBatch(keys) {
+  const db = await openDB();
+  return new Promise((r, j) => {
+    const tx = db.transaction('cells', 'readonly');
+    const results = {};
+    keys.forEach(k => {
+      const req = tx.objectStore('cells').get(k);
+      req.onsuccess = () => { if (req.result) results[k] = req.result; };
+    });
+    tx.oncomplete = () => r(results);
+    tx.onerror = (e) => j(e.target.error);
+    tx.onabort = (e) => j(e.target.error);
+  });
+}
 
 // ============================================================
 // 三、状态与工具函数
@@ -373,7 +395,8 @@ function isTimeSlotPassed(tIdx) {
   const now = new Date();
   const opts = { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false };
   const parts = new Intl.DateTimeFormat('en-US', opts).formatToParts(now);
-  const h = parseInt(parts.find(p => p.type === 'hour').value);
+  // 【修复】处理某些 locale 返回 hour=24 的边界情况
+  const h = parseInt(parts.find(p => p.type === 'hour').value) % 24;
   const m = parseInt(parts.find(p => p.type === 'minute').value);
   const nowMinutes = h * 60 + m;
   const slot = TIME_SLOTS[tIdx];
@@ -396,16 +419,23 @@ function isTimeSlotVisible(tIdx) {
 const app = document.getElementById('app');
 function renderMain() {
   let html = '<div class="page-header"><span class="page-title">图书馆座位图片管理</span><button class="header-btn btn-filter" data-action="open-filter"><span class="filter-icon">⏳</span>时段筛选</button><button class="header-btn btn-batch-dl" data-action="open-batch-dl">批量下载</button><button class="header-btn btn-cleanup" data-action="open-cleanup">批量清理</button></div>';
+  // 【优化】预计算每个区域的已删除座位数，避免每个区域都遍历全量 deletedSeats
+  const deletedCountMap = {};
+  state.deletedSeats.forEach(sk => {
+    const parts = sk.split('-');
+    const ak = `${parts[0]}-${parts[1]}`;
+    deletedCountMap[ak] = (deletedCountMap[ak] || 0) + 1;
+  });
   FLOORS.forEach(floor => {
     const fid = floor.id, expanded = state.expandedFloors.has(fid);
     // 计算楼层总座位数
     let floorTotal = 0;
-    floor.areas.forEach(area => { floorTotal += getAreaSeatCount(fid, area.name) - (state.deletedSeats.size ? [...state.deletedSeats].filter(sk => sk.startsWith(`${fid}-${area.name}-`)).length : 0); });
+    floor.areas.forEach(area => { floorTotal += getAreaSeatCount(fid, area.name) - (deletedCountMap[areaKey(fid, area.name)] || 0); });
     html += `<button class="floor-btn floor-${fid} ${expanded ? 'expanded' : ''}" data-action="toggle-floor" data-floor="${fid}">${floor.name}<span class="floor-count">${floorTotal}座</span><span class="arrow">▶</span></button>`;
     html += `<div class="area-container ${expanded ? 'show' : ''}" id="areas-${fid}">`;
     floor.areas.forEach(area => {
       const aname = area.name, ak = areaKey(fid, aname), aExp = state.expandedAreas.has(ak);
-      const areaTotal = getAreaSeatCount(fid, aname) - [...state.deletedSeats].filter(sk => sk.startsWith(`${fid}-${aname}-`)).length;
+      const areaTotal = getAreaSeatCount(fid, aname) - (deletedCountMap[ak] || 0);
       // 判断区域是否有图片：遍历该区域所有座位检查 seatHasImages
       let areaHasImages = false;
       for (let si = 0; si < getAreaSeatCount(fid, aname); si++) {
@@ -440,11 +470,17 @@ async function renderTimeSlots(sk) {
   const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
   const sName = getSeatNameSync(fid, aname, sidx);
   let html = `<div class="seat-header"><span class="seat-header-label">座位编号：</span><span class="seat-name-text" data-action="edit-seat-name" data-seat-key="${sk}">${sName}</span><span class="seat-name-hint">（点击修改）</span><button class="btn-delete-seat" data-action="delete-seat" data-seat-key="${sk}">删除座位</button></div>`;
+  // 【优化】批量读取该座位所有可见时段的数据，单事务避免多次异步
+  const visibleKeys = [];
+  for (let t = 0; t < TIME_SLOTS.length; t++) {
+    if (isTimeSlotVisible(t)) visibleKeys.push(cellKey(fid, aname, sidx, t));
+  }
+  const cellDataMap = await getCellDataBatch(visibleKeys);
   let needThumbGen = false;
   for (let t = 0; t < TIME_SLOTS.length; t++) {
     if (!isTimeSlotVisible(t)) continue; // 筛选：跳过不可见时段
     const ck = cellKey(fid, aname, sidx, t);
-    const cellData = await getCellData(ck);
+    const cellData = cellDataMap[ck] || null;
     const images = (cellData && cellData.images) ? cellData.images : [];
     const hasImages = images.length > 0, isFull = images.length >= MAX_IMAGES, isSel = state.selectedCells.includes(ck);
     const cbClass = hasImages ? `ts-checkbox ${isSel ? 'checked' : ''}` : 'ts-checkbox disabled';
@@ -589,10 +625,16 @@ const thumbObserver = new IntersectionObserver((entries) => {
   });
 }, { rootMargin: '300px' });
 
+// 【优化】批量读取后生成缺失缩略图，避免逐条异步读取
 async function generateMissingThumbnails(fid, aname, sidx) {
+  const keys = [];
+  for (let t = 0; t < TIME_SLOTS.length; t++) {
+    keys.push(cellKey(fid, aname, sidx, t));
+  }
+  const cellDataMap = await getCellDataBatch(keys);
   for (let t = 0; t < TIME_SLOTS.length; t++) {
     const ck = cellKey(fid, aname, sidx, t);
-    const cd = await getCellData(ck);
+    const cd = cellDataMap[ck];
     if (!cd || !cd.images) continue;
     let changed = false;
     for (let i = 0; i < cd.images.length; i++) {
@@ -708,12 +750,16 @@ async function getProcessedData(imgObj, fid, aname, sidx) {
   return data;
 }
 
+// 【优化】分享选中图片：一次性读取所有数据，避免逐条异步读取
 async function shareSelectedImages() {
   if (state.selectedCells.length === 0) return;
   // 收集所有图片 blob 和文件名
+  const allCells = await dbGetAll('cells');
+  const cellMap = new Map();
+  allCells.forEach(r => { if (r.images && r.images.length > 0) cellMap.set(r.key, r); });
   const items = [];
   for (const ck of state.selectedCells) {
-    const cellData = await getCellData(ck);
+    const cellData = cellMap.get(ck);
     if (!cellData || !cellData.images || cellData.images.length === 0) continue;
     const parts = ck.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]), tidx = parseInt(parts[3]);
     const sName = getSeatNameSync(fid, aname, sidx), timeSlot = TIME_SLOTS[tidx];
@@ -751,14 +797,18 @@ async function shareSelectedImages() {
   }
 }
 
+// 【优化】拼接下载：一次性读取所有数据，避免逐条异步读取
 async function downloadConcatenated() {
   if (state.selectedCells.length === 0) return;
   // 拼接功能最多选择 2 个时段
   const uniqueTimeSlots = new Set(state.selectedCells.map(ck => ck.split('-')[3]));
   if (uniqueTimeSlots.size > 2) { showToast('拼接功能只能选择 2 个时段'); return; }
+  const allCells = await dbGetAll('cells');
+  const cellMap = new Map();
+  allCells.forEach(r => cellMap.set(r.key, r));
   const allImageData = [];
   for (const ck of state.selectedCells) {
-    const cellData = await getCellData(ck);
+    const cellData = cellMap.get(ck);
     if (!cellData || !cellData.images || cellData.images.length === 0) continue;
     const parts = ck.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
     for (const imgObj of cellData.images) allImageData.push({ ...imgObj, fid, aname, sidx });
@@ -843,6 +893,10 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
   if (batchSelectedAreas.size === 0 || batchSelectedTimes.size === 0) { showToast('请选择区域和时段'); return; }
   batchModal.classList.remove('show'); showToast('正在打包...');
   try {
+    // 【优化】一次性读取所有图片数据，避免逐条异步读取
+    const allCells = await dbGetAll('cells');
+    const cellMap = new Map();
+    allCells.forEach(r => { if (r.images && r.images.length > 0) cellMap.set(r.key, r); });
     const zip = new JSZip(); let count = 0;
     for (const ak of batchSelectedAreas) {
       const parts = ak.split('-'), fid = parseInt(parts[0]), aname = parts[1];
@@ -854,8 +908,8 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
           const sk = seatKey(fid, aname, sidx);
           if (state.deletedSeats.has(sk)) continue;
           const ck = cellKey(fid, aname, sidx, tIdx);
-          const cellData = await getCellData(ck);
-          if (!cellData || !cellData.images || cellData.images.length === 0) continue;
+          const cellData = cellMap.get(ck);
+          if (!cellData) continue;
           const sName = getSeatNameSync(fid, aname, sidx);
           for (let i = 0; i < cellData.images.length; i++) {
             const data = await getProcessedData(cellData.images[i], fid, aname, sidx);
@@ -886,6 +940,8 @@ let pvScale = 1, pvTX = 0, pvTY = 0, pvLastDist = 0, pvLastX = 0, pvLastY = 0;
 let pvPinching = false, pvSwipingDown = false;
 let pvSwipeStartX = 0, pvSwipeStartY = 0;
 const pvCache = new Map();
+// 【优化】RAF 节流标志，避免 pinch 缩放时过于频繁更新 DOM
+let pvRafPending = false;
 
 /** 获取当前可见的 slide 和 img 元素 */
 function pvCurrentSlide() {
@@ -910,6 +966,32 @@ function pvUpdateIndicator() {
   previewIndicator.textContent = pvImages.length > 1 ? `${pvIndex + 1} / ${pvImages.length}` : '';
 }
 
+// 【优化】预览懒加载：加载指定索引的完整水印图片
+async function pvLoadFullImage(idx) {
+  if (idx < 0 || idx >= pvImages.length) return;
+  const slide = previewScroller.children[idx];
+  if (!slide || slide.dataset.loaded === '1') return;
+  const imgEl = slide.querySelector('img');
+  if (!imgEl) return;
+
+  let data = pvImages[idx].data;
+  const cacheKey = `${pvImages[idx]._cellKey}_${idx}`;
+  if (pvCache.has(cacheKey)) {
+    data = pvCache.get(cacheKey);
+  } else if (pvImages[idx].original) {
+    const ck = pvImages[idx]._cellKey;
+    if (ck) {
+      const parts = ck.split('-');
+      const sName = getSeatNameSync(parseInt(parts[0]), parts[1], parseInt(parts[2]));
+      const bTime = pvImages[idx].beijingTime || getBeijingTime();
+      data = await addWatermark(pvImages[idx].original, sName, bTime);
+      pvCache.set(cacheKey, data);
+    }
+  }
+  imgEl.src = data;
+  slide.dataset.loaded = '1';
+}
+
 /** 根据滚动位置更新 pvIndex */
 function pvSyncIndex() {
   const sl = previewScroller.scrollLeft;
@@ -917,9 +999,24 @@ function pvSyncIndex() {
   if (w <= 0) return;
   const newIdx = Math.round(sl / w);
   if (newIdx !== pvIndex && newIdx >= 0 && newIdx < pvImages.length) {
+    // 【修复】重置所有非当前 slide 的变换，避免切换后残留缩放/偏移
+    const prevIdx = pvIndex;
     pvIndex = newIdx;
+    // 重置前一个 slide 的变换
+    if (prevIdx >= 0 && prevIdx < previewScroller.children.length) {
+      const prevSlide = previewScroller.children[prevIdx];
+      const prevImg = prevSlide ? prevSlide.querySelector('img') : null;
+      if (prevImg) {
+        prevImg.style.transform = 'translate(0px, 0px) scale(1)';
+        prevImg.style.transition = 'none';
+        prevImg.style.opacity = '1';
+      }
+    }
     pvReset();
     pvUpdateIndicator();
+    // 【优化】预加载相邻图片
+    pvLoadFullImage(newIdx - 1);
+    pvLoadFullImage(newIdx + 1);
   }
 }
 
@@ -929,28 +1026,38 @@ async function showPreview(cellKeyStr, imgIdx) {
   pvImages = cellData.images.map((img, i) => ({ ...img, _cellKey: cellKeyStr }));
   pvIndex = imgIdx;
 
-  // 构建 DOM：每张图片一个 slide
+  // 【优化】构建 DOM：仅加载当前及相邻 slide 的完整水印图，其余用缩略图
   previewScroller.innerHTML = '';
   for (let i = 0; i < pvImages.length; i++) {
     const slide = document.createElement('div');
     slide.className = 'pv-slide';
+    slide.dataset.pvIdx = i;
     const imgEl = document.createElement('img');
-    // 先加载水印图
-    let data = pvImages[i].data;
-    const cacheKey = `${pvImages[i]._cellKey}_${i}`;
-    if (pvCache.has(cacheKey)) {
-      data = pvCache.get(cacheKey);
-    } else if (pvImages[i].original) {
-      const ck = pvImages[i]._cellKey;
-      if (ck) {
-        const parts = ck.split('-');
-        const sName = getSeatNameSync(parseInt(parts[0]), parts[1], parseInt(parts[2]));
-        const bTime = pvImages[i].beijingTime || getBeijingTime();
-        data = await addWatermark(pvImages[i].original, sName, bTime);
-        pvCache.set(cacheKey, data);
+
+    if (Math.abs(i - pvIndex) <= 1) {
+      // 加载完整水印图
+      let data = pvImages[i].data;
+      const cacheKey = `${pvImages[i]._cellKey}_${i}`;
+      if (pvCache.has(cacheKey)) {
+        data = pvCache.get(cacheKey);
+      } else if (pvImages[i].original) {
+        const ck = pvImages[i]._cellKey;
+        if (ck) {
+          const parts = ck.split('-');
+          const sName = getSeatNameSync(parseInt(parts[0]), parts[1], parseInt(parts[2]));
+          const bTime = pvImages[i].beijingTime || getBeijingTime();
+          data = await addWatermark(pvImages[i].original, sName, bTime);
+          pvCache.set(cacheKey, data);
+        }
       }
+      imgEl.src = data;
+      slide.dataset.loaded = '1';
+    } else {
+      // 非相邻 slide 使用缩略图
+      imgEl.src = pvImages[i].thumbnail || pvImages[i].thumb || pvImages[i].data;
+      slide.dataset.loaded = '0';
     }
-    imgEl.src = data;
+
     slide.appendChild(imgEl);
     previewScroller.appendChild(slide);
   }
@@ -1015,7 +1122,12 @@ previewScroller.addEventListener('touchmove', (e) => {
       const ratio = dist / pvLastDist, newScale = Math.max(0.5, Math.min(5, pvScale * ratio));
       const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2, midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
       pvTX = midX - (midX - pvTX) * (newScale / pvScale); pvTY = midY - (midY - pvTY) * (newScale / pvScale);
-      pvScale = newScale; pvApply();
+      pvScale = newScale;
+      // 【优化】使用 RAF 节流变换更新，减少 DOM 操作频率
+      if (!pvRafPending) {
+        pvRafPending = true;
+        requestAnimationFrame(() => { pvApply(); pvRafPending = false; });
+      }
     }
     pvLastDist = dist;
   } else if (e.touches.length === 1 && !pvPinching) {
@@ -1039,7 +1151,10 @@ previewScroller.addEventListener('touchmove', (e) => {
   }
 }, { passive: false });
 
+// 【修复】合并两个 touchend 监听器为一个，避免事件处理冲突
+let pvLastTapTime = 0, pvLastTapX = 0, pvLastTapY = 0;
 previewScroller.addEventListener('touchend', (e) => {
+  // Pinch end
   if (pvPinching && e.touches.length < 2) {
     pvPinching = false; pvLastDist = 0;
     // 缩放结束，如果恢复到1则允许滚动
@@ -1047,6 +1162,7 @@ previewScroller.addEventListener('touchend', (e) => {
       previewScroller.classList.remove('pv-no-scroll');
     }
   }
+
   if (e.touches.length === 0) {
     // 下滑关闭判断
     if (pvSwipingDown) {
@@ -1066,34 +1182,33 @@ previewScroller.addEventListener('touchend', (e) => {
       pvSwipingDown = false;
       return;
     }
-  }
-});
 
-/** 双击缩放/还原 */
-let pvLastTapTime = 0, pvLastTapX = 0, pvLastTapY = 0;
-previewScroller.addEventListener('touchend', (e) => {
-  if (e.touches.length > 0 || pvPinching || pvSwipingDown) return;
-  const now = Date.now();
-  const touch = e.changedTouches[0];
-  if (!touch) return;
-  const tx = touch.clientX, ty = touch.clientY;
-  if (now - pvLastTapTime < 300 && Math.abs(tx - pvLastTapX) < 30 && Math.abs(ty - pvLastTapY) < 30) {
-    e.preventDefault();
-    if (pvScale > 1.05) {
-      pvScale = 1; pvTX = 0; pvTY = 0; pvApply();
-      previewScroller.classList.remove('pv-no-scroll');
-    } else {
-      const rect = previewScroller.getBoundingClientRect();
-      const cx = tx - rect.left, cy = ty - rect.top;
-      const newScale = 2.5;
-      pvTX = cx - (cx - pvTX) * (newScale / pvScale);
-      pvTY = cy - (cy - pvTY) * (newScale / pvScale);
-      pvScale = newScale; pvApply();
-      previewScroller.classList.add('pv-no-scroll');
+    // 双击缩放/还原
+    if (!pvPinching && !pvSwipingDown) {
+      const now = Date.now();
+      const touch = e.changedTouches[0];
+      if (touch) {
+        const tx = touch.clientX, ty = touch.clientY;
+        if (now - pvLastTapTime < 300 && Math.abs(tx - pvLastTapX) < 30 && Math.abs(ty - pvLastTapY) < 30) {
+          e.preventDefault();
+          if (pvScale > 1.05) {
+            pvScale = 1; pvTX = 0; pvTY = 0; pvApply();
+            previewScroller.classList.remove('pv-no-scroll');
+          } else {
+            const rect = previewScroller.getBoundingClientRect();
+            const cx = tx - rect.left, cy = ty - rect.top;
+            const newScale = 2.5;
+            pvTX = cx - (cx - pvTX) * (newScale / pvScale);
+            pvTY = cy - (cy - pvTY) * (newScale / pvScale);
+            pvScale = newScale; pvApply();
+            previewScroller.classList.add('pv-no-scroll');
+          }
+          pvLastTapTime = 0;
+        } else {
+          pvLastTapTime = now; pvLastTapX = tx; pvLastTapY = ty;
+        }
+      }
     }
-    pvLastTapTime = 0;
-  } else {
-    pvLastTapTime = now; pvLastTapX = tx; pvLastTapY = ty;
   }
 });
 
@@ -1214,7 +1329,8 @@ app.addEventListener('click', async (e) => {
   const uploadBtn = target.closest('[data-action="upload"]');
   if (uploadBtn) { const ck = uploadBtn.dataset.cellKey, cd = await getCellData(ck); if (cd && cd.images && cd.images.length >= MAX_IMAGES) { showToast('该时段图片已满'); return; } currentUploadCellKey = ck; uploadInput.value = ''; uploadInput.click(); return; }
   const delBtn = target.closest('[data-action="delete-img"]');
-  if (delBtn) { const ck = delBtn.dataset.cellKey, imgIdx = parseInt(delBtn.dataset.imgIdx), cd = await getCellData(ck); let imgs = (cd && cd.images) ? [...cd.images] : []; if (imgIdx >= 0 && imgIdx < imgs.length) { imgs.splice(imgIdx, 1); if (imgs.length > 0) await saveCellData(ck, imgs); else await dbDelete('cells', ck); const sk = cellToSeatKey(ck), p = ck.split('-'); let still = false; for (let t = 0; t < TIME_SLOTS.length; t++) { const td = await getCellData(`${p[0]}-${p[1]}-${p[2]}-${t}`); if (td && td.images && td.images.length > 0) { still = true; break; } } still ? state.seatHasImages.add(sk) : state.seatHasImages.delete(sk); updateSeatVisual(sk); await renderTimeSlots(sk); updateBottomBar(); } return; }
+  // 【优化】删除图片后，若该时段仍有图片则无需扫描其他时段
+  if (delBtn) { const ck = delBtn.dataset.cellKey, imgIdx = parseInt(delBtn.dataset.imgIdx), cd = await getCellData(ck); let imgs = (cd && cd.images) ? [...cd.images] : []; if (imgIdx >= 0 && imgIdx < imgs.length) { imgs.splice(imgIdx, 1); const sk = cellToSeatKey(ck); if (imgs.length > 0) { await saveCellData(ck, imgs); state.seatHasImages.add(sk); } else { await dbDelete('cells', ck); const p = ck.split('-'); let still = false; for (let t = 0; t < TIME_SLOTS.length; t++) { const td = await getCellData(`${p[0]}-${p[1]}-${p[2]}-${t}`); if (td && td.images && td.images.length > 0) { still = true; break; } } still ? state.seatHasImages.add(sk) : state.seatHasImages.delete(sk); } updateSeatVisual(sk); await renderTimeSlots(sk); updateBottomBar(); } return; }
   const previewBtn = target.closest('[data-action="preview"]');
   if (previewBtn) { showPreview(previewBtn.dataset.cellKey, parseInt(previewBtn.dataset.imgIdx)); return; }
   // 点击时段卡片空白区域切换勾选
