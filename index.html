@@ -871,13 +871,13 @@ function addWatermarkBlob(imageData, seatName, beijingTime) {
           ctx = canvas.getContext('2d');
         }
         ctx.drawImage(img, 0, 0);
-        // 【修复3-水印字号】字体大小根据图片短边动态计算：短边×10%，限制在28~120px
+        // 水印字号：短边×12%，限制在36~120px
         const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
-        const fs = Math.max(28, Math.min(120, Math.round(shortSide * 0.10)));
+        const fs = Math.max(36, Math.min(120, Math.round(shortSide * 0.12)));
         const scaleFactor = fs / 52;
-        const fs1 = Math.max(28, Math.min(120, Math.round(18 * scaleFactor))); // 日期
+        const fs1 = Math.max(36, Math.min(120, Math.round(18 * scaleFactor))); // 日期
         const fs2 = fs;                                                        // 时间
-        const fs3 = Math.max(28, Math.min(120, Math.round(36 * scaleFactor))); // 座位
+        const fs3 = Math.max(36, Math.min(120, Math.round(36 * scaleFactor))); // 座位
         const lineGap = Math.round(fs2 * 0.15);
         const pad = Math.round(fs2 * 0.3);   // 左右内边距
         const vpad = Math.round(fs2 * 0.2);  // 上下内边距
