@@ -618,6 +618,30 @@ function renderSeatFlow(fid, aname) {
   return html;
 }
 
+/** 【修复1-拍照卡顿】在 DOM 中立即插入占位缩略图，让用户感知操作已完成 */
+function insertPlaceholderThumb(ck, imgIdx, thumbSrc) {
+  const container = document.getElementById('timeslots-' + cellToSeatKey(ck));
+  if (!container) return;
+  // 找到该时段卡片的缩略图区域
+  const card = container.querySelector(`.timeslot-card[data-cell-key="${ck}"]`);
+  if (!card) return;
+  let thumbsDiv = card.querySelector('.ts-thumbs');
+  if (!thumbsDiv) {
+    // 该时段之前没有图片，需要创建缩略图容器
+    thumbsDiv = document.createElement('div');
+    thumbsDiv.className = 'ts-thumbs';
+    card.appendChild(thumbsDiv);
+    // 更新卡片状态
+    card.dataset.hasImages = '1';
+    const cb = card.querySelector('.ts-checkbox');
+    if (cb) { cb.classList.remove('disabled'); }
+  }
+  const wrap = document.createElement('div');
+  wrap.className = 'thumb-wrap thumb-placeholder'; // placeholder 类标记占位
+  wrap.innerHTML = `<img src="${thumbSrc}" data-action="preview" data-cell-key="${ck}" data-img-idx="${imgIdx}" style="opacity:0.6" /><div class="thumb-del" data-action="delete-img" data-cell-key="${ck}" data-img-idx="${imgIdx}">&times;</div>`;
+  thumbsDiv.appendChild(wrap);
+}
+
 async function renderTimeSlots(sk) {
   const container = document.getElementById('timeslots-' + sk);
   if (!container) return;
@@ -732,13 +756,13 @@ function addWatermark(imageData, seatName, beijingTime) {
       canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
-      // 字体大小根据图片短边动态计算：短边×8%，限制在24~120px
+      // 【修复3-水印字号】字体大小根据图片短边动态计算：短边×10%，限制在28~120px
       const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
-      const fs = Math.max(24, Math.min(120, Math.round(shortSide * 0.08)));
+      const fs = Math.max(28, Math.min(120, Math.round(shortSide * 0.10)));
       const scaleFactor = fs / 52;
-      const fs1 = Math.max(24, Math.min(120, Math.round(18 * scaleFactor))); // 日期
+      const fs1 = Math.max(28, Math.min(120, Math.round(18 * scaleFactor))); // 日期
       const fs2 = fs;                                                        // 时间
-      const fs3 = Math.max(24, Math.min(120, Math.round(36 * scaleFactor))); // 座位
+      const fs3 = Math.max(28, Math.min(120, Math.round(36 * scaleFactor))); // 座位
       const lineGap = Math.round(fs2 * 0.15);
       const pad = Math.round(fs2 * 0.3);   // 左右内边距
       const vpad = Math.round(fs2 * 0.2);  // 上下内边距
@@ -876,17 +900,29 @@ captureInput.addEventListener('change', async (e) => {
     const parts = ck.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
     const sName = getSeatNameSync(fid, aname, sidx);
     const bTime = getBeijingTime();
-    // 压缩原图（JPEG 0.95，保持分辨率），用于水印重生成
+    const sk = cellToSeatKey(ck);
+
+    // 【修复1-拍照卡顿】先快速生成低质量预览缩略图，立即显示占位
+    const quickThumb = await generateThumbnail(rawOriginal, 100); // 100px 宽快速缩略图
+    // 立即在 DOM 中插入占位缩略图
+    insertPlaceholderThumb(ck, images.length, quickThumb);
+    state.seatHasImages.add(sk);
+    await updateSeatVisual(sk);
+    updateBottomBar();
+
+    // 异步执行重任务：压缩、水印、高质量缩略图、存储
+    await new Promise(r => setTimeout(r, 0)); // 让出主线程，确保占位图已渲染
     const original = await compressImage(rawOriginal, 0.95);
     const watermarked = await addWatermark(original, sName, bTime);
     const thumbnail = await generateThumbnail(watermarked);
     images.push({ data: watermarked, original, thumbnail, type: 'capture', createdAt: Date.now(), seatName: sName, beijingTime: bTime });
     await saveCellData(ck, images);
-    imageCountCache.set(ck, images.length); // 【性能优化】同步更新计数缓存
-    const sk = cellToSeatKey(ck);
-    state.seatHasImages.add(sk); await updateSeatVisual(sk);
-    await renderTimeSlots(sk); updateBottomBar();
-    // 【修改3】拍照后自动分享受开关控制，默认关闭
+    imageCountCache.set(ck, images.length);
+
+    // 替换占位图为正式缩略图
+    await renderTimeSlots(sk);
+
+    // 【修改3】拍照后自动分享受开关控制，延迟到处理完成后
     if (state.autoShare) {
       const shareName = `${sName}_${bTime.replace(/[: ]/g, '-')}.jpg`;
       const shareBlob = dataURLtoBlob(watermarked);
@@ -2015,27 +2051,35 @@ app.addEventListener('click', async (e) => {
     const cd = await getCellData(ck);
     let imgs = (cd && cd.images) ? [...cd.images] : [];
     if (imgIdx >= 0 && imgIdx < imgs.length) {
+      // 【修复2-删除视觉延迟】立即从 DOM 中移除该缩略图元素
+      const thumbWrap = delBtn.closest('.thumb-wrap');
+      if (thumbWrap) thumbWrap.remove();
+
       imgs.splice(imgIdx, 1);
       const sk = cellToSeatKey(ck);
       if (imgs.length > 0) {
         await saveCellData(ck, imgs);
-        imageCountCache.set(ck, imgs.length); // 【性能优化】同步更新计数缓存
+        imageCountCache.set(ck, imgs.length);
         state.seatHasImages.add(sk);
+        // 重新渲染缩略图区域以更新 img-idx（索引已变化）
+        await renderTimeSlots(sk);
       } else {
         await dbDelete('cells', ck);
-        imageCountCache.delete(ck); // 【性能优化】同步更新计数缓存
-        // 【修改2】图片删光后，从勾选集合中移除该时段
+        imageCountCache.delete(ck);
+        // 图片删光后，从勾选集合中移除该时段
         const selIdx = state.selectedCells.indexOf(ck);
         if (selIdx >= 0) state.selectedCells.splice(selIdx, 1);
-        // 【性能优化】从缓存判断是否还有其他时段有图，不逐条读DB
+        // 从缓存判断是否还有其他时段有图
+        const p = ck.split('-');
         let still = false;
         for (let t = 0; t < TIME_SLOTS.length; t++) {
           if (imageCountCache.get(`${p[0]}-${p[1]}-${p[2]}-${t}`) > 0) { still = true; break; }
         }
         still ? state.seatHasImages.add(sk) : state.seatHasImages.delete(sk);
+        // 图片清零时需要重新渲染整个时段区域（移除缩略图容器、更新勾选框状态）
+        await renderTimeSlots(sk);
       }
       await updateSeatVisual(sk);
-      await renderTimeSlots(sk);
       updateBottomBar();
     }
     return;
