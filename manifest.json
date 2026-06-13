@@ -9,9 +9,9 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "seat-icon.PNG",
+      "sizes": "512×512",
+      "type": "image/PNG",
       "purpose": "any"
     }
   ]
