@@ -1,5 +1,5 @@
-const CACHE_NAME = 'seat-mgr-v1';
-const ASSETS = ['./', './index.html', './manifest.json', './icon.svg'];
+const CACHE_NAME = 'seat-mgr-v2';
+const ASSETS = ['./', './index.html', './manifest.json', './seat-icon.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
