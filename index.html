@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="seat-icon.png">
 <meta name="theme-color" content="#1890ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2282,18 +2283,6 @@ async function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
-  // 动态生成 apple-touch-icon（iOS 主屏幕图标）
-  try {
-    const c = document.createElement('canvas'); c.width = 192; c.height = 192;
-    const ctx = c.getContext('2d');
-    ctx.fillStyle = '#1890ff'; ctx.fillRect(0, 0, 192, 192);
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 96px sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('座', 96, 96);
-    const link = document.createElement('link');
-    link.rel = 'apple-touch-icon'; link.href = c.toDataURL('image/png');
-    document.head.appendChild(link);
-  } catch (e) {}
 }
 init();
 </script>
