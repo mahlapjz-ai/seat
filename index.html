@@ -752,11 +752,11 @@ uploadInput.addEventListener('change', async (e) => {
     const parts = ck.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
     const sName = getSeatNameSync(fid, aname, sidx);
     const bTime = getBeijingTime();
-    // 压缩原图（JPEG 0.95，保持分辨率），用于水印重生成
+    // 压缩原图（JPEG 0.95，保持分辨率）
     const original = await compressImage(rawOriginal, 0.95);
-    const watermarked = await addWatermark(original, sName, bTime);
-    const thumbnail = await generateThumbnail(watermarked);
-    images.push({ data: watermarked, original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime });
+    // 上传图片不添加水印，直接以原始状态保存
+    const thumbnail = await generateThumbnail(original);
+    images.push({ data: original, original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime });
     await saveCellData(ck, images);
     const sk = cellToSeatKey(ck);
     state.seatHasImages.add(sk); updateSeatVisual(sk);
