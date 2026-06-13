@@ -78,11 +78,16 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .seat-container{display:none;padding:8px 0}
 .seat-container.show{display:block}
 .seat-flow{display:flex;flex-wrap:wrap;gap:6px;padding:0 2px}
-.seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:13px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,border-color .15s}
+.seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:13px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,border-color .15s;position:relative}
 .seat-btn:active{background:#e6f7ff}
 .seat-btn.expanded{background:#e6f7ff;border-color:#1890ff}
-.seat-btn.has-images{border-color:#52c41a;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d;font-weight:700}
-.seat-btn.has-images.expanded{border-color:#1890ff;background:#e6f7ff;color:#333;font-weight:500}
+/* 【修改2】座位视觉提示分层：1个时段有图=浅蓝，2+时段=橙色 */
+.seat-btn.has-images-1{border-color:#69c0ff;background:linear-gradient(135deg,#e6f7ff,#bae7ff);color:#096dd9;font-weight:700}
+.seat-btn.has-images-2{border-color:#fa8c16;background:linear-gradient(135deg,#fff7e6,#ffe7ba);color:#d46b08;font-weight:700}
+.seat-btn.has-images-1.expanded,.seat-btn.has-images-2.expanded{border-color:#1890ff;background:#e6f7ff;color:#333;font-weight:500}
+/* 【修改2】隐藏时段图片提示小圆点 */
+.seat-btn .hidden-dot{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:#ff4d4f;box-shadow:0 0 3px rgba(255,77,79,.5)}
+.seat-btn.expanded .hidden-dot{display:none}
 .add-seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s}
 .add-seat-btn:active{background:#e6f7ff;border-color:#1890ff;color:#1890ff}
 
@@ -414,7 +419,56 @@ function getBeijingTime() {
   return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
 }
 
-async function buildSeatHasImages() { const a = await dbGetAll('cells'); state.seatHasImages = new Set(); a.forEach(r => { if (r.images && r.images.length > 0) state.seatHasImages.add(r.key.split('-').slice(0, 3).join('-')); }); }
+// 【修改2】座位图片统计：{ visibleCount, hiddenHasImages } 分层提示
+// seatImageStats: Map<seatKey, { visibleCount: number, hiddenHasImages: boolean }>
+const seatImageStats = new Map();
+
+async function buildSeatHasImages() {
+  const a = await dbGetAll('cells');
+  state.seatHasImages = new Set();
+  seatImageStats.clear();
+  a.forEach(r => {
+    if (r.images && r.images.length > 0) {
+      const sk = r.key.split('-').slice(0, 3).join('-');
+      state.seatHasImages.add(sk);
+    }
+  });
+  // 计算分层统计
+  await refreshSeatImageStats();
+}
+
+/** 【修改2】刷新所有座位的图片统计（可见时段图片数、隐藏时段是否有图） */
+async function refreshSeatImageStats() {
+  seatImageStats.clear();
+  const allCells = await dbGetAll('cells');
+  allCells.forEach(r => {
+    if (!r.images || r.images.length === 0) return;
+    const p = r.key.split('-');
+    const sk = p.slice(0, 3).join('-');
+    const tidx = parseInt(p[3]);
+    if (!seatImageStats.has(sk)) seatImageStats.set(sk, { visibleCount: 0, hiddenHasImages: false });
+    const stat = seatImageStats.get(sk);
+    if (isTimeSlotVisible(tidx)) {
+      stat.visibleCount++;
+    } else {
+      stat.hiddenHasImages = true;
+    }
+  });
+}
+
+/** 【修改2】刷新单个座位的图片统计 */
+async function refreshSingleSeatStats(sk) {
+  const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
+  let visibleCount = 0, hiddenHasImages = false;
+  for (let t = 0; t < TIME_SLOTS.length; t++) {
+    const ck = cellKey(fid, aname, sidx, t);
+    const cd = await getCellData(ck);
+    if (!cd || !cd.images || cd.images.length === 0) continue;
+    if (isTimeSlotVisible(t)) visibleCount++;
+    else hiddenHasImages = true;
+  }
+  seatImageStats.set(sk, { visibleCount, hiddenHasImages });
+}
 function saveUIState() { try { localStorage.setItem('seat_ui_state', JSON.stringify({ f: [...state.expandedFloors], a: [...state.expandedAreas], s: [...state.expandedSeats] })); } catch (e) {} }
 function loadUIState() { try { const o = JSON.parse(localStorage.getItem('seat_ui_state')); if (o.f) state.expandedFloors = new Set(o.f); if (o.a) state.expandedAreas = new Set(o.a); if (o.s) state.expandedSeats = new Set(o.s); } catch (e) {} }
 // 拍照后分享开关状态持久化
@@ -497,7 +551,13 @@ function renderSeatFlow(fid, aname) {
     const sk = seatKey(fid, aname, i);
     if (state.deletedSeats.has(sk)) continue;
     const sName = getSeatNameSync(fid, aname, i), sExp = state.expandedSeats.has(sk), hasImg = state.seatHasImages.has(sk);
-    html += `<button class="seat-btn ${sExp ? 'expanded' : ''} ${hasImg ? 'has-images' : ''}" data-action="toggle-seat" data-floor="${fid}" data-area="${aname}" data-seat="${i}">${sName}</button>`;
+    // 【修改2】座位视觉分层 + 隐藏时段小圆点
+    const stat = seatImageStats.get(sk);
+    let imgClass = '';
+    if (stat && stat.visibleCount > 0) imgClass = stat.visibleCount >= 2 ? 'has-images-2' : 'has-images-1';
+    else if (hasImg) imgClass = 'has-images-1';
+    const hiddenDot = (stat && stat.hiddenHasImages && !sExp) ? '<span class="hidden-dot"></span>' : '';
+    html += `<button class="seat-btn ${sExp ? 'expanded' : ''} ${imgClass}" data-action="toggle-seat" data-floor="${fid}" data-area="${aname}" data-seat="${i}">${sName}${hiddenDot}</button>`;
     html += `<div class="timeslot-container ${sExp ? 'show' : ''}" id="timeslots-${sk}"></div>`;
   }
   html += `<button class="add-seat-btn" data-action="add-seat" data-floor="${fid}" data-area="${aname}">+</button></div>`;
@@ -543,10 +603,32 @@ async function renderTimeSlots(sk) {
   if (needThumbGen) generateMissingThumbnails(fid, aname, sidx);
 }
 
-function updateSeatVisual(sk) {
+/** 【修改2】更新座位按钮视觉：分层提示 + 隐藏时段小圆点 */
+async function updateSeatVisual(sk) {
+  // 先刷新该座位的统计
+  await refreshSingleSeatStats(sk);
   document.querySelectorAll('.seat-btn').forEach(btn => {
     const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
-    if (k === sk) btn.classList.toggle('has-images', state.seatHasImages.has(sk));
+    if (k !== sk) return;
+    // 移除旧类
+    btn.classList.remove('has-images', 'has-images-1', 'has-images-2');
+    // 移除旧小圆点
+    const oldDot = btn.querySelector('.hidden-dot');
+    if (oldDot) oldDot.remove();
+    // 添加分层类
+    const stat = seatImageStats.get(sk);
+    if (stat && stat.visibleCount > 0) {
+      btn.classList.add(stat.visibleCount >= 2 ? 'has-images-2' : 'has-images-1');
+    } else if (state.seatHasImages.has(sk)) {
+      // 可见时段无图但整体有图（全在隐藏时段），仍给浅色提示
+      btn.classList.add('has-images-1');
+    }
+    // 添加隐藏时段小圆点
+    if (stat && stat.hiddenHasImages) {
+      const dot = document.createElement('span');
+      dot.className = 'hidden-dot';
+      btn.appendChild(dot);
+    }
   });
   // 同步更新区域按钮视觉
   const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1];
@@ -720,7 +802,7 @@ captureInput.addEventListener('change', async (e) => {
     images.push({ data: watermarked, original, thumbnail, type: 'capture', createdAt: Date.now(), seatName: sName, beijingTime: bTime });
     await saveCellData(ck, images);
     const sk = cellToSeatKey(ck);
-    state.seatHasImages.add(sk); updateSeatVisual(sk);
+    state.seatHasImages.add(sk); await updateSeatVisual(sk);
     await renderTimeSlots(sk); updateBottomBar();
     // 【修改3】拍照后自动分享受开关控制，默认关闭
     if (state.autoShare) {
@@ -759,7 +841,7 @@ uploadInput.addEventListener('change', async (e) => {
     images.push({ data: original, original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime });
     await saveCellData(ck, images);
     const sk = cellToSeatKey(ck);
-    state.seatHasImages.add(sk); updateSeatVisual(sk);
+    state.seatHasImages.add(sk); await updateSeatVisual(sk);
     await renderTimeSlots(sk); updateBottomBar();
   } catch (err) {
     if (err.name === 'QuotaExceededError') showToast('存储空间不足！');
@@ -808,8 +890,8 @@ async function shareSelectedImages() {
     const parts = ck.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]), tidx = parseInt(parts[3]);
     const sName = getSeatNameSync(fid, aname, sidx), timeSlot = TIME_SLOTS[tidx];
     for (let i = 0; i < cellData.images.length; i++) {
-      const data = await getProcessedData(cellData.images[i], fid, aname, sidx);
-      const blob = dataURLtoBlob(data);
+      // 直接用已存储的 data，不额外叠加水印
+      const blob = dataURLtoBlob(cellData.images[i].data);
       const filename = `${sName}_${timeSlot}_${i + 1}.jpg`;
       items.push({ blob, filename });
     }
@@ -854,16 +936,12 @@ async function downloadConcatenated() {
   for (const ck of state.selectedCells) {
     const cellData = cellMap.get(ck);
     if (!cellData || !cellData.images || cellData.images.length === 0) continue;
-    const parts = ck.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
-    for (const imgObj of cellData.images) allImageData.push({ ...imgObj, fid, aname, sidx });
+    for (const imgObj of cellData.images) allImageData.push(imgObj);
   }
   if (allImageData.length === 0) { showToast('无图片可拼接'); return; }
   showToast('正在拼接...');
-  const processedImages = [];
-  for (const imgObj of allImageData) {
-    processedImages.push(await getProcessedData(imgObj, imgObj.fid, imgObj.aname, imgObj.sidx));
-  }
-  const imgs = await Promise.all(processedImages.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(); img.src = src; })));
+  // 【修改1】直接用已存储的 data 拼接，不额外叠加水印
+  const imgs = await Promise.all(allImageData.map(imgObj => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(); img.src = imgObj.data; })));
   const maxW = Math.max(...imgs.map(i => i.naturalWidth));
   const scaledH = imgs.map(i => Math.round(i.naturalHeight * maxW / i.naturalWidth));
   const totalH = scaledH.reduce((a, b) => a + b, 0);
@@ -871,7 +949,6 @@ async function downloadConcatenated() {
   const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, maxW, totalH);
   let y = 0;
   for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], 0, y, maxW, scaledH[i]); y += scaledH[i]; }
-  // 【修改1】拼接后打开预览而非直接下载
   const dataURL = canvas.toDataURL('image/jpeg', 0.95);
   showPreviewFromDataURL(dataURL, '拼接结果');
 }
@@ -940,7 +1017,7 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
   if (batchSelectedAreas.size === 0 || batchSelectedTimes.size === 0) { showToast('请选择区域和时段'); return; }
   batchModal.classList.remove('show'); showToast('正在打包...');
   try {
-    // 【优化】一次性读取所有图片数据，避免逐条异步读取
+    // 一次性读取所有图片数据，避免逐条异步读取
     const allCells = await dbGetAll('cells');
     const cellMap = new Map();
     allCells.forEach(r => { if (r.images && r.images.length > 0) cellMap.set(r.key, r); });
@@ -959,9 +1036,9 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
           if (!cellData) continue;
           const sName = getSeatNameSync(fid, aname, sidx);
           for (let i = 0; i < cellData.images.length; i++) {
-            const data = await getProcessedData(cellData.images[i], fid, aname, sidx);
+            // 【修改3】直接用已存储的 data，不额外叠加水印
             const folder = `${floorObj.name}_${aname}`;
-            zip.folder(folder).file(`${sName}_${TIME_SLOTS[tIdx]}_${i + 1}.jpg`, dataURLtoBlob(data));
+            zip.folder(folder).file(`${sName}_${TIME_SLOTS[tIdx]}_${i + 1}.jpg`, dataURLtoBlob(cellData.images[i].data));
             count++;
           }
         }
@@ -1800,7 +1877,7 @@ app.addEventListener('click', async (e) => {
         }
         still ? state.seatHasImages.add(sk) : state.seatHasImages.delete(sk);
       }
-      updateSeatVisual(sk);
+      await updateSeatVisual(sk);
       await renderTimeSlots(sk);
       updateBottomBar();
     }
@@ -1921,7 +1998,14 @@ filterOverlay.addEventListener('click', closeFilterSheet);
 document.getElementById('filter-close').addEventListener('click', closeFilterSheet);
 
 /** 筛选变更后刷新已展开的座位 */
-function refreshExpandedSeats() {
+/** 【修改2】时段筛选变化后，刷新统计并更新所有座位视觉 */
+async function refreshExpandedSeats() {
+  await refreshSeatImageStats();
+  // 更新所有座位按钮视觉
+  for (const btn of document.querySelectorAll('.seat-btn')) {
+    const sk = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
+    await updateSeatVisual(sk);
+  }
   state.expandedSeats.forEach(sk => renderTimeSlots(sk));
 }
 
