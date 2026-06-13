@@ -618,30 +618,6 @@ function renderSeatFlow(fid, aname) {
   return html;
 }
 
-/** 【修复1-拍照卡顿】在 DOM 中立即插入占位缩略图，让用户感知操作已完成 */
-function insertPlaceholderThumb(ck, imgIdx, thumbSrc) {
-  const container = document.getElementById('timeslots-' + cellToSeatKey(ck));
-  if (!container) return;
-  // 找到该时段卡片的缩略图区域
-  const card = container.querySelector(`.timeslot-card[data-cell-key="${ck}"]`);
-  if (!card) return;
-  let thumbsDiv = card.querySelector('.ts-thumbs');
-  if (!thumbsDiv) {
-    // 该时段之前没有图片，需要创建缩略图容器
-    thumbsDiv = document.createElement('div');
-    thumbsDiv.className = 'ts-thumbs';
-    card.appendChild(thumbsDiv);
-    // 更新卡片状态
-    card.dataset.hasImages = '1';
-    const cb = card.querySelector('.ts-checkbox');
-    if (cb) { cb.classList.remove('disabled'); }
-  }
-  const wrap = document.createElement('div');
-  wrap.className = 'thumb-wrap thumb-placeholder'; // placeholder 类标记占位
-  wrap.innerHTML = `<img src="${thumbSrc}" data-action="preview" data-cell-key="${ck}" data-img-idx="${imgIdx}" style="opacity:0.6" /><div class="thumb-del" data-action="delete-img" data-cell-key="${ck}" data-img-idx="${imgIdx}">&times;</div>`;
-  thumbsDiv.appendChild(wrap);
-}
-
 async function renderTimeSlots(sk) {
   const container = document.getElementById('timeslots-' + sk);
   if (!container) return;
@@ -902,37 +878,48 @@ captureInput.addEventListener('change', async (e) => {
     const bTime = getBeijingTime();
     const sk = cellToSeatKey(ck);
 
-    // 【修复1-拍照卡顿】先快速生成低质量预览缩略图，立即显示占位
-    const quickThumb = await generateThumbnail(rawOriginal, 100); // 100px 宽快速缩略图
-    // 立即在 DOM 中插入占位缩略图
-    insertPlaceholderThumb(ck, images.length, quickThumb);
-    state.seatHasImages.add(sk);
-    await updateSeatVisual(sk);
-    updateBottomBar();
-
-    // 异步执行重任务：压缩、水印、高质量缩略图、存储
-    await new Promise(r => setTimeout(r, 0)); // 让出主线程，确保占位图已渲染
+    // 【修复1-拍照卡顿】第一步：立即压缩原图并保存到 IndexedDB（无水印，可立即预览）
     const original = await compressImage(rawOriginal, 0.95);
-    const watermarked = await addWatermark(original, sName, bTime);
-    const thumbnail = await generateThumbnail(watermarked);
-    images.push({ data: watermarked, original, thumbnail, type: 'capture', createdAt: Date.now(), seatName: sName, beijingTime: bTime });
+    const quickThumb = await generateThumbnail(original, 200);
+    images.push({ data: original, original, thumbnail: quickThumb, type: 'capture', createdAt: Date.now(), seatName: sName, beijingTime: bTime });
     await saveCellData(ck, images);
     imageCountCache.set(ck, images.length);
-
-    // 替换占位图为正式缩略图
+    // 立即渲染缩略图——此时点击即可打开预览（显示无水印原图）
+    state.seatHasImages.add(sk);
+    await updateSeatVisual(sk);
     await renderTimeSlots(sk);
+    updateBottomBar();
 
-    // 【修改3】拍照后自动分享受开关控制，延迟到处理完成后
-    if (state.autoShare) {
-      const shareName = `${sName}_${bTime.replace(/[: ]/g, '-')}.jpg`;
-      const shareBlob = dataURLtoBlob(watermarked);
-      if (navigator.share && navigator.canShare) {
-        const shareFile = new File([shareBlob], shareName, { type: 'image/jpeg' });
-        if (navigator.canShare({ files: [shareFile] })) {
-          try { await navigator.share({ files: [shareFile] }); } catch (err) { if (err.name !== 'AbortError') console.error('分享出错:', err); }
-        } else { downloadBlob(shareBlob, shareName); }
-      } else { downloadBlob(shareBlob, shareName); }
-    }
+    // 【修复1-拍照卡顿】第二步：后台异步处理水印，不阻塞 UI
+    setTimeout(async () => {
+      try {
+        const watermarked = await addWatermark(original, sName, bTime);
+        const thumbnail = await generateThumbnail(watermarked);
+        // 从 DB 重新读取最新数据，更新最后一张图片为水印版
+        const cd = await getCellData(ck);
+        if (cd && cd.images && cd.images.length > 0) {
+          const lastIdx = cd.images.length - 1;
+          cd.images[lastIdx].data = watermarked;
+          cd.images[lastIdx].thumbnail = thumbnail;
+          await saveCellData(ck, cd.images);
+          // 静默替换缩略图
+          await renderTimeSlots(sk);
+        }
+        // 自动分享（延迟到水印处理完成后）
+        if (state.autoShare) {
+          const shareName = `${sName}_${bTime.replace(/[: ]/g, '-')}.jpg`;
+          const shareBlob = dataURLtoBlob(watermarked);
+          if (navigator.share && navigator.canShare) {
+            const shareFile = new File([shareBlob], shareName, { type: 'image/jpeg' });
+            if (navigator.canShare({ files: [shareFile] })) {
+              try { await navigator.share({ files: [shareFile] }); } catch (err) { if (err.name !== 'AbortError') console.error('分享出错:', err); }
+            } else { downloadBlob(shareBlob, shareName); }
+          } else { downloadBlob(shareBlob, shareName); }
+        }
+      } catch (err) {
+        console.error('后台水印处理出错:', err);
+      }
+    }, 50); // 50ms 延迟，让主线程先完成渲染和事件绑定
   } catch (err) {
     if (err.name === 'QuotaExceededError') showToast('存储空间不足！');
     else { console.error('拍照处理出错:', err); showToast('拍照处理出错'); }
