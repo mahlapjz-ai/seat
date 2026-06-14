@@ -1348,6 +1348,18 @@ function dataURLtoBlob(dataurl) {
   for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
   return new Blob([u8arr], { type: mime });
 }
+/** 【修复预览渐进渲染】将 Base64 data URL 转为 Blob URL
+ *  浏览器对 data: URL 的 JPEG 会逐行解码（从上往下逐渐显示），
+ *  而 blob: URL 可以一次性完整渲染
+ *  创建的 Blob URL 注册到管理器，关闭预览时统一回收 */
+function dataURLtoBlobURL(dataurl) {
+  try {
+    const blob = dataURLtoBlob(dataurl);
+    return createTrackedBlobURL(blob);
+  } catch (e) {
+    return dataurl; // 转换失败时回退到原始 data URL
+  }
+}
 /** 【性能优化】Blob → Base64 DataURL（仅在需要存入 IndexedDB 时才转换） */
 function blobToDataURL(blob) {
   return new Promise((resolve, reject) => {
@@ -1787,7 +1799,8 @@ async function pvLoadFullImage(idx) {
     }
 
     if (data) {
-      imgEl.src = data;
+      // 【修复预览渐进渲染】Base64 data URL → Blob URL，一次性完整渲染
+      imgEl.src = data.startsWith('data:') ? dataURLtoBlobURL(data) : data;
       slide.dataset.loaded = '1';
       slide.dataset.srcType = 'generated';
     }
@@ -1916,7 +1929,7 @@ async function showPreview(cellKeyStr, imgIdx) {
 
       if (Math.abs(i - imgIdx) <= 1) {
         // 当前图及相邻：立即加载
-        // 【终极方案】优先级：_fullBlobURL > 内存 Blob 缓存 > pvCache > data > thumbnail
+        // 优先级：_fullBlobURL > 内存 Blob 缓存 > pvCache > data > thumbnail
         let src = null;
         // 1. 优先用 _fullBlobURL（拍照后同步生成，立即可用）
         if (pvImages[i]._fullBlobURL) {
@@ -1925,7 +1938,7 @@ async function showPreview(cellKeyStr, imgIdx) {
           slide.dataset.srcType = 'blob-url';
         }
         // 2. 再查内存 Blob 缓存
-        else if (!src) {
+        if (!src) {
           const memBlob = getMemoryBlobURL(cellKeyStr, i);
           if (memBlob && memBlob.fullBlobURL) {
             src = memBlob.fullBlobURL;
@@ -1933,15 +1946,15 @@ async function showPreview(cellKeyStr, imgIdx) {
             slide.dataset.srcType = 'memory-blob';
           }
         }
-        // 3. 再查 pvCache
+        // 3. 再查 pvCache（Base64 → Blob URL 避免渐进渲染）
         if (!src && pvCache.has(cacheKey)) {
-          src = pvCache.get(cacheKey);
+          src = dataURLtoBlobURL(pvCache.get(cacheKey));
           slide.dataset.loaded = '1';
           slide.dataset.srcType = 'pv-cache';
         }
-        // 4. 用 data 字段（Base64）
+        // 4. 用 data 字段（Base64 → Blob URL 避免渐进渲染）
         if (!src && pvImages[i].data) {
-          src = pvImages[i].data;
+          src = dataURLtoBlobURL(pvImages[i].data);
           slide.dataset.loaded = '1';
           slide.dataset.srcType = 'data';
         }
@@ -1949,9 +1962,9 @@ async function showPreview(cellKeyStr, imgIdx) {
         if (!src && pvImages[i].original) {
           slide.dataset.loaded = '0';
         }
-        // 6. thumbnail（非 ObjectURL）
+        // 6. thumbnail（Base64 → Blob URL 避免渐进渲染）
         if (!src && pvImages[i].thumbnail && !pvImages[i].thumbnail.startsWith('blob:')) {
-          src = pvImages[i].thumbnail;
+          src = dataURLtoBlobURL(pvImages[i].thumbnail);
           slide.dataset.loaded = '1';
           slide.dataset.srcType = 'thumbnail';
         }
@@ -2006,7 +2019,8 @@ function showPreviewFromDataURL(dataURL, title) {
   const slide = document.createElement('div');
   slide.className = 'pv-slide';
   const imgEl = document.createElement('img');
-  imgEl.src = dataURL;
+  // 【修复预览渐进渲染】Base64 → Blob URL，一次性完整渲染
+  imgEl.src = dataURL.startsWith('data:') ? dataURLtoBlobURL(dataURL) : dataURL;
   slide.dataset.loaded = '1';
   slide.appendChild(imgEl);
   previewScroller.appendChild(slide);
