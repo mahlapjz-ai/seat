@@ -332,17 +332,17 @@ async function dbGet(s, k) { const db = await openDB(); return new Promise((r, j
 async function dbDelete(s, k) { const db = await openDB(); return new Promise((r, j) => { const tx = db.transaction(s, 'readwrite'); tx.objectStore(s).delete(k); tx.oncomplete = () => r(); tx.onerror = (e) => j(e.target.error); tx.onabort = (e) => j(e.target.error); }); }
 async function dbGetAll(s) { const db = await openDB(); return new Promise((r, j) => { const tx = db.transaction(s, 'readonly'); const req = tx.objectStore(s).getAll(); req.onsuccess = () => r(req.result); tx.oncomplete = () => r(req.result || []); tx.onerror = (e) => j(e.target.error); tx.onabort = (e) => j(e.target.error); }); }
 async function saveCellData(k, imgs) {
-  // 【性能优化-深度】存入 IndexedDB 前，清理临时字段（ObjectURL 等页面刷新后失效）
+  // 存入 IndexedDB 前，清理临时字段（ObjectURL 等页面刷新后失效，Blob 对象不可序列化）
   const cleanImgs = imgs.map(img => {
     const clean = { ...img };
-    // 删除不应持久化的临时字段
     delete clean._tempURL;
     delete clean._fullBlob;
     delete clean._thumbBlob;
-    // 如果 thumbnail 是 ObjectURL，存入 DB 时清空（刷新后失效）
-    if (clean.thumbnail && clean.thumbnail.startsWith('blob:')) {
-      clean.thumbnail = '';
-    }
+    delete clean._fullBlobURL;
+    delete clean._thumbBlobURL;
+    // thumbnail/data 如果是 ObjectURL，存入 DB 时清空（刷新后失效）
+    if (clean.thumbnail && clean.thumbnail.startsWith('blob:')) clean.thumbnail = '';
+    if (clean.data && clean.data.startsWith('blob:')) clean.data = '';
     return clean;
   });
   try { await dbPut('cells', { key: k, images: cleanImgs }); }
@@ -577,9 +577,13 @@ function isTimeSlotVisible(tIdx) {
 // 四、渲染
 // ============================================================
 const app = document.getElementById('app');
+// 【修复Bug3】renderMain 并发保护：序列号机制，旧调用自动让路给新调用
+let _renderMainSeq = 0;
 async function renderMain() {
+  const mySeq = ++_renderMainSeq;
   // 【修改3】顶部只保留标题和功能按钮
-  let html = '<div class="page-header"><span class="page-title">图书馆座位图片管理</span><button class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">功能</button></div>';
+  // 【修复Bug3】按钮加 id="func-btn"，方便定位和校验文字
+  let html = '<div class="page-header"><span class="page-title">图书馆座位图片管理</span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">功能</button></div>';
   // 【优化】预计算每个区域的已删除座位数，避免每个区域都遍历全量 deletedSeats
   const deletedCountMap = {};
   state.deletedSeats.forEach(sk => {
@@ -608,11 +612,31 @@ async function renderMain() {
     html += '</div>';
   });
   app.innerHTML = html;
+  // 【修复Bug3】确保"功能"按钮文字始终显示
+  ensureFuncBtnText();
   // 【修复BUG】串行执行 renderTimeSlots，避免并发 DOM 操作冲突
+  // 【修复Bug3】每次 await 前检查序列号，旧调用自动让路
   for (const sk of state.expandedSeats) {
+    if (_renderMainSeq !== mySeq) return; // 有更新的 renderMain 调用，当前调用终止
     await renderTimeSlots(sk);
   }
 }
+
+// 【修复Bug3】确保"功能"按钮文字始终显示，防止异步竞态或页面恢复时文字消失
+function ensureFuncBtnText() {
+  const btn = document.getElementById('func-btn');
+  if (btn && !btn.textContent.trim()) {
+    btn.textContent = '功能';
+  }
+}
+
+// 【修复Bug3】页面从后台恢复时，校验并恢复"功能"按钮文字
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    // 页面重新可见时，确保按钮文字存在
+    requestAnimationFrame(ensureFuncBtnText);
+  }
+});
 
 function renderSeatFlow(fid, aname) {
   const count = getAreaSeatCount(fid, aname);
@@ -662,6 +686,8 @@ async function renderTimeSlots(sk) {
     if (isTimeSlotVisible(t)) visibleKeys.push(cellKey(fid, aname, sidx, t));
   }
   let countFingerprint = visibleKeys.map(ck => `${ck}:${imageCountCache.get(ck) || 0}`).join(',');
+  // 【修复Bug2】指纹包含删除座位开关状态，确保开关切换时缓存失效
+  countFingerprint += `|del:${state.allowDeleteSeat ? '1' : '0'}`;
 
   // 【修复问题2】检查 DOM 缓存：如果数据未变，直接复用缓存的 HTML
   const cached = timeslotDOMCache.get(sk);
@@ -688,29 +714,28 @@ async function renderTimeSlots(sk) {
     if (images.length > 0) {
       html += '<div class="ts-thumbs">';
       images.forEach((img, idx) => {
-        // 【性能优化-深度】ObjectURL 缩略图直接用 src（瞬开），Base64 缩略图用懒加载
-        let thumbSrc = img.thumbnail || img.thumb || '';
-        // 【性能优化-深度】如果缩略图为空但有内存 Blob 缓存，用缓存
+        // 【终极方案】优先使用 Blob URL（拍照后立即可用），回退到 Base64 缩略图
+        let thumbSrc = img._thumbBlobURL || img.thumbnail || img.thumb || '';
+        // 如果缩略图为空但有内存 Blob 缓存，用缓存
         if (!thumbSrc) {
           const memBlob = getMemoryBlobURL(ck, idx);
-          if (memBlob && memBlob.thumbBlobURL) {
-            thumbSrc = memBlob.thumbBlobURL;
-          }
+          if (memBlob && memBlob.thumbBlobURL) thumbSrc = memBlob.thumbBlobURL;
         }
         const isObjectURL = thumbSrc && thumbSrc.startsWith('blob:');
         const hasData = img.data && !img._placeholder;
-        if (!thumbSrc && !hasData) needThumbGen = true;
+        if (!thumbSrc && !hasData && !img._fullBlobURL) needThumbGen = true;
         if (isObjectURL) {
-          // ObjectURL 直接显示，不走懒加载
+          // Blob URL 直接显示，不走懒加载
           html += `<div class="thumb-wrap"><img src="${thumbSrc}" data-action="preview" data-cell-key="${ck}" data-img-idx="${idx}" /><div class="thumb-del" data-action="delete-img" data-cell-key="${ck}" data-img-idx="${idx}">&times;</div></div>`;
         } else if (thumbSrc) {
           // Base64 缩略图走懒加载
           html += `<div class="thumb-wrap"><img data-thumb-src="${thumbSrc}" data-action="preview" data-cell-key="${ck}" data-img-idx="${idx}" /><div class="thumb-del" data-action="delete-img" data-cell-key="${ck}" data-img-idx="${idx}">&times;</div></div>`;
         } else if (hasData) {
-          // 无缩略图，直接用 data 字段
           html += `<div class="thumb-wrap"><img src="${img.data}" data-action="preview" data-cell-key="${ck}" data-img-idx="${idx}" /><div class="thumb-del" data-action="delete-img" data-cell-key="${ck}" data-img-idx="${idx}">&times;</div></div>`;
+        } else if (img._fullBlobURL) {
+          // 有 fullBlobURL 但无缩略图，用原图 Blob URL 显示
+          html += `<div class="thumb-wrap"><img src="${img._fullBlobURL}" data-action="preview" data-cell-key="${ck}" data-img-idx="${idx}" /><div class="thumb-del" data-action="delete-img" data-cell-key="${ck}" data-img-idx="${idx}">&times;</div></div>`;
         } else {
-          // 完全无图可显示（占位状态且无缓存），显示占位框
           html += `<div class="thumb-wrap" style="background:#e6f7ff;display:flex;align-items:center;justify-content:center;font-size:10px;color:#1890ff">处理中</div>`;
         }
       });
@@ -888,34 +913,25 @@ function clearCellBlobCache(cellKey) {
     memoryBlobCache.delete(cellKey);
   }
 }
-
-// 【性能优化】addWatermarkBlob：一次 Canvas 绘制，同时输出原图 Blob + 缩略图 Blob
-// 【性能优化-深度】支持 OffscreenCanvas（如浏览器支持），避免主线程阻塞
-/** 添加水印并返回 { fullBlob, thumbBlob }，避免重复 Canvas 操作 */
+/** 添加水印并返回 { fullBlob, thumbBlob }，避免重复 Canvas 操作
+ *  水印三行：第一行座位编号，第二行日期，第三行时间
+ *  字号：短边×10%，限制在36~200px */
 function addWatermarkBlob(imageData, seatName, beijingTime) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
       try {
-        // 【性能优化-深度】优先使用 OffscreenCanvas，避免主线程阻塞
-        const useOffscreen = typeof OffscreenCanvas !== 'undefined';
-        let canvas, ctx;
-        if (useOffscreen) {
-          canvas = new OffscreenCanvas(img.naturalWidth, img.naturalHeight);
-          ctx = canvas.getContext('2d');
-        } else {
-          canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-          ctx = canvas.getContext('2d');
-        }
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
-        // 水印字号：短边×12%，限制在36~200px
+        // 水印字号：短边×10%，限制在36~200px
         const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
-        const fs = Math.max(36, Math.min(200, Math.round(shortSide * 0.12)));
+        const fs = Math.max(36, Math.min(200, Math.round(shortSide * 0.10)));
         const scaleFactor = fs / 52;
-        const fs1 = Math.max(36, Math.min(200, Math.round(18 * scaleFactor))); // 日期
-        const fs2 = fs;                                                        // 时间
-        const fs3 = Math.max(36, Math.min(200, Math.round(36 * scaleFactor))); // 座位
+        const fs1 = Math.max(36, Math.min(200, Math.round(36 * scaleFactor))); // 座位编号
+        const fs2 = fs;                                                        // 日期
+        const fs3 = Math.max(36, Math.min(200, Math.round(18 * scaleFactor))); // 时间
         const lineGap = Math.round(fs2 * 0.15);
         const pad = Math.round(fs2 * 0.3);   // 左右内边距
         const vpad = Math.round(fs2 * 0.2);  // 上下内边距
@@ -924,13 +940,13 @@ function addWatermarkBlob(imageData, seatName, beijingTime) {
         // 拆分北京时间
         const datePart = beijingTime.split(' ')[0];
         const timePart = beijingTime.split(' ')[1] || beijingTime;
-        // 逐行测量宽度
-        ctx.font = `300 ${fs1}px ${fontFam}`;
-        const tw1 = ctx.measureText(datePart).width;
-        ctx.font = `700 ${fs2}px ${fontFam}`;
-        const tw2 = ctx.measureText(timePart).width;
-        ctx.font = `400 ${fs3}px ${fontFam}`;
-        const tw3 = ctx.measureText(seatName).width;
+        // 逐行测量宽度（顺序：座位、日期、时间）
+        ctx.font = `400 ${fs1}px ${fontFam}`;
+        const tw1 = ctx.measureText(seatName).width;
+        ctx.font = `300 ${fs2}px ${fontFam}`;
+        const tw2 = ctx.measureText(datePart).width;
+        ctx.font = `700 ${fs3}px ${fontFam}`;
+        const tw3 = ctx.measureText(timePart).width;
         const maxTW = Math.max(tw1, tw2, tw3);
         const totalH = fs1 + fs2 + fs3 + lineGap * 2;
         const bgX = 24, bgY = canvas.height - totalH - vpad * 2 - 24;
@@ -947,26 +963,20 @@ function addWatermarkBlob(imageData, seatName, beijingTime) {
         ctx.lineTo(bgX, bgY + r);
         ctx.quadraticCurveTo(bgX, bgY, bgX + r, bgY);
         ctx.closePath(); ctx.fill();
-        // 绘制三行白色文本
+        // 绘制三行白色文本：座位编号、日期、时间
         ctx.textBaseline = 'top'; ctx.fillStyle = '#ffffff';
         const textX = bgX + pad;
         let curY = bgY + vpad;
-        ctx.font = `300 ${fs1}px ${fontFam}`;
-        ctx.fillText(datePart, textX, curY);
-        curY += fs1 + lineGap;
-        ctx.font = `700 ${fs2}px ${fontFam}`;
-        ctx.fillText(timePart, textX, curY);
-        curY += fs2 + lineGap;
-        ctx.font = `400 ${fs3}px ${fontFam}`;
+        ctx.font = `400 ${fs1}px ${fontFam}`;
         ctx.fillText(seatName, textX, curY);
-        // 【性能优化】一次 Canvas 绘制，同时导出原图 Blob 和缩略图 Blob
-        // 【性能优化-深度】OffscreenCanvas 使用 convertToBlob，普通 Canvas 使用 toBlob
-        let fullPromise;
-        if (useOffscreen) {
-          fullPromise = canvas.convertToBlob({ type: 'image/jpeg', quality: 0.95 });
-        } else {
-          fullPromise = new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
-        }
+        curY += fs1 + lineGap;
+        ctx.font = `300 ${fs2}px ${fontFam}`;
+        ctx.fillText(datePart, textX, curY);
+        curY += fs2 + lineGap;
+        ctx.font = `700 ${fs3}px ${fontFam}`;
+        ctx.fillText(timePart, textX, curY);
+        // 一次 Canvas 绘制，同时导出原图 Blob 和缩略图 Blob
+        const fullPromise = new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
         // 从同一个 Canvas 生成缩略图
         const thumbCanvas = document.createElement('canvas');
         const scale = Math.min(200 / img.naturalWidth, 1);
@@ -976,6 +986,9 @@ function addWatermarkBlob(imageData, seatName, beijingTime) {
         tCtx.drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
         const thumbPromise = new Promise(r => thumbCanvas.toBlob(r, 'image/jpeg', 0.8));
         Promise.all([fullPromise, thumbPromise]).then(([fullBlob, thumbBlob]) => {
+          // 【内存优化】Canvas 使用完立即释放
+          canvas.width = 0; canvas.height = 0;
+          thumbCanvas.width = 0; thumbCanvas.height = 0;
           resolve({ fullBlob, thumbBlob });
         });
       } catch (err) { reject(new Error('水印生成失败: ' + err.message)); }
@@ -1099,63 +1112,61 @@ captureInput.addEventListener('change', async (e) => {
     const bTime = getBeijingTime();
     const sk = cellToSeatKey(ck);
 
-    // 【修复缩略图延迟】第一步：生成 Base64 缩略图占位，await 存入 DB，确保 renderTimeSlots 能读到
-    const tempURL = URL.createObjectURL(file);
-    const quickThumb = await generateThumbnail(tempURL, 200);
-    URL.revokeObjectURL(tempURL);
-    // 占位数据：data 和 thumbnail 都用缩略图（可立即预览），后台处理后替换为水印原图
-    const placeholderImg = {
-      data: quickThumb,
-      original: '',
-      thumbnail: quickThumb,
+    // 【终极方案】同步绘制水印：拍照后立即生成带水印的缩略图和原图 Blob
+    // 1. 读取文件为 DataURL
+    const rawOriginal = await readFileAsDataURL(file);
+    // 2. 同步绘制水印 + 导出 fullBlob 和 thumbBlob（一次 Canvas 绘制）
+    const { fullBlob, thumbBlob } = await addWatermarkBlob(rawOriginal, sName, bTime);
+    // 3. 生成 Blob URL 用于即时显示和预览
+    const fullBlobURL = URL.createObjectURL(fullBlob);
+    const thumbBlobURL = URL.createObjectURL(thumbBlob);
+    // 4. 构建图片数据：缩略图用 Blob URL 显示，预览用 fullBlobURL
+    const newImg = {
+      data: '',              // Base64 水印图（后台异步填充）
+      original: '',          // Base64 原图（后台异步填充）
+      thumbnail: '',         // Base64 缩略图（后台异步填充）
       type: 'capture',
       createdAt: Date.now(),
       seatName: sName,
       beijingTime: bTime,
-      _placeholder: true
+      // 【关键】Blob 缓存，预览和拼接直接使用，不依赖 IndexedDB
+      _fullBlob: fullBlob,
+      _thumbBlob: thumbBlob,
+      _fullBlobURL: fullBlobURL,
+      _thumbBlobURL: thumbBlobURL
     };
-    images.push(placeholderImg);
-    // 【关键修复】await 存入 DB，确保 renderTimeSlots 从 IndexedDB 能读到新图片
+    images.push(newImg);
+    // 5. 更新内存 Blob 缓存（预览时直接使用）
+    cacheCellBlobs(ck, images);
+    // 6. 存入 DB（data 为空，但 Blob URL 已在内存中可用于预览）
     await saveCellData(ck, images);
     imageCountCache.set(ck, images.length);
     state.seatHasImages.add(sk);
+    invalidateTimeslotCache(sk);
     updateSeatVisual(sk);
     await renderTimeSlots(sk);
     updateBottomBar();
 
-    // 第二步：后台异步压缩+水印+正式存储，不阻塞 UI
-    const doProcess = async () => {
+    // 7. 后台异步：将 Blob 转 Base64 存入 IndexedDB（不阻塞预览）
+    const doStore = async () => {
       try {
-        const rawOriginal = await readFileAsDataURL(file);
-        const originalBlob = await compressImageBlob(rawOriginal, 0.95);
-        const originalDataURL = await blobToDataURL(originalBlob);
-        const { fullBlob, thumbBlob } = await addWatermarkBlob(originalDataURL, sName, bTime);
-        const [watermarked, thumbnail] = await Promise.all([
+        const [watermarked, thumbnail, original] = await Promise.all([
           blobToDataURL(fullBlob),
-          blobToDataURL(thumbBlob)
+          blobToDataURL(thumbBlob),
+          blobToDataURL(await compressImageBlob(rawOriginal, 0.95))
         ]);
         const cd = await getCellData(ck);
         if (cd && cd.images && cd.images.length > 0) {
           const lastIdx = cd.images.length - 1;
-          cd.images[lastIdx] = {
-            data: watermarked,
-            original: originalDataURL,
-            thumbnail,
-            type: 'capture',
-            createdAt: Date.now(),
-            seatName: sName,
-            beijingTime: bTime,
-            _fullBlob: fullBlob,
-            _thumbBlob: thumbBlob
-          };
+          cd.images[lastIdx].data = watermarked;
+          cd.images[lastIdx].original = original;
+          cd.images[lastIdx].thumbnail = thumbnail;
           await saveCellData(ck, cd.images);
-          cacheCellBlobs(ck, cd.images);
-          // 【修复问题1】水印完成后，如果预览正在显示该图片，静默替换为水印版
-          pvSilentReplaceIfOpen(ck, lastIdx, watermarked, fullBlob);
-          // 【修复问题2】数据变化，清除 DOM 缓存后重新渲染
+          // 数据已持久化，刷新 DOM 缓存
           invalidateTimeslotCache(sk);
           await renderTimeSlots(sk);
         }
+        // 自动分享
         if (state.autoShare) {
           const shareName = `${sName}_${bTime.replace(/[: ]/g, '-')}.jpg`;
           if (navigator.share && navigator.canShare) {
@@ -1166,13 +1177,13 @@ captureInput.addEventListener('change', async (e) => {
           } else { downloadBlob(fullBlob, shareName); }
         }
       } catch (err) {
-        console.error('后台处理出错:', err);
+        console.error('后台存储出错:', err);
       }
     };
     if ('requestIdleCallback' in window) {
-      requestIdleCallback(() => { doProcess(); }, { timeout: 2000 });
+      requestIdleCallback(() => { doStore(); }, { timeout: 2000 });
     } else {
-      setTimeout(doProcess, 100);
+      setTimeout(doStore, 100);
     }
   } catch (err) {
     if (err.name === 'QuotaExceededError') showToast('存储空间不足！');
@@ -1288,13 +1299,14 @@ async function shareSelectedImages() {
   if (state.selectedCells.length === 0) return;
   // 【性能优化】只读取选中的单元格数据
   const cellDataMap = await getCellDataBatch(state.selectedCells);
-  // 【修复问题1b】分享前检查图片是否已就绪（非占位状态）
+  // 【终极方案】分享时优先使用 Blob（拍照后可能 data 还未存入 IndexedDB）
   const allImgs = [];
   for (const ck of state.selectedCells) {
     const cellData = cellDataMap[ck];
     if (cellData && cellData.images) allImgs.push(...cellData.images);
   }
-  if (allImgs.some(img => img._placeholder || !img.data)) { showToast('图片处理中，请稍后重试'); return; }
+  // 检查是否所有图片都有可用数据（Blob URL 或 Base64 data）
+  if (allImgs.some(img => !img._fullBlob && !img._fullBlobURL && !img.data)) { showToast('图片处理中，请稍后重试'); return; }
 
   const items = [];
   for (const ck of state.selectedCells) {
@@ -1303,8 +1315,8 @@ async function shareSelectedImages() {
     const parts = ck.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]), tidx = parseInt(parts[3]);
     const sName = getSeatNameSync(fid, aname, sidx), timeSlot = TIME_SLOTS[tidx];
     for (let i = 0; i < cellData.images.length; i++) {
-      // 直接用已存储的 data，不额外叠加水印
-      const blob = dataURLtoBlob(cellData.images[i].data);
+      // 优先使用 _fullBlob（已是水印图 Blob），回退到 data（Base64）
+      const blob = cellData.images[i]._fullBlob || dataURLtoBlob(cellData.images[i].data);
       const filename = `${sName}_${timeSlot}_${i + 1}.jpg`;
       items.push({ blob, filename });
     }
@@ -1352,12 +1364,17 @@ async function downloadConcatenated() {
     for (const imgObj of cellData.images) allImageData.push(imgObj);
   }
   if (allImageData.length === 0) { showToast('无图片可拼接'); return; }
-  // 【修复问题1b】拼接前检查图片是否已就绪（非占位状态）
-  const hasPlaceholder = allImageData.some(img => img._placeholder || !img.data);
-  if (hasPlaceholder) { showToast('图片处理中，请稍后重试'); return; }
+  // 【终极方案】拼接时优先使用 Blob URL（拍照后可能 data 还未存入 IndexedDB）
   showToast('正在拼接...');
-  // 【修改1】直接用已存储的 data 拼接，不额外叠加水印
-  const imgs = await Promise.all(allImageData.map(imgObj => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(); img.src = imgObj.data; })));
+  // 构建图片源：优先 _fullBlobURL > _fullBlob(Blob) > data(Base64)
+  const imgSrcs = allImageData.map((imgObj, idx) => {
+    if (imgObj._fullBlobURL) return imgObj._fullBlobURL;
+    if (imgObj._fullBlob) return URL.createObjectURL(imgObj._fullBlob);
+    if (imgObj.data) return imgObj.data;
+    return null;
+  });
+  if (imgSrcs.some(s => !s)) { showToast('部分图片尚未就绪，请稍后重试'); return; }
+  const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(); img.src = src; })));
   const maxW = Math.max(...imgs.map(i => i.naturalWidth));
   const scaledH = imgs.map(i => Math.round(i.naturalHeight * maxW / i.naturalWidth));
   const totalH = scaledH.reduce((a, b) => a + b, 0);
@@ -1636,7 +1653,7 @@ function pvApplySlideOffset() {
 }
 
 // ---- 异步加载完整水印图 ----
-// 【性能优化-深度】优先使用内存 Blob URL，避免重复 Canvas 水印绘制
+// 【终极方案】优先使用 _fullBlobURL（拍照后同步生成），避免重新 Canvas 水印绘制
 async function pvLoadFullImage(idx) {
   if (idx < 0 || idx >= pvImages.length) return;
   const slide = previewScroller.children[idx];
@@ -1644,7 +1661,14 @@ async function pvLoadFullImage(idx) {
   const imgEl = slide ? slide.querySelector('img') : null;
   if (!imgEl) return;
   try {
-    // 【性能优化-深度】优先级1：内存 Blob 缓存（最快，0ms）
+    // 优先级1：_fullBlobURL（拍照后同步生成，0ms）
+    if (pvImages[idx]._fullBlobURL) {
+      imgEl.src = pvImages[idx]._fullBlobURL;
+      slide.dataset.loaded = '1';
+      slide.dataset.srcType = 'blob-url';
+      return;
+    }
+    // 优先级2：内存 Blob 缓存
     const cellKey = pvImages[idx]._cellKey;
     const memBlob = getMemoryBlobURL(cellKey, idx);
     if (memBlob && memBlob.fullBlobURL) {
@@ -1657,15 +1681,15 @@ async function pvLoadFullImage(idx) {
     let data = null;
     const cacheKey = `${cellKey}_${idx}`;
 
-    // 优先级2：pvCache
+    // 优先级3：pvCache
     if (pvCache.has(cacheKey)) {
       data = pvCache.get(cacheKey);
     }
-    // 优先级3：data 字段（非占位）
-    else if (pvImages[idx].data && !pvImages[idx]._placeholder) {
+    // 优先级4：data 字段
+    else if (pvImages[idx].data) {
       data = pvImages[idx].data;
     }
-    // 优先级4：有 original 字段，重新生成水印（最慢，需要 Canvas 操作）
+    // 优先级5：有 original 字段，重新生成水印
     else if (pvImages[idx].original) {
       const ck = cellKey;
       if (ck) {
@@ -1673,12 +1697,11 @@ async function pvLoadFullImage(idx) {
         const sName = getSeatNameSync(parseInt(parts[0]), parts[1], parseInt(parts[2]));
         const bTime = pvImages[idx].beijingTime || getBeijingTime();
         data = await addWatermark(pvImages[idx].original, sName, bTime);
-        // 【性能优化】缓存上限控制，超出时淘汰最早的条目
         if (pvCache.size >= PV_CACHE_MAX) { const firstKey = pvCache.keys().next().value; pvCache.delete(firstKey); }
         pvCache.set(cacheKey, data);
       }
     }
-    // 优先级5：占位状态，用缩略图（非 ObjectURL）
+    // 优先级6：thumbnail
     else if (pvImages[idx].thumbnail && !pvImages[idx].thumbnail.startsWith('blob:')) {
       data = pvImages[idx].thumbnail;
     }
@@ -1813,40 +1836,47 @@ async function showPreview(cellKeyStr, imgIdx) {
 
       if (Math.abs(i - imgIdx) <= 1) {
         // 当前图及相邻：立即加载
-        // 【性能优化-深度】优先级：内存 Blob URL > pvCache > data 字段 > thumbnail
+        // 【终极方案】优先级：_fullBlobURL > 内存 Blob 缓存 > pvCache > data > thumbnail
         let src = null;
-        // 1. 先查内存 Blob 缓存
-        const memBlob = getMemoryBlobURL(cellKeyStr, i);
-        if (memBlob && memBlob.fullBlobURL) {
-          src = memBlob.fullBlobURL;
+        // 1. 优先用 _fullBlobURL（拍照后同步生成，立即可用）
+        if (pvImages[i]._fullBlobURL) {
+          src = pvImages[i]._fullBlobURL;
           slide.dataset.loaded = '1';
-          slide.dataset.srcType = 'memory-blob'; // 标记来源
+          slide.dataset.srcType = 'blob-url';
         }
-        // 2. 再查 pvCache
-        else if (pvCache.has(cacheKey)) {
+        // 2. 再查内存 Blob 缓存
+        else if (!src) {
+          const memBlob = getMemoryBlobURL(cellKeyStr, i);
+          if (memBlob && memBlob.fullBlobURL) {
+            src = memBlob.fullBlobURL;
+            slide.dataset.loaded = '1';
+            slide.dataset.srcType = 'memory-blob';
+          }
+        }
+        // 3. 再查 pvCache
+        if (!src && pvCache.has(cacheKey)) {
           src = pvCache.get(cacheKey);
           slide.dataset.loaded = '1';
           slide.dataset.srcType = 'pv-cache';
         }
-        // 3. 用 data 字段（可能是 Base64）
-        else if (pvImages[i].data && !pvImages[i]._placeholder) {
+        // 4. 用 data 字段（Base64）
+        if (!src && pvImages[i].data) {
           src = pvImages[i].data;
           slide.dataset.loaded = '1';
           slide.dataset.srcType = 'data';
         }
-        // 4. 有 original 字段（可重新生成水印）
-        else if (pvImages[i].original) {
-          // 需要异步加载，先标记未加载
+        // 5. 有 original 字段（可重新生成水印）
+        if (!src && pvImages[i].original) {
           slide.dataset.loaded = '0';
         }
-        // 5. 占位状态且 thumbnail 是 ObjectURL（页面刷新后已失效）
-        else if (pvImages[i].thumbnail && !pvImages[i].thumbnail.startsWith('blob:')) {
+        // 6. thumbnail（非 ObjectURL）
+        if (!src && pvImages[i].thumbnail && !pvImages[i].thumbnail.startsWith('blob:')) {
           src = pvImages[i].thumbnail;
           slide.dataset.loaded = '1';
-          slide.dataset.srcType = 'thumbnail-placeholder';
+          slide.dataset.srcType = 'thumbnail';
         }
-        // 6. 完全无法显示
-        else {
+        // 7. 完全无法显示
+        if (!src && !slide.dataset.loaded) {
           slide.dataset.loaded = '0';
         }
 
@@ -1935,46 +1965,6 @@ function showPreviewFromBlobURL(blobURL, blob, title) {
   pvApplySlideOffset();
   pvUpdateIndicator();
   pvShowSaveBtn();
-}
-
-/** 【修复问题1】水印完成后，静默替换预览中的占位图
- *  如果预览正在打开且显示的是该 cellKey 的第 imgIdx 张图片，立即替换为水印版
- *  用户无需关闭重开，无感切换 */
-function pvSilentReplaceIfOpen(cellKey, imgIdx, watermarkedDataURL, fullBlob) {
-  // 预览未打开，无需替换
-  if (!previewModal.classList.contains('show')) return;
-  // 检查预览中的图片是否匹配
-  if (!pvImages || pvImages.length === 0) return;
-  for (let i = 0; i < pvImages.length; i++) {
-    if (pvImages[i]._cellKey === cellKey && i === imgIdx) {
-      // 找到匹配的图片，更新数据
-      pvImages[i].data = watermarkedDataURL;
-      pvImages[i]._placeholder = false;
-      if (fullBlob) pvImages[i]._fullBlob = fullBlob;
-      // 更新 pvCache
-      const cacheKey = `${cellKey}_${imgIdx}`;
-      pvCache.set(cacheKey, watermarkedDataURL);
-      // 替换 DOM 中对应 slide 的 img src
-      const slide = previewScroller.children[i];
-      if (slide) {
-        const imgEl = slide.querySelector('img');
-        if (imgEl) {
-          // 优先用 Blob URL（渲染更快），回退用 dataURL
-          if (fullBlob) {
-            const blobURL = URL.createObjectURL(fullBlob);
-            imgEl.src = blobURL;
-            // 注册到 pvBlobURLs，关闭预览时统一回收
-            pvBlobURLs.set(blobURL, true);
-          } else {
-            imgEl.src = watermarkedDataURL;
-          }
-          slide.dataset.loaded = '1';
-          slide.dataset.srcType = 'memory-blob';
-        }
-      }
-      break;
-    }
-  }
 }
 
 function closePreview() {
@@ -2406,8 +2396,8 @@ document.getElementById('cleanup-exec-btn').addEventListener('click', async () =
     let total = 0;
     for (const rec of all) {
       if (!rec.images) continue;
-      // 【修复BUG】过滤时跳过占位图片（_placeholder），占位图片无水印原图，应直接删除
-      const filtered = rec.images.filter(img => (img.createdAt || 0) >= threshold && !img._placeholder);
+      // 过滤掉指定日期之前的图片
+      const filtered = rec.images.filter(img => (img.createdAt || 0) >= threshold);
       if (filtered.length < rec.images.length) {
         total += rec.images.length - filtered.length;
         if (filtered.length > 0) await saveCellData(rec.key, filtered);
@@ -2644,18 +2634,31 @@ document.getElementById('filter-clear').addEventListener('click', () => {
 filterOverlay.addEventListener('click', closeFilterSheet);
 document.getElementById('filter-close').addEventListener('click', closeFilterSheet);
 
-/** 【修复BUG-时段隐藏卡死】刷新已展开座位的视觉和内容
- *  优化：updateSeatVisual 同步执行，renderTimeSlots 串行执行避免并发 DOM 冲突 */
+/** 【修复BUG-时段筛选卡死】刷新已展开座位的视觉和内容
+ *  优化：updateSeatVisual 同步执行，renderTimeSlots 串行执行避免并发 DOM 冲突
+ *  【修复】时段筛选变化时清除所有 DOM 缓存（因为可见时段变了，旧缓存无效）
+ *  【修复】防止并发调用：用标志位跳过正在执行的刷新 */
+let _refreshingSeats = false;
+
 async function refreshExpandedSeats() {
-  await refreshSeatImageStats();
-  // 更新所有座位按钮视觉（同步 DOM 操作，无需逐个 await）
-  for (const btn of document.querySelectorAll('.seat-btn')) {
-    const sk = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
-    updateSeatVisual(sk);
-  }
-  // 【修复BUG】串行执行 renderTimeSlots，避免并发 DOM 操作冲突导致卡死
-  for (const sk of state.expandedSeats) {
-    await renderTimeSlots(sk);
+  // 【修复BUG】防止并发调用导致卡死
+  if (_refreshingSeats) return;
+  _refreshingSeats = true;
+  try {
+    // 【修复BUG】时段筛选变化时必须清除所有 DOM 缓存（可见时段变了，旧 HTML 无效）
+    invalidateAllTimeslotCache();
+    await refreshSeatImageStats();
+    // 更新所有座位按钮视觉（同步 DOM 操作，无需逐个 await）
+    for (const btn of document.querySelectorAll('.seat-btn')) {
+      const sk = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
+      updateSeatVisual(sk);
+    }
+    // 串行执行 renderTimeSlots，避免并发 DOM 操作冲突导致卡死
+    for (const sk of state.expandedSeats) {
+      await renderTimeSlots(sk);
+    }
+  } finally {
+    _refreshingSeats = false;
   }
 }
 
@@ -2677,9 +2680,11 @@ async function regenerateWatermarksForSeat(sk) {
         cd.images[i].data = await blobToDataURL(fullBlob);
         cd.images[i].thumbnail = await blobToDataURL(thumbBlob);
         cd.images[i].seatName = sName;
-        // 【性能优化-深度】缓存 Blob 到内存，后续预览直接用 Blob URL
+        // 缓存 Blob 到内存，后续预览直接用 Blob URL
         cd.images[i]._fullBlob = fullBlob;
         cd.images[i]._thumbBlob = thumbBlob;
+        cd.images[i]._fullBlobURL = URL.createObjectURL(fullBlob);
+        cd.images[i]._thumbBlobURL = URL.createObjectURL(thumbBlob);
         changed = true;
       }
     }
@@ -2758,10 +2763,13 @@ funcPanelBody.addEventListener('click', (e) => {
     saveAllowDeleteState();
     const toggle = document.getElementById('func-toggle-delete');
     if (toggle) toggle.classList.toggle('on', state.allowDeleteSeat);
-    // 立即更新所有删除座位按钮的可见性
+    // 【修复Bug2】立即更新所有删除座位按钮的可见性
     document.querySelectorAll('.btn-delete-seat').forEach(btn => {
       btn.classList.toggle('visible', state.allowDeleteSeat);
     });
+    // 【修复Bug2】清除 DOM 缓存并刷新已展开座位（确保新渲染的 HTML 包含正确按钮状态）
+    invalidateAllTimeslotCache();
+    state.expandedSeats.forEach(sk => renderTimeSlots(sk));
   }
 });
 
@@ -2779,7 +2787,7 @@ async function init() {
     loadFilterState();
     loadAutoShareState();
     loadAllowDeleteState(); // 【修改1】加载允许删除座位开关状态
-    renderMain();
+    await renderMain(); // 【修复Bug3】await 防止 init 后续代码与 renderMain 竞态
   } catch (err) {
     console.error('初始化失败:', err);
     app.innerHTML = '<p style="padding:20px;color:red;">初始化失败，请检查浏览器是否支持 IndexedDB。</p>';
