@@ -9,13 +9,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "seat-icon.png?v=3",
-      "sizes": "192x192",
+      "src": "seat-icon.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "seat-icon.png?v=3",
+      "src": "seat-icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
