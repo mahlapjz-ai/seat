@@ -1577,9 +1577,15 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
           if (!cellData) continue;
           const sName = getSeatNameSync(fid, aname, sidx);
           for (let i = 0; i < cellData.images.length; i++) {
-            // 【修改3】直接用已存储的 data，不额外叠加水印
+            // 优先使用 _fullBlob（内存 Blob），回退到 data（Base64），跳过无数据的图片
+            const img = cellData.images[i];
+            let blob = img._fullBlob || null;
+            if (!blob && img.data) {
+              try { blob = dataURLtoBlob(img.data); } catch (e) { blob = null; }
+            }
+            if (!blob) continue; // 数据未就绪，跳过
             const folder = `${floorObj.name}_${aname}`;
-            zip.folder(folder).file(`${sName}_${TIME_SLOTS[tIdx]}_${i + 1}.jpg`, dataURLtoBlob(cellData.images[i].data));
+            zip.folder(folder).file(`${sName}_${TIME_SLOTS[tIdx]}_${i + 1}.jpg`, blob);
             count++;
           }
         }
