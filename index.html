@@ -942,8 +942,8 @@ function clearCellBlobCache(cellKey) {
   }
 }
 /** 添加水印并返回 { fullBlob, thumbBlob }，避免重复 Canvas 操作
- *  【修复Bug2】水印三行：第一行日期，第二行时间，第三行座位编号
- *  字号：短边×10%，限制在36~200px */
+ *  水印三行：第一行年月日（小号细体），第二行时分秒（大号粗体），第三行座位编号（中号常规）
+ *  基准字号：短边×10%，限制在36~200px */
 function addWatermarkBlob(imageData, seatName, beijingTime) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -953,30 +953,31 @@ function addWatermarkBlob(imageData, seatName, beijingTime) {
         canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
-        // 水印字号：短边×10%，限制在36~200px
+        // 基准字号：短边×10%，限制在36~200px
         const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
         const fs = Math.max(36, Math.min(200, Math.round(shortSide * 0.10)));
         const scaleFactor = fs / 52;
-        const fs1 = Math.max(36, Math.min(200, Math.round(36 * scaleFactor))); // 【修复Bug2】座位编号（第三行）
-        const fs2 = fs;                                                        // 日期（第一行）
-        const fs3 = Math.max(36, Math.min(200, Math.round(18 * scaleFactor))); // 时间（第二行）
-        const lineGap = Math.round(fs2 * 0.15);
-        const pad = Math.round(fs2 * 0.3);   // 左右内边距
-        const vpad = Math.round(fs2 * 0.2);  // 上下内边距
+        // 【修复Bug2】三行字号：日期小号、时间大号、座位中号
+        const fs_date = Math.max(14, Math.round(18 * scaleFactor));  // 第一行：年月日（小号，细体）
+        const fs_time = fs;                                           // 第二行：时分秒（大号，粗体）
+        const fs_seat = Math.max(20, Math.round(36 * scaleFactor));   // 第三行：座位编号（中号，常规）
+        const lineGap = Math.round(fs_time * 0.12);
+        const pad = Math.round(fs_time * 0.3);   // 左右内边距
+        const vpad = Math.round(fs_time * 0.2);  // 上下内边距
         const r = 8; // 固定圆角
         const fontFam = '-apple-system, sans-serif';
         // 拆分北京时间
         const datePart = beijingTime.split(' ')[0];
         const timePart = beijingTime.split(' ')[1] || beijingTime;
-        // 【修复Bug2】逐行测量宽度（顺序：日期、时间、座位编号）
-        ctx.font = `300 ${fs2}px ${fontFam}`;
+        // 逐行测量宽度
+        ctx.font = `300 ${fs_date}px ${fontFam}`;
         const tw1 = ctx.measureText(datePart).width;
-        ctx.font = `700 ${fs3}px ${fontFam}`;
+        ctx.font = `700 ${fs_time}px ${fontFam}`;
         const tw2 = ctx.measureText(timePart).width;
-        ctx.font = `400 ${fs1}px ${fontFam}`;
+        ctx.font = `400 ${fs_seat}px ${fontFam}`;
         const tw3 = ctx.measureText(seatName).width;
         const maxTW = Math.max(tw1, tw2, tw3);
-        const totalH = fs1 + fs2 + fs3 + lineGap * 2;
+        const totalH = fs_date + fs_time + fs_seat + lineGap * 2;
         const bgX = 24, bgY = canvas.height - totalH - vpad * 2 - 24;
         const bgW = maxTW + pad * 2, bgH = totalH + vpad * 2;
         // 半透明圆角背景
@@ -991,17 +992,17 @@ function addWatermarkBlob(imageData, seatName, beijingTime) {
         ctx.lineTo(bgX, bgY + r);
         ctx.quadraticCurveTo(bgX, bgY, bgX + r, bgY);
         ctx.closePath(); ctx.fill();
-        // 【修复Bug2】绘制三行白色文本：日期、时间、座位编号
+        // 绘制三行白色文本：年月日（细体）、时分秒（粗体）、座位编号（常规）
         ctx.textBaseline = 'top'; ctx.fillStyle = '#ffffff';
         const textX = bgX + pad;
         let curY = bgY + vpad;
-        ctx.font = `300 ${fs2}px ${fontFam}`;
+        ctx.font = `300 ${fs_date}px ${fontFam}`;
         ctx.fillText(datePart, textX, curY);
-        curY += fs2 + lineGap;
-        ctx.font = `700 ${fs3}px ${fontFam}`;
+        curY += fs_date + lineGap;
+        ctx.font = `700 ${fs_time}px ${fontFam}`;
         ctx.fillText(timePart, textX, curY);
-        curY += fs3 + lineGap;
-        ctx.font = `400 ${fs1}px ${fontFam}`;
+        curY += fs_time + lineGap;
+        ctx.font = `400 ${fs_seat}px ${fontFam}`;
         ctx.fillText(seatName, textX, curY);
         // 一次 Canvas 绘制，同时导出原图 Blob 和缩略图 Blob
         const fullPromise = new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
@@ -2663,7 +2664,8 @@ filterOverlay.addEventListener('click', closeFilterSheet);
 document.getElementById('filter-close').addEventListener('click', closeFilterSheet);
 
 /** 【修复Bug1】刷新已展开座位的视觉和筛选状态
- *  轻量化：筛选变化时只切换 CSS 显隐，不重建 DOM；数据变化时才重建 */
+ *  轻量化：筛选变化时只切换 CSS 显隐，不重建 DOM；数据变化时才重建
+ *  【性能优化】单次遍历所有座位按钮，避免 O(n²) 的 updateSeatVisual 调用 */
 let _refreshingSeats = false;
 
 async function refreshExpandedSeats() {
@@ -2673,11 +2675,38 @@ async function refreshExpandedSeats() {
   try {
     // 【修复Bug1】不再 invalidateAllTimeslotCache！筛选变化时只需切换 CSS 显隐
     await refreshSeatImageStats();
-    // 更新所有座位按钮视觉（同步 DOM 操作，无需逐个 await）
-    for (const btn of document.querySelectorAll('.seat-btn')) {
+    // 【性能优化】单次遍历所有座位按钮，批量更新视觉，避免 O(n²)
+    const updatedAreas = new Set();
+    document.querySelectorAll('.seat-btn').forEach(btn => {
       const sk = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
-      updateSeatVisual(sk);
-    }
+      refreshSingleSeatStats(sk);
+      // 移除旧类
+      btn.classList.remove('has-images', 'has-images-1', 'has-images-2');
+      // 移除旧小圆点
+      const oldDot = btn.querySelector('.hidden-dot');
+      if (oldDot) oldDot.remove();
+      // 添加分层类
+      const stat = seatImageStats.get(sk);
+      if (stat && stat.visibleCount > 0) {
+        btn.classList.add(stat.visibleCount >= 2 ? 'has-images-2' : 'has-images-1');
+      } else if (state.seatHasImages.has(sk)) {
+        btn.classList.add('has-images-1');
+      }
+      // 添加隐藏时段小圆点
+      if (stat && stat.hiddenHasImages) {
+        const dot = document.createElement('span');
+        dot.className = 'hidden-dot';
+        btn.appendChild(dot);
+      }
+      // 记录需要更新区域视觉的区域
+      const parts = sk.split('-');
+      updatedAreas.add(`${parts[0]}-${parts[1]}`);
+    });
+    // 【性能优化】每个区域只更新一次区域按钮视觉
+    updatedAreas.forEach(ak => {
+      const p = ak.split('-');
+      updateAreaVisual(parseInt(p[0]), p[1]);
+    });
     // 【修复Bug1】筛选变化时只切换时段卡片的显隐，不重建 DOM
     for (const sk of state.expandedSeats) {
       const container = document.getElementById('timeslots-' + sk);
