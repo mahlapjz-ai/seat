@@ -1397,8 +1397,8 @@ async function shareSelectedImages() {
     const cellData = cellDataMap[ck];
     if (cellData && cellData.images) allImgs.push(...cellData.images);
   }
-  // 检查是否所有图片都有可用数据（Blob URL 或 Base64 data）
-  if (allImgs.some(img => !img._fullBlob && !img._fullBlobURL && !img.data)) { showToast('图片处理中，请稍后重试'); return; }
+  // 检查是否所有图片都有可用数据（Blob 或有效的 Base64 data）
+  if (allImgs.some(img => !img._fullBlob && !img._fullBlobURL && (!img.data || !img.data.startsWith('data:') || img.data.split(',')[1].length <= 10))) { showToast('图片处理中，请稍后重试'); return; }
 
   const items = [];
   for (const ck of state.selectedCells) {
@@ -1408,7 +1408,15 @@ async function shareSelectedImages() {
     const sName = getSeatNameSync(fid, aname, sidx), timeSlot = TIME_SLOTS[tidx];
     for (let i = 0; i < cellData.images.length; i++) {
       // 优先使用 _fullBlob（已是水印图 Blob），回退到 data（Base64）
-      const blob = cellData.images[i]._fullBlob || dataURLtoBlob(cellData.images[i].data);
+      let blob = cellData.images[i]._fullBlob || null;
+      if (!blob) {
+        const memBlob = getMemoryBlobURL(ck, i);
+        if (memBlob && memBlob.fullBlob) blob = memBlob.fullBlob;
+      }
+      if (!blob && cellData.images[i].data) {
+        try { blob = dataURLtoBlob(cellData.images[i].data); } catch (e) { blob = null; }
+      }
+      if (!blob || blob.size === 0) continue;
       const filename = `${sName}_${timeSlot}_${i + 1}.jpg`;
       items.push({ blob, filename });
     }
@@ -1577,13 +1585,31 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
           if (!cellData) continue;
           const sName = getSeatNameSync(fid, aname, sidx);
           for (let i = 0; i < cellData.images.length; i++) {
-            // 优先使用 _fullBlob（内存 Blob），回退到 data（Base64），跳过无数据的图片
+            // 从图片数据获取 Blob：优先 _fullBlob → data(Base64) → 内存缓存
+            // 跳过数据未就绪或无效的图片，避免空文件损坏 ZIP
             const img = cellData.images[i];
-            let blob = img._fullBlob || null;
-            if (!blob && img.data) {
+            let blob = null;
+            // 1. 优先 _fullBlob（仅拍照后当前会话内存中存在）
+            if (img._fullBlob) blob = img._fullBlob;
+            // 2. 内存 Blob 缓存
+            if (!blob) {
+              const memBlob = getMemoryBlobURL(ck, i);
+              if (memBlob && memBlob.fullBlob) blob = memBlob.fullBlob;
+            }
+            // 3. data 字段（Base64 → Blob）
+            if (!blob && img.data && img.data.startsWith('data:') && img.data.indexOf(',') > 0 && img.data.split(',')[1].length > 10) {
               try { blob = dataURLtoBlob(img.data); } catch (e) { blob = null; }
             }
-            if (!blob) continue; // 数据未就绪，跳过
+            // 4. original 字段 → 重新生成水印
+            if (!blob && img.original && img.original.startsWith('data:')) {
+              try {
+                const sName2 = getSeatNameSync(fid, aname, sidx);
+                const bTime = img.beijingTime || getBeijingTime();
+                const { fullBlob: regenBlob } = await addWatermarkBlob(img.original, sName2, bTime);
+                blob = regenBlob;
+              } catch (e) { blob = null; }
+            }
+            if (!blob || blob.size === 0) continue; // 无有效数据，跳过
             const folder = `${floorObj.name}_${aname}`;
             zip.folder(folder).file(`${sName}_${TIME_SLOTS[tIdx]}_${i + 1}.jpg`, blob);
             count++;
