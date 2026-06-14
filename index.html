@@ -522,8 +522,8 @@ async function refreshSeatImageStats() {
   refreshSeatImageStatsFromCache();
 }
 
-/** 【修改2】刷新单个座位的图片统计 */
-async function refreshSingleSeatStats(sk) {
+/** 【修改2】刷新单个座位的图片统计（同步，仅读内存缓存） */
+function refreshSingleSeatStats(sk) {
   const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
   let visibleCount = 0, hiddenHasImages = false;
   // 【性能优化】从内存缓存读取计数，不加载图片数据
@@ -577,7 +577,7 @@ function isTimeSlotVisible(tIdx) {
 // 四、渲染
 // ============================================================
 const app = document.getElementById('app');
-function renderMain() {
+async function renderMain() {
   // 【修改3】顶部只保留标题和功能按钮
   let html = '<div class="page-header"><span class="page-title">图书馆座位图片管理</span><button class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">功能</button></div>';
   // 【优化】预计算每个区域的已删除座位数，避免每个区域都遍历全量 deletedSeats
@@ -608,7 +608,10 @@ function renderMain() {
     html += '</div>';
   });
   app.innerHTML = html;
-  state.expandedSeats.forEach(sk => renderTimeSlots(sk));
+  // 【修复BUG】串行执行 renderTimeSlots，避免并发 DOM 操作冲突
+  for (const sk of state.expandedSeats) {
+    await renderTimeSlots(sk);
+  }
 }
 
 function renderSeatFlow(fid, aname) {
@@ -631,19 +634,47 @@ function renderSeatFlow(fid, aname) {
   return html;
 }
 
+// 【修复问题2】座位时段 DOM 缓存：缓存最近展开的座位渲染结果，避免重复从 IndexedDB 读取
+// 收起座位后再展开时，如果数据未变，直接复用缓存的 DOM，避免从上往下重新渲染
+const timeslotDOMCache = new Map(); // Map<seatKey, { html: string, imageCounts: string }>
+const TIMESLOT_DOM_CACHE_MAX = 3; // 最多缓存 3 个座位的 DOM
+
+/** 清除某个座位的 DOM 缓存（数据变化时调用） */
+function invalidateTimeslotCache(sk) {
+  timeslotDOMCache.delete(sk);
+}
+
+/** 清除所有 DOM 缓存 */
+function invalidateAllTimeslotCache() {
+  timeslotDOMCache.clear();
+}
+
 async function renderTimeSlots(sk) {
   const container = document.getElementById('timeslots-' + sk);
   if (!container) return;
   const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
   const sName = getSeatNameSync(fid, aname, sidx);
-  // 【修改1】删除座位按钮受开关控制
-  const delBtnClass = state.allowDeleteSeat ? 'btn-delete-seat visible' : 'btn-delete-seat';
-  let html = `<div class="seat-header"><span class="seat-header-label">座位编号：</span><span class="seat-name-text" data-action="edit-seat-name" data-seat-key="${sk}">${sName}</span><span class="seat-name-hint">（点击修改）</span><button class="${delBtnClass}" data-action="delete-seat" data-seat-key="${sk}">删除座位</button></div>`;
-  // 【优化】批量读取该座位所有可见时段的数据，单事务避免多次异步
+
+  // 【修复问题2】构建图片计数指纹，用于判断数据是否变化
+  // 包含图片数量和占位状态，确保占位→正式替换时缓存失效
   const visibleKeys = [];
   for (let t = 0; t < TIME_SLOTS.length; t++) {
     if (isTimeSlotVisible(t)) visibleKeys.push(cellKey(fid, aname, sidx, t));
   }
+  let countFingerprint = visibleKeys.map(ck => `${ck}:${imageCountCache.get(ck) || 0}`).join(',');
+
+  // 【修复问题2】检查 DOM 缓存：如果数据未变，直接复用缓存的 HTML
+  const cached = timeslotDOMCache.get(sk);
+  if (cached && cached.countFingerprint === countFingerprint) {
+    container.innerHTML = cached.html;
+    container.querySelectorAll('img[data-thumb-src]').forEach(img => thumbObserver.observe(img));
+    return;
+  }
+
+  // 【修改1】删除座位按钮受开关控制
+  const delBtnClass = state.allowDeleteSeat ? 'btn-delete-seat visible' : 'btn-delete-seat';
+  let html = `<div class="seat-header"><span class="seat-header-label">座位编号：</span><span class="seat-name-text" data-action="edit-seat-name" data-seat-key="${sk}">${sName}</span><span class="seat-name-hint">（点击修改）</span><button class="${delBtnClass}" data-action="delete-seat" data-seat-key="${sk}">删除座位</button></div>`;
+  // 【优化】批量读取该座位所有可见时段的数据，单事务避免多次异步（visibleKeys 已在上方构建）
   const cellDataMap = await getCellDataBatch(visibleKeys);
   let needThumbGen = false;
   for (let t = 0; t < TIME_SLOTS.length; t++) {
@@ -690,12 +721,19 @@ async function renderTimeSlots(sk) {
   container.innerHTML = html;
   container.querySelectorAll('img[data-thumb-src]').forEach(img => thumbObserver.observe(img));
   if (needThumbGen) generateMissingThumbnails(fid, aname, sidx);
+  // 【修复问题2】更新 DOM 缓存：保存渲染结果，下次展开时直接复用
+  if (timeslotDOMCache.size >= TIMESLOT_DOM_CACHE_MAX) {
+    const firstKey = timeslotDOMCache.keys().next().value;
+    timeslotDOMCache.delete(firstKey);
+  }
+  timeslotDOMCache.set(sk, { html, countFingerprint });
 }
 
 /** 【修改2】更新座位按钮视觉：分层提示 + 隐藏时段小圆点 */
-async function updateSeatVisual(sk) {
-  // 先刷新该座位的统计
-  await refreshSingleSeatStats(sk);
+/** 【修改2】更新座位按钮视觉：分层提示 + 隐藏时段小圆点（同步） */
+function updateSeatVisual(sk) {
+  // 先刷新该座位的统计（同步，仅读内存缓存）
+  refreshSingleSeatStats(sk);
   document.querySelectorAll('.seat-btn').forEach(btn => {
     const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
     if (k !== sk) return;
@@ -1081,7 +1119,7 @@ captureInput.addEventListener('change', async (e) => {
     await saveCellData(ck, images);
     imageCountCache.set(ck, images.length);
     state.seatHasImages.add(sk);
-    await updateSeatVisual(sk);
+    updateSeatVisual(sk);
     await renderTimeSlots(sk);
     updateBottomBar();
 
@@ -1112,6 +1150,10 @@ captureInput.addEventListener('change', async (e) => {
           };
           await saveCellData(ck, cd.images);
           cacheCellBlobs(ck, cd.images);
+          // 【修复问题1】水印完成后，如果预览正在显示该图片，静默替换为水印版
+          pvSilentReplaceIfOpen(ck, lastIdx, watermarked, fullBlob);
+          // 【修复问题2】数据变化，清除 DOM 缓存后重新渲染
+          invalidateTimeslotCache(sk);
           await renderTimeSlots(sk);
         }
         if (state.autoShare) {
@@ -1171,7 +1213,7 @@ uploadInput.addEventListener('change', async (e) => {
     await saveCellData(ck, images);
     imageCountCache.set(ck, images.length);
     state.seatHasImages.add(sk);
-    await updateSeatVisual(sk);
+    updateSeatVisual(sk);
     await renderTimeSlots(sk);
     updateBottomBar();
 
@@ -1186,6 +1228,8 @@ uploadInput.addEventListener('change', async (e) => {
           const lastIdx = cd.images.length - 1;
           cd.images[lastIdx] = { data: original, original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime };
           await saveCellData(ck, cd.images);
+          // 【修复问题2】数据变化，清除 DOM 缓存后重新渲染
+          invalidateTimeslotCache(sk);
           await renderTimeSlots(sk);
         }
       } catch (err) {
@@ -1244,6 +1288,14 @@ async function shareSelectedImages() {
   if (state.selectedCells.length === 0) return;
   // 【性能优化】只读取选中的单元格数据
   const cellDataMap = await getCellDataBatch(state.selectedCells);
+  // 【修复问题1b】分享前检查图片是否已就绪（非占位状态）
+  const allImgs = [];
+  for (const ck of state.selectedCells) {
+    const cellData = cellDataMap[ck];
+    if (cellData && cellData.images) allImgs.push(...cellData.images);
+  }
+  if (allImgs.some(img => img._placeholder || !img.data)) { showToast('图片处理中，请稍后重试'); return; }
+
   const items = [];
   for (const ck of state.selectedCells) {
     const cellData = cellDataMap[ck];
@@ -1300,6 +1352,9 @@ async function downloadConcatenated() {
     for (const imgObj of cellData.images) allImageData.push(imgObj);
   }
   if (allImageData.length === 0) { showToast('无图片可拼接'); return; }
+  // 【修复问题1b】拼接前检查图片是否已就绪（非占位状态）
+  const hasPlaceholder = allImageData.some(img => img._placeholder || !img.data);
+  if (hasPlaceholder) { showToast('图片处理中，请稍后重试'); return; }
   showToast('正在拼接...');
   // 【修改1】直接用已存储的 data 拼接，不额外叠加水印
   const imgs = await Promise.all(allImageData.map(imgObj => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(); img.src = imgObj.data; })));
@@ -1882,6 +1937,46 @@ function showPreviewFromBlobURL(blobURL, blob, title) {
   pvShowSaveBtn();
 }
 
+/** 【修复问题1】水印完成后，静默替换预览中的占位图
+ *  如果预览正在打开且显示的是该 cellKey 的第 imgIdx 张图片，立即替换为水印版
+ *  用户无需关闭重开，无感切换 */
+function pvSilentReplaceIfOpen(cellKey, imgIdx, watermarkedDataURL, fullBlob) {
+  // 预览未打开，无需替换
+  if (!previewModal.classList.contains('show')) return;
+  // 检查预览中的图片是否匹配
+  if (!pvImages || pvImages.length === 0) return;
+  for (let i = 0; i < pvImages.length; i++) {
+    if (pvImages[i]._cellKey === cellKey && i === imgIdx) {
+      // 找到匹配的图片，更新数据
+      pvImages[i].data = watermarkedDataURL;
+      pvImages[i]._placeholder = false;
+      if (fullBlob) pvImages[i]._fullBlob = fullBlob;
+      // 更新 pvCache
+      const cacheKey = `${cellKey}_${imgIdx}`;
+      pvCache.set(cacheKey, watermarkedDataURL);
+      // 替换 DOM 中对应 slide 的 img src
+      const slide = previewScroller.children[i];
+      if (slide) {
+        const imgEl = slide.querySelector('img');
+        if (imgEl) {
+          // 优先用 Blob URL（渲染更快），回退用 dataURL
+          if (fullBlob) {
+            const blobURL = URL.createObjectURL(fullBlob);
+            imgEl.src = blobURL;
+            // 注册到 pvBlobURLs，关闭预览时统一回收
+            pvBlobURLs.set(blobURL, true);
+          } else {
+            imgEl.src = watermarkedDataURL;
+          }
+          slide.dataset.loaded = '1';
+          slide.dataset.srcType = 'memory-blob';
+        }
+      }
+      break;
+    }
+  }
+}
+
 function closePreview() {
   if (pvAnimId) { cancelAnimationFrame(pvAnimId); pvAnimId = null; }
   clearTimeout(pvSaveBtnTimer);
@@ -2306,7 +2401,32 @@ document.getElementById('cleanup-exec-btn').addEventListener('click', async () =
   const threshold = new Date(dateVal + 'T00:00:00+08:00').getTime();
   if (isNaN(threshold)) { showToast('日期无效'); return; }
   cleanupModal.classList.remove('show'); showToast('正在清理...');
-  try { const all = await dbGetAll('cells'); let total = 0; for (const rec of all) { if (!rec.images) continue; const filtered = rec.images.filter(img => (img.createdAt || 0) >= threshold); if (filtered.length < rec.images.length) { total += rec.images.length - filtered.length; if (filtered.length > 0) await saveCellData(rec.key, filtered); else await dbDelete('cells', rec.key); } } await buildSeatHasImages(); renderMain(); showToast(`已清理 ${total} 张图片`); } catch (err) { console.error('清理出错:', err); showToast('清理出错'); }
+  try {
+    const all = await dbGetAll('cells');
+    let total = 0;
+    for (const rec of all) {
+      if (!rec.images) continue;
+      // 【修复BUG】过滤时跳过占位图片（_placeholder），占位图片无水印原图，应直接删除
+      const filtered = rec.images.filter(img => (img.createdAt || 0) >= threshold && !img._placeholder);
+      if (filtered.length < rec.images.length) {
+        total += rec.images.length - filtered.length;
+        if (filtered.length > 0) await saveCellData(rec.key, filtered);
+        else await dbDelete('cells', rec.key);
+        // 【修复BUG】清理后更新内存缓存
+        imageCountCache.set(rec.key, filtered.length);
+        clearCellBlobCache(rec.key);
+        const sk = rec.key.split('-').slice(0, 3).join('-');
+        invalidateTimeslotCache(sk);
+      }
+    }
+    await buildSeatHasImages();
+    invalidateAllTimeslotCache(); // 【修复BUG】清理后清除所有 DOM 缓存
+    await renderMain();
+    showToast(`已清理 ${total} 张图片`);
+  } catch (err) {
+    console.error('清理出错:', err);
+    showToast('清理出错');
+  }
 });
 
 // ============================================================
@@ -2378,9 +2498,11 @@ app.addEventListener('click', async (e) => {
 
       // 【性能优化-深度】回收该图片的内存 Blob 缓存
       clearCellBlobCache(ck);
+      // 【修复问题2】数据变化，清除 DOM 缓存
+      const sk = cellToSeatKey(ck);
+      invalidateTimeslotCache(sk);
 
       imgs.splice(imgIdx, 1);
-      const sk = cellToSeatKey(ck);
       if (imgs.length > 0) {
         await saveCellData(ck, imgs);
         imageCountCache.set(ck, imgs.length);
@@ -2403,7 +2525,7 @@ app.addEventListener('click', async (e) => {
         // 图片清零时需要重新渲染整个时段区域（移除缩略图容器、更新勾选框状态）
         await renderTimeSlots(sk);
       }
-      await updateSeatVisual(sk);
+      updateSeatVisual(sk);
       updateBottomBar();
     }
     return;
@@ -2522,16 +2644,19 @@ document.getElementById('filter-clear').addEventListener('click', () => {
 filterOverlay.addEventListener('click', closeFilterSheet);
 document.getElementById('filter-close').addEventListener('click', closeFilterSheet);
 
-/** 筛选变更后刷新已展开的座位 */
-/** 【修改2】时段筛选变化后，刷新统计并更新所有座位视觉 */
+/** 【修复BUG-时段隐藏卡死】刷新已展开座位的视觉和内容
+ *  优化：updateSeatVisual 同步执行，renderTimeSlots 串行执行避免并发 DOM 冲突 */
 async function refreshExpandedSeats() {
   await refreshSeatImageStats();
-  // 更新所有座位按钮视觉
+  // 更新所有座位按钮视觉（同步 DOM 操作，无需逐个 await）
   for (const btn of document.querySelectorAll('.seat-btn')) {
     const sk = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
-    await updateSeatVisual(sk);
+    updateSeatVisual(sk);
   }
-  state.expandedSeats.forEach(sk => renderTimeSlots(sk));
+  // 【修复BUG】串行执行 renderTimeSlots，避免并发 DOM 操作冲突导致卡死
+  for (const sk of state.expandedSeats) {
+    await renderTimeSlots(sk);
+  }
 }
 
 function updateSeatButtonText(sk, newName) {
@@ -2564,6 +2689,8 @@ async function regenerateWatermarksForSeat(sk) {
       cacheCellBlobs(ck, cd.images);
     }
   }
+  // 【修复问题2】数据变化，清除 DOM 缓存后重新渲染
+  invalidateTimeslotCache(sk);
   await renderTimeSlots(sk);
 }
 
