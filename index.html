@@ -29,6 +29,11 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .btn-delete-seat.visible{display:inline-block}
 .btn-delete-seat:active{background:#fff1f0}
 
+/* 新版本更新提示条 */
+.update-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#1890ff,#096dd9);color:#fff;text-align:center;padding:12px 16px;font-size:14px;font-weight:500;cursor:pointer;box-shadow:0 2px 8px rgba(24,144,255,.4)}
+.update-bar.show{display:block}
+.update-bar:active{opacity:.85}
+
 /* 【修改3】功能面板 */
 .func-panel-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:260}
 .func-panel-overlay.show{display:block}
@@ -208,6 +213,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 </style>
 </head>
 <body>
+<div class="update-bar" id="update-bar">有新版本可用，点击刷新</div>
 <div id="app"></div>
 <div id="bottom-bar">
   <span id="selected-count">已选 0 个时段</span>
@@ -2426,10 +2432,35 @@ previewSaveBtn.addEventListener('click', (e) => {
   }
   bTime = img.beijingTime || getBeijingTime();
   const filename = `${sName || '图片'}_${bTime.replace(/[: ]/g, '-')}.jpg`;
-  const imgEl = pvCurrentImg();
-  const blob = dataURLtoBlob(imgEl ? imgEl.src : '');
-  downloadBlob(blob, filename);
-  showToast('已保存');
+  // 【修复保存图片失败】优先使用内存 Blob 缓存或 data 字段下载，不依赖 imgEl.src
+  // imgEl.src 可能是 blob: URL，dataURLtoBlob 无法处理
+  let saveBlob = null;
+  // 1. 优先用 _fullBlob（Blob 对象，最可靠）
+  if (img._fullBlob) {
+    saveBlob = img._fullBlob;
+  }
+  // 2. 再查 memoryBlobCache
+  if (!saveBlob && ck) {
+    const memBlob = getMemoryBlobURL(ck, pvIndex);
+    if (memBlob && memBlob.fullBlob) saveBlob = memBlob.fullBlob;
+  }
+  // 3. 用 data 字段（Base64）
+  if (!saveBlob && img.data) {
+    try { saveBlob = dataURLtoBlob(img.data); } catch (ex) {}
+  }
+  // 4. 最后尝试从 imgEl.src 获取
+  if (!saveBlob) {
+    const imgEl = pvCurrentImg();
+    if (imgEl && imgEl.src && imgEl.src.startsWith('data:')) {
+      try { saveBlob = dataURLtoBlob(imgEl.src); } catch (ex) {}
+    }
+  }
+  if (saveBlob) {
+    downloadBlob(saveBlob, filename);
+    showToast('已保存');
+  } else {
+    showToast('保存失败');
+  }
 });
 
 // ============================================================
@@ -2892,9 +2923,43 @@ async function init() {
     console.error('初始化失败:', err);
     app.innerHTML = '<p style="padding:20px;color:red;">初始化失败，请检查浏览器是否支持 IndexedDB。</p>';
   }
-  // 注册 Service Worker
+  // 注册 Service Worker + 新版本更新提示
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      // 检测到新版本等待激活时，显示更新提示
+      if (reg.waiting) {
+        showUpdateBar(reg.waiting);
+      }
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // 新版本已安装，等待激活
+            showUpdateBar(newWorker);
+          }
+        });
+      });
+      // 定时检查更新（每30分钟）
+      setInterval(() => reg.update(), 30 * 60 * 1000);
+    }).catch(() => {});
+  }
+  // 更新提示条：点击后通知新 SW 激活并刷新页面
+  function showUpdateBar(worker) {
+    const bar = document.getElementById('update-bar');
+    if (!bar || bar.classList.contains('show')) return;
+    bar.classList.add('show');
+    bar.onclick = () => {
+      if (worker && worker.postMessage) {
+        worker.postMessage({ type: 'SKIP_WAITING' });
+      }
+      // 等待新 SW 接管后刷新
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+      // 兜底：1秒后强制刷新
+      setTimeout(() => window.location.reload(), 1000);
+    };
   }
 }
 init();
