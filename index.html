@@ -99,6 +99,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .seat-header-label{font-size:15px;color:#666}
 .seat-name-text{font-size:17px;font-weight:700;color:#1890ff;cursor:pointer;border-bottom:1px dashed #1890ff;padding-bottom:1px}
 .seat-name-hint{font-size:12px;color:#999;margin-left:4px}
+/* 隐藏时段有图片的文字提示 */
+.hidden-ts-hint{font-size:12px;color:#fa8c16;max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-left:8px;flex-shrink:1;min-width:0}
 .seat-name-edit-input{font-size:17px;font-weight:700;color:#1890ff;border:none;border-bottom:2px solid #1890ff;outline:none;background:transparent;width:120px;padding-bottom:1px}
 
 .timeslot-card{background:#fff;border-radius:8px;margin:6px 0;padding:6px 10px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;display:flex;align-items:center;gap:6px;min-height:44px;flex-wrap:wrap}
@@ -691,13 +693,17 @@ async function renderTimeSlots(sk) {
   const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
   const sName = getSeatNameSync(fid, aname, sidx);
 
-  // 【修复Bug1】构建图片计数指纹：用所有时段（不只是可见的），筛选变化不会导致缓存失效
+  // 【修复Bug1】构建图片计数指纹：用所有时段的计数 + 筛选状态 + 删除开关状态
+  // 筛选状态变化会导致隐藏时段提示文字变化，必须使缓存失效
   let countFingerprint = '';
   for (let t = 0; t < TIME_SLOTS.length; t++) {
     const ck = cellKey(fid, aname, sidx, t);
     countFingerprint += `${ck}:${imageCountCache.get(ck) || 0},`;
   }
-  // 【修复Bug2】指纹包含删除座位开关状态，确保开关切换时缓存失效
+  // 指纹包含筛选状态（哪些时段可见），确保筛选变化时缓存失效
+  const visibleFingerprint = TIME_SLOTS.map((_, t) => isTimeSlotVisible(t) ? '1' : '0').join('');
+  countFingerprint += `|vis:${visibleFingerprint}`;
+  // 指纹包含删除座位开关状态
   countFingerprint += `|del:${state.allowDeleteSeat ? '1' : '0'}`;
 
   // 【修复问题2】检查 DOM 缓存：如果数据未变，直接复用缓存的 HTML
@@ -712,7 +718,18 @@ async function renderTimeSlots(sk) {
 
   // 【修改1】删除座位按钮受开关控制
   const delBtnClass = state.allowDeleteSeat ? 'btn-delete-seat visible' : 'btn-delete-seat';
-  let html = `<div class="seat-header"><span class="seat-header-label">座位编号：</span><span class="seat-name-text" data-action="edit-seat-name" data-seat-key="${sk}">${sName}</span><span class="seat-name-hint">（点击修改）</span><button class="${delBtnClass}" data-action="delete-seat" data-seat-key="${sk}">删除座位</button></div>`;
+  // 【新增】计算隐藏且有图片的时段名称列表
+  const hiddenTsNames = [];
+  for (let t = 0; t < TIME_SLOTS.length; t++) {
+    if (!isTimeSlotVisible(t)) {
+      const ck = cellKey(fid, aname, sidx, t);
+      if ((imageCountCache.get(ck) || 0) > 0) hiddenTsNames.push(TIME_SLOTS[t]);
+    }
+  }
+  const hiddenHintHtml = hiddenTsNames.length > 0
+    ? `<span class="hidden-ts-hint">以下时段照片被隐藏：${hiddenTsNames.join('、')}</span>`
+    : '';
+  let html = `<div class="seat-header"><span class="seat-header-label">座位编号：</span><span class="seat-name-text" data-action="edit-seat-name" data-seat-key="${sk}">${sName}</span><span class="seat-name-hint">（点击修改）</span>${hiddenHintHtml}<button class="${delBtnClass}" data-action="delete-seat" data-seat-key="${sk}">删除座位</button></div>`;
   // 【修复Bug1】批量读取该座位所有时段的数据（不只是可见的），渲染所有时段卡片
   const allKeys = [];
   for (let t = 0; t < TIME_SLOTS.length; t++) {
@@ -773,13 +790,41 @@ async function renderTimeSlots(sk) {
   timeslotDOMCache.set(sk, { html, countFingerprint });
 }
 
-/** 【修复Bug1】轻量级筛选切换：只切换时段卡片的 CSS 显隐，不重建 DOM */
+/** 【修复Bug1】轻量级筛选切换：切换时段卡片 CSS 显隐 + 更新隐藏时段提示文字 */
 function applyTimeslotFilter(container) {
   if (!container) return;
+  // 切换时段卡片显隐
   container.querySelectorAll('.timeslot-card[data-tidx]').forEach(card => {
     const tidx = parseInt(card.dataset.tidx);
     card.style.display = isTimeSlotVisible(tidx) ? '' : 'none';
   });
+  // 【新增】更新隐藏时段提示文字
+  const seatHeader = container.querySelector('.seat-header');
+  if (!seatHeader) return;
+  // 从 seat-header 的子元素中提取 seatKey
+  const nameEl = seatHeader.querySelector('.seat-name-text');
+  if (!nameEl) return;
+  const sk = nameEl.dataset.seatKey;
+  const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
+  const hiddenTsNames = [];
+  for (let t = 0; t < TIME_SLOTS.length; t++) {
+    if (!isTimeSlotVisible(t)) {
+      const ck = cellKey(fid, aname, sidx, t);
+      if ((imageCountCache.get(ck) || 0) > 0) hiddenTsNames.push(TIME_SLOTS[t]);
+    }
+  }
+  // 移除旧提示，插入新提示
+  const oldHint = seatHeader.querySelector('.hidden-ts-hint');
+  if (oldHint) oldHint.remove();
+  if (hiddenTsNames.length > 0) {
+    const hint = document.createElement('span');
+    hint.className = 'hidden-ts-hint';
+    hint.textContent = `以下时段照片被隐藏：${hiddenTsNames.join('、')}`;
+    // 插入到删除按钮之前
+    const delBtn = seatHeader.querySelector('.btn-delete-seat');
+    if (delBtn) seatHeader.insertBefore(hint, delBtn);
+    else seatHeader.appendChild(hint);
+  }
 }
 
 /** 【修改2】更新座位按钮视觉：分层提示 + 隐藏时段小圆点 */
