@@ -871,13 +871,13 @@ function addWatermarkBlob(imageData, seatName, beijingTime) {
           ctx = canvas.getContext('2d');
         }
         ctx.drawImage(img, 0, 0);
-        // 水印字号：短边×12%，限制在36~120px
+        // 水印字号：短边×12%，限制在36~200px
         const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
-        const fs = Math.max(36, Math.min(120, Math.round(shortSide * 0.12)));
+        const fs = Math.max(36, Math.min(200, Math.round(shortSide * 0.12)));
         const scaleFactor = fs / 52;
-        const fs1 = Math.max(36, Math.min(120, Math.round(18 * scaleFactor))); // 日期
+        const fs1 = Math.max(36, Math.min(200, Math.round(18 * scaleFactor))); // 日期
         const fs2 = fs;                                                        // 时间
-        const fs3 = Math.max(36, Math.min(120, Math.round(36 * scaleFactor))); // 座位
+        const fs3 = Math.max(36, Math.min(200, Math.round(36 * scaleFactor))); // 座位
         const lineGap = Math.round(fs2 * 0.15);
         const pad = Math.round(fs2 * 0.3);   // 左右内边距
         const vpad = Math.round(fs2 * 0.2);  // 上下内边距
@@ -1061,16 +1061,15 @@ captureInput.addEventListener('change', async (e) => {
     const bTime = getBeijingTime();
     const sk = cellToSeatKey(ck);
 
-    // 【性能优化-深度-拍照秒开】第一步：用 URL.createObjectURL 0ms 生成临时链接
-    // 直接将 ObjectURL 作为缩略图显示，跳过 generateThumbnail 的 Canvas 编码
+    // 【修复缩略图延迟】第一步：生成 Base64 缩略图占位，await 存入 DB，确保 renderTimeSlots 能读到
     const tempURL = URL.createObjectURL(file);
-    // 生成缩略图 Blob（用于 DB 存储和后续替换），但不阻塞 UI 显示
-    // 占位数据：thumbnail 用 ObjectURL 立即显示，data 用空字符串占位
+    const quickThumb = await generateThumbnail(tempURL, 200);
+    URL.revokeObjectURL(tempURL);
+    // 占位数据：data 和 thumbnail 都用缩略图（可立即预览），后台处理后替换为水印原图
     const placeholderImg = {
-      data: '',              // 【优化】空字符串占位，不存 Base64，减少写入量
+      data: quickThumb,
       original: '',
-      thumbnail: tempURL,    // 【优化】直接用 ObjectURL 立即显示
-      _tempURL: tempURL,     // 标记临时 ObjectURL，后续需要回收
+      thumbnail: quickThumb,
       type: 'capture',
       createdAt: Date.now(),
       seatName: sName,
@@ -1078,35 +1077,25 @@ captureInput.addEventListener('change', async (e) => {
       _placeholder: true
     };
     images.push(placeholderImg);
-    // 【优化】先更新计数缓存和视觉，再异步存 DB（不等待 DB 写入完成）
+    // 【关键修复】await 存入 DB，确保 renderTimeSlots 从 IndexedDB 能读到新图片
+    await saveCellData(ck, images);
     imageCountCache.set(ck, images.length);
     state.seatHasImages.add(sk);
-    // 立即渲染 UI（此时缩略图已可点击预览）
     await updateSeatVisual(sk);
     await renderTimeSlots(sk);
     updateBottomBar();
-    // 异步存入 DB（不阻塞 UI）
-    saveCellData(ck, images).catch(err => {
-      if (err.name === 'QuotaExceededError') showToast('存储空间不足！');
-      else console.error('占位数据存入失败:', err);
-    });
 
-    // 【性能优化-深度-拍照秒开】第二步：后台异步压缩+水印+正式存储，不阻塞 UI
+    // 第二步：后台异步压缩+水印+正式存储，不阻塞 UI
     const doProcess = async () => {
       try {
-        // 1. 读取文件为 DataURL（用于 compressImageBlob）
         const rawOriginal = await readFileAsDataURL(file);
-        // 2. 压缩原图为 Blob（比 toDataURL 更快）
         const originalBlob = await compressImageBlob(rawOriginal, 0.95);
-        // 3. 水印+缩略图（一次 Canvas 绘制）
         const originalDataURL = await blobToDataURL(originalBlob);
         const { fullBlob, thumbBlob } = await addWatermarkBlob(originalDataURL, sName, bTime);
-        // 4. 仅在存入 IndexedDB 时才转 Base64
         const [watermarked, thumbnail] = await Promise.all([
           blobToDataURL(fullBlob),
           blobToDataURL(thumbBlob)
         ]);
-        // 5. 从 DB 重新读取最新数据，替换占位为正式数据
         const cd = await getCellData(ck);
         if (cd && cd.images && cd.images.length > 0) {
           const lastIdx = cd.images.length - 1;
@@ -1118,19 +1107,13 @@ captureInput.addEventListener('change', async (e) => {
             createdAt: Date.now(),
             seatName: sName,
             beijingTime: bTime,
-            // 【性能优化-深度】缓存 Blob 到内存，预览时直接用 Blob URL
             _fullBlob: fullBlob,
             _thumbBlob: thumbBlob
           };
           await saveCellData(ck, cd.images);
-          // 【性能优化-深度】缓存 Blob URL 到内存，预览时直接使用
           cacheCellBlobs(ck, cd.images);
-          // 静默替换缩略图（从 ObjectURL 替换为正式缩略图）
           await renderTimeSlots(sk);
         }
-        // 回收临时 ObjectURL
-        try { URL.revokeObjectURL(tempURL); } catch (e) {}
-        // 自动分享（延迟到水印处理完成后）
         if (state.autoShare) {
           const shareName = `${sName}_${bTime.replace(/[: ]/g, '-')}.jpg`;
           if (navigator.share && navigator.canShare) {
@@ -1142,11 +1125,8 @@ captureInput.addEventListener('change', async (e) => {
         }
       } catch (err) {
         console.error('后台处理出错:', err);
-        // 回收临时 ObjectURL（处理失败时也要回收）
-        try { URL.revokeObjectURL(tempURL); } catch (e) {}
       }
     };
-    // 【性能优化-深度】使用 requestIdleCallback 在空闲时执行，带 2000ms timeout 回退
     if ('requestIdleCallback' in window) {
       requestIdleCallback(() => { doProcess(); }, { timeout: 2000 });
     } else {
@@ -1169,18 +1149,18 @@ uploadInput.addEventListener('change', async (e) => {
     const bTime = getBeijingTime();
     const sk = cellToSeatKey(ck);
 
-    // 【性能优化-深度-上传秒开】第一步：用 ObjectURL 立即显示缩略图
+    // 【修复缩略图延迟】第一步：生成 Base64 缩略图占位，await 存入 DB
     const tempURL = URL.createObjectURL(file);
+    const quickThumb = await generateThumbnail(tempURL, 200);
+    URL.revokeObjectURL(tempURL);
     const cellData = await getCellData(ck);
     const images = (cellData && cellData.images) ? [...cellData.images] : [];
-    if (images.length >= MAX_IMAGES) { URL.revokeObjectURL(tempURL); showToast('该时段图片已满'); uploadInput.value = ''; return; }
+    if (images.length >= MAX_IMAGES) { showToast('该时段图片已满'); uploadInput.value = ''; return; }
 
-    // 占位数据：thumbnail 用 ObjectURL 立即显示
     const placeholderImg = {
-      data: '',
+      data: quickThumb,
       original: '',
-      thumbnail: tempURL,
-      _tempURL: tempURL,
+      thumbnail: quickThumb,
       type: 'upload',
       createdAt: Date.now(),
       seatName: sName,
@@ -1188,23 +1168,18 @@ uploadInput.addEventListener('change', async (e) => {
       _placeholder: true
     };
     images.push(placeholderImg);
+    await saveCellData(ck, images);
     imageCountCache.set(ck, images.length);
     state.seatHasImages.add(sk);
     await updateSeatVisual(sk);
     await renderTimeSlots(sk);
     updateBottomBar();
-    // 异步存入 DB
-    saveCellData(ck, images).catch(err => {
-      if (err.name === 'QuotaExceededError') showToast('存储空间不足！');
-      else console.error('占位数据存入失败:', err);
-    });
 
-    // 【性能优化-深度-上传秒开】第二步：后台异步压缩+缩略图+正式存储
+    // 第二步：后台异步压缩+缩略图+正式存储
     const doProcess = async () => {
       try {
         const rawOriginal = await readFileAsDataURL(file);
         const original = await compressImage(rawOriginal, 0.95);
-        // 上传图片不添加水印，直接以原始状态保存
         const thumbnail = await generateThumbnail(original);
         const cd = await getCellData(ck);
         if (cd && cd.images && cd.images.length > 0) {
@@ -1213,10 +1188,8 @@ uploadInput.addEventListener('change', async (e) => {
           await saveCellData(ck, cd.images);
           await renderTimeSlots(sk);
         }
-        try { URL.revokeObjectURL(tempURL); } catch (e) {}
       } catch (err) {
         console.error('上传后台处理出错:', err);
-        try { URL.revokeObjectURL(tempURL); } catch (e) {}
       }
     };
     if ('requestIdleCallback' in window) {
