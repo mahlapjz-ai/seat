@@ -15,9 +15,10 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:15px;color:#333;background:#f0f2f5;-webkit-tap-highlight-color:transparent}
-#app{max-width:480px;margin:0 auto;padding:12px 10px 100px;min-height:100vh}
+#app{max-width:480px;margin:0 auto;padding:0 10px 100px;min-height:calc(100vh - 50px)}
 
-.page-header{display:flex;align-items:center;justify-content:center;padding:14px 0 10px;gap:8px;flex-wrap:wrap}
+/* 【修复文字消失】page-header 从 app 中移出，作为独立固定元素 */
+.page-header{display:flex;align-items:center;justify-content:center;padding:14px 10px 10px;gap:8px;flex-wrap:wrap;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:10}
 .page-title{font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:1px}
 .header-btn{padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap}
 .header-btn:active{opacity:.7}
@@ -214,6 +215,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 </head>
 <body>
 <div class="update-bar" id="update-bar">有新版本可用，点击刷新</div>
+<!-- 【修复文字消失】page-header 移出 app，作为静态 DOM，不会被 renderMain 重建 -->
+<div class="page-header" id="page-header"><span class="page-title">图书馆座位图片管理</span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">功能</button></div>
 <div id="app"></div>
 <div id="bottom-bar">
   <span id="selected-count">已选 0 个时段</span>
@@ -589,9 +592,8 @@ const app = document.getElementById('app');
 let _renderMainSeq = 0;
 async function renderMain() {
   const mySeq = ++_renderMainSeq;
-  // 【修改3】顶部只保留标题和功能按钮
-  // 【修复Bug3】按钮加 id="func-btn"，方便定位和校验文字
-  let html = '<div class="page-header"><span class="page-title">图书馆座位图片管理</span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">功能</button></div>';
+  // 【修复文字消失】page-header 已移到 body 静态 HTML，不再由 renderMain 生成
+  let html = '';
   // 【优化】预计算每个区域的已删除座位数，避免每个区域都遍历全量 deletedSeats
   const deletedCountMap = {};
   state.deletedSeats.forEach(sk => {
@@ -620,9 +622,6 @@ async function renderMain() {
     html += '</div>';
   });
   app.innerHTML = html;
-  // 【修复Bug3】确保"功能"按钮文字始终显示，并启动 MutationObserver 持续监控
-  ensureFuncBtnText();
-  startFuncBtnObserver();
   // 【修复BUG】串行执行 renderTimeSlots，避免并发 DOM 操作冲突
   // 【修复Bug3】每次 await 前检查序列号，旧调用自动让路
   for (const sk of state.expandedSeats) {
@@ -2551,7 +2550,8 @@ document.getElementById('btn-clear-select').addEventListener('click', () => { st
 // ============================================================
 // 十二、事件委托
 // ============================================================
-app.addEventListener('click', async (e) => {
+// 【修复文字消失】事件委托改为 document，因为 page-header 已移出 app
+document.addEventListener('click', async (e) => {
   const target = e.target;
   const floorBtn = target.closest('[data-action="toggle-floor"]');
   if (floorBtn) { const fid = parseInt(floorBtn.dataset.floor); state.expandedFloors.has(fid) ? state.expandedFloors.delete(fid) : state.expandedFloors.add(fid); saveUIState(); renderMain(); return; }
@@ -2932,7 +2932,10 @@ async function init() {
     loadFilterState();
     loadAutoShareState();
     loadAllowDeleteState(); // 【修改1】加载允许删除座位开关状态
-    await renderMain(); // 【修复Bug3】await 防止 init 后续代码与 renderMain 竞态
+    // 【修复文字消失】page-header 是静态 DOM，只需在 init 时启动一次 Observer
+    ensureFuncBtnText();
+    startFuncBtnObserver();
+    await renderMain();
   } catch (err) {
     console.error('初始化失败:', err);
     app.innerHTML = '<p style="padding:20px;color:red;">初始化失败，请检查浏览器是否支持 IndexedDB。</p>';
