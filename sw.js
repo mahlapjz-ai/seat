@@ -1,11 +1,12 @@
 // 图书馆座位图片管理 - Service Worker
 // 策略说明：
 //   index.html → Network-First（网络优先，保证每次打开都是最新版）
-//   manifest.json / seat-icon.png → Cache-First（缓存优先，不常变，省流量）
+//   manifest.json → Network-First（网络优先，确保图标等配置更新及时生效）
+//   seat-icon.png → Cache-First（缓存优先，不常变，省流量）
 //   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
 //   其他同源资源 → Stale-While-Revalidate（先返回缓存，后台静默更新）
 
-const CACHE_NAME = 'seat-cache-v4';
+const CACHE_NAME = 'seat-cache-v5';
 
 // 预缓存资源列表（安装时一次性缓存）
 const PRECACHE_ASSETS = [
@@ -17,7 +18,6 @@ const PRECACHE_ASSETS = [
 
 // Cache-First 资源：不常变，优先从缓存读取
 const CACHE_FIRST_URLS = [
-  './manifest.json',
   './seat-icon.png'
 ];
 
@@ -69,9 +69,9 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // --- index.html：Network-First（网络优先）---
+  // --- index.html / manifest.json：Network-First（网络优先）---
   // 每次打开都优先请求网络，确保拿到最新版；网络失败时才用缓存
-  if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html') || url.pathname === '/') {
+  if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html') || url.pathname === '/' || url.pathname.endsWith('/manifest.json')) {
     e.respondWith(
       fetch(e.request)
         .then(resp => {
@@ -90,7 +90,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // --- Cache-First 资源：manifest.json、seat-icon.png 等 ---
+  // --- Cache-First 资源：seat-icon.png 等 ---
   // 不常变，优先从缓存读取，缓存没有才请求网络
   if (CACHE_FIRST_URLS.some(u => url.pathname.endsWith(u.replace('./', '')))) {
     e.respondWith(
