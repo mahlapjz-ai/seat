@@ -1,30 +1,44 @@
-// 【修复PWA离线缓存】Service Worker v4
-// 缓存策略：stale-while-revalidate（优先缓存，后台更新）
-// 离线时从缓存返回，在线时先返回缓存再后台更新缓存
+// 图书馆座位图片管理 - Service Worker
+// 策略说明：
+//   index.html → Network-First（网络优先，保证每次打开都是最新版）
+//   manifest.json / seat-icon.png → Cache-First（缓存优先，不常变，省流量）
+//   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
+//   其他同源资源 → Stale-While-Revalidate（先返回缓存，后台静默更新）
+
 const CACHE_NAME = 'seat-cache-v4';
-const ASSETS = [
+
+// 预缓存资源列表（安装时一次性缓存）
+const PRECACHE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './seat-icon.png'
 ];
 
-// 安装：预缓存核心资源
+// Cache-First 资源：不常变，优先从缓存读取
+const CACHE_FIRST_URLS = [
+  './manifest.json',
+  './seat-icon.png'
+];
+
+// ===== 安装事件 =====
+// 预缓存核心资源，不自动 skipWaiting（等用户确认更新提示后再激活）
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(c => c.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE_ASSETS))
   );
-  // 不自动 skipWaiting，等用户点击更新提示后再激活
 });
 
-// 接收页面消息：用户点击更新提示后，新 SW 立即激活
+// ===== 消息事件 =====
+// 用户点击"有新版本可用，点击刷新"后，新 SW 立即激活
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
-// 激活：清理旧版本缓存，立即接管所有客户端
+// ===== 激活事件 =====
+// 清理旧版本缓存，立即接管所有客户端
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -34,21 +48,19 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// 请求拦截：stale-while-revalidate 策略
+// ===== 请求拦截 =====
 self.addEventListener('fetch', e => {
-  // 只处理同源 GET 请求
+  // 只处理 GET 请求
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
 
-  // 外部 CDN 资源（如 jszip）：网络优先，失败回退缓存
+  // --- 外部 CDN 资源（如 jszip）：网络优先，离线回退缓存 ---
   if (url.origin !== self.location.origin) {
     e.respondWith(
       fetch(e.request)
         .then(resp => {
-          // 缓存成功的响应
           if (resp.ok) {
-            const clone = resp.clone();
-            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+            caches.open(CACHE_NAME).then(c => c.put(e.request, resp.clone()));
           }
           return resp;
         })
@@ -57,21 +69,56 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // 同源资源：stale-while-revalidate（优先缓存，后台更新）
+  // --- index.html：Network-First（网络优先）---
+  // 每次打开都优先请求网络，确保拿到最新版；网络失败时才用缓存
+  if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html') || url.pathname === '/') {
+    e.respondWith(
+      fetch(e.request)
+        .then(resp => {
+          // 网络成功：更新缓存并返回最新内容
+          if (resp.ok) {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+          }
+          return resp;
+        })
+        .catch(() => {
+          // 网络失败（离线）：回退缓存
+          return caches.match(e.request).then(cached => cached || new Response('离线', { status: 503 }));
+        })
+    );
+    return;
+  }
+
+  // --- Cache-First 资源：manifest.json、seat-icon.png 等 ---
+  // 不常变，优先从缓存读取，缓存没有才请求网络
+  if (CACHE_FIRST_URLS.some(u => url.pathname.endsWith(u.replace('./', '')))) {
+    e.respondWith(
+      caches.match(e.request).then(cached => {
+        if (cached) return cached;
+        return fetch(e.request).then(resp => {
+          if (resp.ok) {
+            const clone = resp.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+          }
+          return resp;
+        });
+      })
+    );
+    return;
+  }
+
+  // --- 其他同源资源：Stale-While-Revalidate ---
+  // 先返回缓存（秒开），后台静默更新缓存（下次访问生效）
   e.respondWith(
     caches.open(CACHE_NAME).then(cache =>
       cache.match(e.request).then(cached => {
-        // 后台发起网络请求更新缓存
         const fetchPromise = fetch(e.request)
           .then(resp => {
-            if (resp.ok) {
-              cache.put(e.request, resp.clone());
-            }
+            if (resp.ok) cache.put(e.request, resp.clone());
             return resp;
           })
-          .catch(() => cached); // 网络失败时回退缓存
-
-        // 有缓存就先返回缓存，否则等网络
+          .catch(() => cached);
         return cached || fetchPromise;
       })
     )
