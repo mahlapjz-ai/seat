@@ -1461,7 +1461,9 @@ async function shareSelectedImages() {
         try { blob = dataURLtoBlob(cellData.images[i].data); } catch (e) { blob = null; }
       }
       if (!blob || blob.size === 0) continue;
-      const filename = `${sName}_${timeSlot}_${i + 1}.jpg`;
+      // 文件名中冒号在 Android 文件系统非法，替换为短横线
+      const safeTimeSlot = timeSlot.replace(/:/g, '-');
+      const filename = `${sName}_${safeTimeSlot}_${i + 1}.jpg`;
       items.push({ blob, filename });
     }
   }
@@ -1655,8 +1657,10 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
             }
             if (!blob || blob.size === 0) continue; // 无有效数据，跳过
             const folder = `${floorObj.name}_${aname}`;
+            // 文件名中冒号在 Android 文件系统非法，替换为短横线
+            const safeTimeSlot = TIME_SLOTS[tIdx].replace(/:/g, '-');
             // 用路径字符串代替 zip.folder()，避免生成 STORED 目录条目导致 Android 解压失败
-            zip.file(`${folder}/${sName}_${TIME_SLOTS[tIdx]}_${i + 1}.jpg`, blob);
+            zip.file(`${folder}/${sName}_${safeTimeSlot}_${i + 1}.jpg`, blob);
             count++;
           }
         }
