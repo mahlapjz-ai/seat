@@ -1484,8 +1484,8 @@ async function shareSelectedImages() {
     showToast('正在打包...');
     try {
       const zip = new JSZip();
-      items.forEach(it => zip.file(it.filename, it.blob, { date: new Date('2000-01-01T00:00:00') }));
-      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+      items.forEach(it => zip.file(it.filename, it.blob));
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
       downloadBlob(zipBlob, `图片导出_${Date.now()}.zip`);
       showToast(`已下载 ${items.length} 张图片`);
     } catch (err) { console.error('打包出错:', err); showToast('打包出错'); }
@@ -1655,14 +1655,15 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
             }
             if (!blob || blob.size === 0) continue; // 无有效数据，跳过
             const folder = `${floorObj.name}_${aname}`;
-            zip.folder(folder).file(`${sName}_${TIME_SLOTS[tIdx]}_${i + 1}.jpg`, blob, { date: new Date('2000-01-01T00:00:00') });
+            // 用路径字符串代替 zip.folder()，避免生成 STORED 目录条目导致 Android 解压失败
+            zip.file(`${folder}/${sName}_${TIME_SLOTS[tIdx]}_${i + 1}.jpg`, blob);
             count++;
           }
         }
       }
     }
     if (count === 0) { showToast('所选范围内无图片'); return; }
-    const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+    const blob = await zip.generateAsync({ type: 'blob' });
     downloadBlob(blob, `批量下载_${count}张.zip`);
     showToast(`已下载 ${count} 张图片`);
   } catch (err) { console.error('批量下载出错:', err); showToast('下载出错'); }
