@@ -1145,6 +1145,40 @@ const thumbObserver = new IntersectionObserver((entries) => {
   });
 }, { rootMargin: '300px' });
 
+/** 【性能优化】拍照后直接追加缩略图到 DOM，不重建整个座位（从 ~1s 降到 <50ms）
+ *  同时更新时段卡片状态（checkbox、按钮 disabled 等） */
+function appendThumbnailToDOM(ck, newImg, imgIdx) {
+  const card = document.querySelector(`.timeslot-card[data-cell-key="${ck}"]`);
+  if (!card) return; // 卡片不在 DOM 中，后续 renderTimeSlots 会处理
+
+  // 1. 追加缩略图
+  let thumbsDiv = card.querySelector('.ts-thumbs');
+  if (!thumbsDiv) {
+    thumbsDiv = document.createElement('div');
+    thumbsDiv.className = 'ts-thumbs';
+    card.appendChild(thumbsDiv);
+  }
+  // 优先 Blob URL，回退 Base64 缩略图
+  const thumbSrc = newImg._thumbBlobURL || newImg._fullBlobURL || newImg.thumbnail || newImg.thumb || '';
+  if (thumbSrc) {
+    const wrap = document.createElement('div');
+    wrap.className = 'thumb-wrap';
+    wrap.innerHTML = `<img src="${thumbSrc}" data-action="preview" data-cell-key="${ck}" data-img-idx="${imgIdx}" /><div class="thumb-del" data-action="delete-img" data-cell-key="${ck}" data-img-idx="${imgIdx}">&times;</div>`;
+    thumbsDiv.appendChild(wrap);
+  }
+
+  // 2. 更新卡片状态
+  const imgCount = imageCountCache.get(ck) || 0;
+  card.dataset.hasImages = imgCount > 0 ? '1' : '0';
+  // 更新 checkbox
+  const cb = card.querySelector('.ts-checkbox');
+  if (cb) cb.className = imgCount > 0 ? `ts-checkbox ${state.selectedCells.includes(ck) ? 'checked' : ''}` : 'ts-checkbox disabled';
+  // 图片满时禁用按钮
+  if (imgCount >= MAX_IMAGES) {
+    card.querySelectorAll('.ts-btn-capture, .ts-btn-upload').forEach(btn => btn.disabled = true);
+  }
+}
+
 // 【优化】批量读取后生成缺失缩略图，避免逐条异步读取
 async function generateMissingThumbnails(fid, aname, sidx) {
   const keys = [];
@@ -1224,7 +1258,8 @@ captureInput.addEventListener('change', async (e) => {
     state.seatHasImages.add(sk);
     invalidateTimeslotCache(sk);
     updateSeatVisual(sk);
-    await renderTimeSlots(sk);
+    // 【性能优化】拍照后直接追加缩略图到 DOM，不重建整个座位
+    appendThumbnailToDOM(ck, newImg, images.length - 1);
     updateBottomBar();
 
     // 7. 后台异步：将 Blob 转 Base64 存入 IndexedDB（不阻塞预览）
@@ -1305,7 +1340,8 @@ uploadInput.addEventListener('change', async (e) => {
     imageCountCache.set(ck, images.length);
     state.seatHasImages.add(sk);
     updateSeatVisual(sk);
-    await renderTimeSlots(sk);
+    // 【性能优化】上传后直接追加缩略图到 DOM，不重建整个座位
+    appendThumbnailToDOM(ck, placeholderImg, images.length - 1);
     updateBottomBar();
 
     // 第二步：后台异步压缩+缩略图+正式存储
@@ -1440,7 +1476,7 @@ async function shareSelectedImages() {
     showToast('正在打包...');
     try {
       const zip = new JSZip();
-      items.forEach(it => zip.file(it.filename, it.blob));
+      items.forEach(it => zip.file(it.filename, it.blob, { date: new Date('2000-01-01T00:00:00') }));
       const zipBlob = await zip.generateAsync({ type: 'blob' });
       downloadBlob(zipBlob, `图片导出_${Date.now()}.zip`);
       showToast(`已下载 ${items.length} 张图片`);
@@ -1611,7 +1647,7 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
             }
             if (!blob || blob.size === 0) continue; // 无有效数据，跳过
             const folder = `${floorObj.name}_${aname}`;
-            zip.folder(folder).file(`${sName}_${TIME_SLOTS[tIdx]}_${i + 1}.jpg`, blob);
+            zip.folder(folder).file(`${sName}_${TIME_SLOTS[tIdx]}_${i + 1}.jpg`, blob, { date: new Date('2000-01-01T00:00:00') });
             count++;
           }
         }
