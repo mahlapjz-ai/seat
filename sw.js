@@ -13,12 +13,14 @@ const PRECACHE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './seat-icon.png'
+  './seat-icon.png',
+  './seat-icon-192.png'
 ];
 
 // Cache-First 资源：不常变，优先从缓存读取
 const CACHE_FIRST_URLS = [
-  './seat-icon.png'
+  './seat-icon.png',
+  './seat-icon-192.png'
 ];
 
 // ===== 安装事件 =====
