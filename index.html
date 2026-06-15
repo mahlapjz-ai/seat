@@ -1252,15 +1252,18 @@ captureInput.addEventListener('change', async (e) => {
     images.push(newImg);
     // 5. 更新内存 Blob 缓存（预览时直接使用）
     cacheCellBlobs(ck, images);
-    // 6. 存入 DB（data 为空，但 Blob URL 已在内存中可用于预览）
-    await saveCellData(ck, images);
+    // 6. 立即显示缩略图（不等待 DB 写入）
     imageCountCache.set(ck, images.length);
     state.seatHasImages.add(sk);
     invalidateTimeslotCache(sk);
     updateSeatVisual(sk);
-    // 【性能优化】拍照后直接追加缩略图到 DOM，不重建整个座位
     appendThumbnailToDOM(ck, newImg, images.length - 1);
     updateBottomBar();
+    // 7. 存入 DB（非阻塞，不等待写入完成）
+    saveCellData(ck, images).catch(err => {
+      if (err.name === 'QuotaExceededError') showToast('存储空间不足！');
+      else console.error('DB写入出错:', err);
+    });
 
     // 7. 后台异步：将 Blob 转 Base64 存入 IndexedDB（不阻塞预览）
     const doStore = async () => {
@@ -1336,13 +1339,17 @@ uploadInput.addEventListener('change', async (e) => {
       _placeholder: true
     };
     images.push(placeholderImg);
-    await saveCellData(ck, images);
+    // 立即显示缩略图（不等待 DB 写入）
     imageCountCache.set(ck, images.length);
     state.seatHasImages.add(sk);
     updateSeatVisual(sk);
-    // 【性能优化】上传后直接追加缩略图到 DOM，不重建整个座位
     appendThumbnailToDOM(ck, placeholderImg, images.length - 1);
     updateBottomBar();
+    // 存入 DB（非阻塞）
+    saveCellData(ck, images).catch(err => {
+      if (err.name === 'QuotaExceededError') showToast('存储空间不足！');
+      else console.error('DB写入出错:', err);
+    });
 
     // 第二步：后台异步压缩+缩略图+正式存储
     const doProcess = async () => {
@@ -1409,7 +1416,8 @@ function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  // 不主动 revokeObjectURL：手机浏览器下载大文件可能需要数秒，
+  // 过早回收会导致下载不完整/文件损坏。页面关闭时浏览器会自动回收。
 }
 
 async function getProcessedData(imgObj, fid, aname, sidx) {
@@ -1477,7 +1485,7 @@ async function shareSelectedImages() {
     try {
       const zip = new JSZip();
       items.forEach(it => zip.file(it.filename, it.blob, { date: new Date('2000-01-01T00:00:00') }));
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
       downloadBlob(zipBlob, `图片导出_${Date.now()}.zip`);
       showToast(`已下载 ${items.length} 张图片`);
     } catch (err) { console.error('打包出错:', err); showToast('打包出错'); }
@@ -1654,7 +1662,7 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
       }
     }
     if (count === 0) { showToast('所选范围内无图片'); return; }
-    const blob = await zip.generateAsync({ type: 'blob' });
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
     downloadBlob(blob, `批量下载_${count}张.zip`);
     showToast(`已下载 ${count} 张图片`);
   } catch (err) { console.error('批量下载出错:', err); showToast('下载出错'); }
