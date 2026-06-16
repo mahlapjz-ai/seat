@@ -139,7 +139,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #bottom-bar.show{display:flex;align-items:center;gap:8px}
 #selected-count{font-size:13px;color:#666;flex-shrink:0;white-space:nowrap}
 #btn-clear-select{padding:8px 12px;font-size:13px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;color:#666;cursor:pointer;flex-shrink:0}
-.bar-btn{padding:12px 10px;font-size:14px;font-weight:600;border:none;border-radius:8px;cursor:pointer;flex:1;min-width:0;white-space:nowrap}
+/* 【v1.3.1 Bug1修复】拼接预览按钮文字适配，防止安卓端溢出 */
+.bar-btn{padding:12px 8px;font-size:13px;font-weight:600;border:none;border-radius:8px;cursor:pointer;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-footer{text-align:center;padding:12px 0 16px;max-width:480px;margin:0 auto}
 .app-footer .disclaimer{font-size:10px;color:#999}
 .app-footer .contact{font-size:9px;color:#999;margin-top:2px;transition:opacity .5s ease}
@@ -170,9 +171,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #concat-sheet .concat-thumb.disabled{opacity:.4;cursor:not-allowed}
 #concat-sheet .concat-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 /* 【v1.1.1】全屏图标替换"展开"文字 */
-/* 【v1.3.0 iOS修复】最小触摸区域 44×44px，防止手势拦截 */
-#concat-sheet .concat-thumb .thumb-expand{position:absolute;left:0;bottom:0;width:44px;height:44px;background:rgba(0,0,0,.5);border-radius:4px;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-#concat-sheet .concat-thumb .thumb-expand svg{width:14px;height:14px;fill:#fff}
+/* 【v1.3.1 Bug3修复】纯图标按钮：44×44px 点击热区，无多余背景，图标放大至 20px */
+#concat-sheet .concat-thumb .thumb-expand{position:absolute;left:2px;bottom:2px;width:44px;height:44px;background:transparent;border-radius:4px;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#concat-sheet .concat-thumb .thumb-expand svg{width:20px;height:20px;fill:rgba(255,255,255,.85);filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
 #concat-sheet .concat-thumb .thumb-check{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
 #concat-sheet .concat-thumb.selected .thumb-check{background:#1890ff}
 #concat-sheet .concat-btns-grid{display:none;gap:10px;padding:12px 20px 24px;padding-bottom:calc(24px + constant(safe-area-inset-bottom));padding-bottom:calc(24px + env(safe-area-inset-bottom));flex-shrink:0}
@@ -372,8 +373,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.3.0 iOS拼接安全缩放、统一下载逻辑、网格展开按钮修复、菜单改名+重置
-const APP_VERSION = 'v1.3.0';
+// v1.3.1 修复：安卓端拼接按钮溢出、安卓端拼接画质误降级、展开按钮图标比例
+const APP_VERSION = 'v1.3.1';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 
@@ -1708,52 +1709,58 @@ function getThumbSrc(imgObj) {
 }
 
 // 【v1.1.0 新增】竖拼绘制：宽度取最大宽度，高度按比例缩放后累加
-// 【v1.3.0 iOS适配】iOS 端总高度 > 4096px 时等比缩放至 4096px，确保完整显示；安卓端保持原始高清
+// 【v1.3.1 Bug2修复】严格区分平台：iOS 端总高度 > 4096px 时等比缩放；安卓端完全不受限制，原始高清
 async function stitchVertical(imgObjs) {
   const imgSrcs = imgObjs.map(getImgSrc);
   if (imgSrcs.some(s => !s)) throw new Error('部分图片尚未就绪');
   const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
   const maxW = Math.max(...imgs.map(i => i.naturalWidth));
-  // 先按最大宽度统一缩放，计算各图高度
   const scaledH = imgs.map(i => Math.round(i.naturalHeight * maxW / i.naturalWidth));
   const totalH = scaledH.reduce((a, b) => a + b, 0);
-  let drawW = maxW, finalScaledH = scaledH;
-  // 【v1.3.0】iOS 端：总高度 > 4096px 时等比缩放，使总高度恰好 = 4096px
+  let drawW, drawH;
   if (isIOS && totalH > 4096) {
+    // 【v1.3.1】iOS 端：总高度 > 4096px 时等比缩放，使总高度恰好 = 4096px
     const globalScale = 4096 / totalH;
     drawW = Math.round(maxW * globalScale);
-    finalScaledH = scaledH.map(h => Math.round(h * globalScale));
+    drawH = scaledH.map(h => Math.round(h * globalScale));
+  } else {
+    // 【v1.3.1】安卓端 / iOS 总高度 ≤ 4096px：原始高清，不做任何缩放
+    drawW = maxW;
+    drawH = scaledH;
   }
-  const canvasH = isIOS ? (finalScaledH.reduce((a, b) => a + b, 0)) : totalH;
+  const canvasH = drawH.reduce((a, b) => a + b, 0);
   const canvas = document.createElement('canvas'); canvas.width = drawW; canvas.height = canvasH;
   const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   let y = 0;
-  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], 0, y, drawW, finalScaledH[i]); y += finalScaledH[i]; }
+  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], 0, y, drawW, drawH[i]); y += drawH[i]; }
   return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
 }
 
 // 【v1.1.0 新增】横拼绘制：高度取最大高度，宽度按比例缩放后累加，顶部对齐
-// 【v1.3.0 iOS适配】iOS 端总宽度 > 4096px 时等比缩放至 4096px，确保完整显示；安卓端保持原始高清
+// 【v1.3.1 Bug2修复】严格区分平台：iOS 端总宽度 > 4096px 时等比缩放；安卓端完全不受限制，原始高清
 async function stitchHorizontal(imgObjs) {
   const imgSrcs = imgObjs.map(getImgSrc);
   if (imgSrcs.some(s => !s)) throw new Error('部分图片尚未就绪');
   const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
   const maxH = Math.max(...imgs.map(i => i.naturalHeight));
-  // 先按最大高度统一缩放，计算各图宽度
   const scaledW = imgs.map(i => Math.round(i.naturalWidth * maxH / i.naturalHeight));
   const totalW = scaledW.reduce((a, b) => a + b, 0);
-  let drawH = maxH, finalScaledW = scaledW;
-  // 【v1.3.0】iOS 端：总宽度 > 4096px 时等比缩放，使总宽度恰好 = 4096px
+  let drawH, drawW;
   if (isIOS && totalW > 4096) {
+    // 【v1.3.1】iOS 端：总宽度 > 4096px 时等比缩放，使总宽度恰好 = 4096px
     const globalScale = 4096 / totalW;
     drawH = Math.round(maxH * globalScale);
-    finalScaledW = scaledW.map(w => Math.round(w * globalScale));
+    drawW = scaledW.map(w => Math.round(w * globalScale));
+  } else {
+    // 【v1.3.1】安卓端 / iOS 总宽度 ≤ 4096px：原始高清，不做任何缩放
+    drawH = maxH;
+    drawW = scaledW;
   }
-  const canvasW = isIOS ? (finalScaledW.reduce((a, b) => a + b, 0)) : totalW;
+  const canvasW = drawW.reduce((a, b) => a + b, 0);
   const canvas = document.createElement('canvas'); canvas.width = canvasW; canvas.height = drawH;
   const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   let x = 0;
-  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], x, 0, finalScaledW[i], drawH); x += finalScaledW[i]; }
+  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], x, 0, drawW[i], drawH); x += drawW[i]; }
   return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
 }
 

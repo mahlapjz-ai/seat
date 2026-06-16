@@ -6,8 +6,8 @@
 //   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
 //   其他同源资源 → Stale-While-Revalidate（先返回缓存，后台静默更新）
 
-// 【v1.3.0】更新缓存版本号，确保新版本正确激活
-const CACHE_NAME = 'seat-cache-v7';
+// 【v1.3.1】更新缓存版本号
+const CACHE_NAME = 'seat-cache-v8';
 
 // 预缓存资源列表（安装时一次性缓存）
 const PRECACHE_ASSETS = [
