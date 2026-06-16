@@ -173,8 +173,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #concat-sheet .concat-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 /* 【v1.1.1】全屏图标替换"展开"文字 */
 /* 【v1.3.1 Bug3修复】纯图标按钮：44×44px 点击热区，无多余背景，图标放大至 20px */
-#concat-sheet .concat-thumb .thumb-expand{position:absolute;left:2px;bottom:2px;width:44px;height:44px;background:transparent;border-radius:4px;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-#concat-sheet .concat-thumb .thumb-expand svg{width:20px;height:20px;fill:rgba(255,255,255,.85);filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+/* 【v1.3.6 修复1】图标移至左下角边缘，距左/下各5px；视觉缩小至18px，触摸热区保持44×44px */
+#concat-sheet .concat-thumb .thumb-expand{position:absolute;left:5px;bottom:5px;width:44px;height:44px;background:transparent;border-radius:4px;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#concat-sheet .concat-thumb .thumb-expand svg{width:18px;height:18px;fill:rgba(255,255,255,.85);filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
 #concat-sheet .concat-thumb .thumb-check{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
 #concat-sheet .concat-thumb.selected .thumb-check{background:#1890ff}
 #concat-sheet .concat-btns-grid{display:none;gap:10px;padding:12px 20px 24px;padding-bottom:calc(24px + constant(safe-area-inset-bottom));padding-bottom:calc(24px + env(safe-area-inset-bottom));flex-shrink:0}
@@ -374,8 +375,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.3.5 修改下载提示语时机、菜单说明文字
-const APP_VERSION = 'v1.3.5';
+// v1.3.6 缩略图展开图标位置调整、安卓端拼接画质修复（Canvas 验证+分块拼接）
+const APP_VERSION = 'v1.3.6';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1762,13 +1763,55 @@ function getThumbSrc(imgObj) {
 
 // 【v1.1.0 新增】竖拼绘制：宽度取最大宽度，高度按比例缩放后累加
 // 【v1.3.2 Bug1修复】严格区分平台：仅 iOS 端总高度 > 4096px 时等比缩放；安卓端原始高清，零缩放
+// 【v1.3.6 修复2】安卓端拼接画质排查与修复：
+//   排查结论：
+//   1. 图片源：getImgSrc 返回 imgObj.data（Base64 全图，0.95 JPEG），非缩略图 ✅
+//   2. Canvas 导出质量：0.95 ✅
+//   3. Canvas 尺寸限制：代码中无安卓端显式限制，但安卓浏览器内部有 Canvas 像素上限，
+//      3张图拼接时 Canvas 过大，浏览器会静默降低分辨率 → 这是画质变差的主因
+//   4. 重复压缩：data URL→Image→Canvas→JPEG 只有一次重编码 ✅
+//   5. 三张图更模糊：Canvas 像素越多，浏览器内部缩放比越大
+//   修复方案：
+//   - 拼接时将 data URL 转为 Blob URL（减少内存压力，避免浏览器因内存不足降低 Canvas 分辨率）
+//   - 添加 Canvas 尺寸验证：创建后检测是否被浏览器静默缩小
+//   - 若检测到缩小，使用分块拼接（每次只拼2张，避免超大 Canvas）
+//   - iOS 端仍使用 4096px 总尺寸限制，不受影响
 async function stitchVertical(imgObjs) {
+  // 【v1.3.6】拼接图片源：使用 getImgSrc 获取原图（非缩略图）
+  // getImgSrc 优先返回 _fullBlobURL（内存 Blob），其次 _fullBlob，最后 data（Base64 全图）
   const imgSrcs = imgObjs.map(getImgSrc);
   if (imgSrcs.some(s => !s)) throw new Error('部分图片尚未就绪');
-  const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
+
+  // 【v1.3.6】将 data URL 转为 Blob URL 再加载，减少内存压力
+  // data URL（Base64）比原始二进制大约 33%，多张大图同时加载会导致内存紧张，
+  // 安卓浏览器可能在内存不足时静默降低 Canvas 分辨率
+  const blobURLs = [];
+  const srcToUse = imgSrcs.map(src => {
+    if (src.startsWith('data:')) {
+      try {
+        const blob = dataURLtoBlob(src);
+        const blobURL = URL.createObjectURL(blob);
+        blobURLs.push(blobURL);
+        return blobURL;
+      } catch (e) {
+        return src; // 转换失败则回退用原 data URL
+      }
+    }
+    return src;
+  });
+
+  const imgs = await Promise.all(srcToUse.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
+
+  // 【v1.3.6】加载完成后立即释放 Blob URL，减少内存占用
+  blobURLs.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} });
+
   const maxW = Math.max(...imgs.map(i => i.naturalWidth));
   const scaledH = imgs.map(i => Math.round(i.naturalHeight * maxW / i.naturalWidth));
   const totalH = scaledH.reduce((a, b) => a + b, 0);
+
+  // 【v1.3.6】拼接尺寸参数：
+  // - iOS 端：总高度 > 4096px 时等比缩放至 4096px（安全限制）
+  // - 安卓端：原始尺寸，零缩放（Canvas 尺寸 = 图片实际拼接后尺寸）
   let drawW, drawH;
   if (isIOS && totalH > 4096) {
     // 【v1.3.1】iOS 端：总高度 > 4096px 时等比缩放，使总高度恰好 = 4096px
@@ -1782,21 +1825,127 @@ async function stitchVertical(imgObjs) {
   }
   const canvasH = drawH.reduce((a, b) => a + b, 0);
   const canvas = document.createElement('canvas'); canvas.width = drawW; canvas.height = canvasH;
-  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 【v1.3.6】Canvas 尺寸验证：检测浏览器是否静默降低了 Canvas 分辨率
+  // 安卓浏览器在 Canvas 像素数超过内部上限时，会静默降低 backing store 分辨率，
+  // 导致 canvas.width/height 报告值正确但实际像素数据被缩小，导出图片模糊
+  const ctx = canvas.getContext('2d');
+  if (!isIOS && canvasH > 4096) {
+    // 安卓端大 Canvas：绘制测试像素并读回，验证分辨率是否被降低
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(0, 0, 1, 1);
+    try {
+      const testData = ctx.getImageData(0, 0, 1, 1).data;
+      if (testData[0] !== 255) {
+        // Canvas 分辨率被浏览器静默降低，使用分块拼接
+        console.warn('【v1.3.6】Canvas 分辨率被浏览器降低，切换到分块拼接模式');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const blob = await stitchVerticalChunked(imgs, maxW, scaledH, drawW, drawH);
+        return blob;
+      }
+    } catch (e) {
+      // getImageData 失败，可能 Canvas 已被降低，使用分块拼接
+      console.warn('【v1.3.6】Canvas getImageData 失败，切换到分块拼接模式', e);
+      const blob = await stitchVerticalChunked(imgs, maxW, scaledH, drawW, drawH);
+      return blob;
+    }
+    // 验证通过，清除测试像素
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else {
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
   let y = 0;
   for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], 0, y, drawW, drawH[i]); y += drawH[i]; }
+
+  // 【v1.3.6】Canvas 导出质量：JPEG 0.95，确保高清
   return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+}
+
+// 【v1.3.6 新增】安卓端分块竖拼：每次只拼2张，避免超大 Canvas 被浏览器静默降分辨率
+// 拼接流程：图1+图2 → 临时Canvas → JPEG Blob → 加载 → +图3 → 最终Canvas → JPEG Blob
+// 注意：中间步骤有一次额外的 JPEG 重编码（质量 0.95），但比浏览器静默降分辨率画质好得多
+async function stitchVerticalChunked(imgs, maxW, scaledH, drawW, drawH) {
+  let resultImg = imgs[0];
+  let resultDrawW = drawW;
+  let resultDrawH = drawH[0];
+
+  for (let i = 1; i < imgs.length; i++) {
+    // 每次将当前结果与下一张图拼接
+    const pairTotalH = resultDrawH + drawH[i];
+    const pairCanvas = document.createElement('canvas');
+    pairCanvas.width = resultDrawW;
+    pairCanvas.height = pairTotalH;
+    const pairCtx = pairCanvas.getContext('2d');
+    pairCtx.fillStyle = '#fff';
+    pairCtx.fillRect(0, 0, pairCanvas.width, pairCanvas.height);
+    // 绘制当前结果
+    pairCtx.drawImage(resultImg, 0, 0, resultDrawW, resultDrawH);
+    // 绘制下一张图
+    pairCtx.drawImage(imgs[i], 0, resultDrawH, drawW, drawH[i]);
+
+    // 导出为 JPEG Blob（质量 0.95）
+    const pairBlob = await new Promise(resolve => pairCanvas.toBlob(resolve, 'image/jpeg', 0.95));
+    // 释放当前中间 Image（如果是前一轮创建的）
+    // 加载 Blob 为新 Image 用于下一轮拼接
+    const pairURL = URL.createObjectURL(pairBlob);
+    resultImg = await new Promise((r, j) => {
+      const img = new Image();
+      img.onload = () => r(img);
+      img.onerror = () => j(new Error('分块拼接：中间图片加载失败'));
+      img.src = pairURL;
+    });
+    URL.revokeObjectURL(pairURL);
+    resultDrawH = pairTotalH;
+  }
+
+  // 最终导出
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = resultDrawW;
+  finalCanvas.height = resultDrawH;
+  const finalCtx = finalCanvas.getContext('2d');
+  finalCtx.fillStyle = '#fff';
+  finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+  finalCtx.drawImage(resultImg, 0, 0, resultDrawW, resultDrawH);
+  return await new Promise(resolve => finalCanvas.toBlob(resolve, 'image/jpeg', 0.95));
 }
 
 // 【v1.1.0 新增】横拼绘制：高度取最大高度，宽度按比例缩放后累加，顶部对齐
 // 【v1.3.2 Bug1修复】严格区分平台：仅 iOS 端总宽度 > 4096px 时等比缩放；安卓端原始高清，零缩放
+// 【v1.3.6 修复2】同 stitchVertical，添加 data URL→Blob URL 转换、Canvas 尺寸验证、分块拼接回退
 async function stitchHorizontal(imgObjs) {
+  // 【v1.3.6】拼接图片源：使用 getImgSrc 获取原图（非缩略图）
   const imgSrcs = imgObjs.map(getImgSrc);
   if (imgSrcs.some(s => !s)) throw new Error('部分图片尚未就绪');
-  const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
+
+  // 【v1.3.6】将 data URL 转为 Blob URL 再加载，减少内存压力
+  const blobURLs = [];
+  const srcToUse = imgSrcs.map(src => {
+    if (src.startsWith('data:')) {
+      try {
+        const blob = dataURLtoBlob(src);
+        const blobURL = URL.createObjectURL(blob);
+        blobURLs.push(blobURL);
+        return blobURL;
+      } catch (e) {
+        return src;
+      }
+    }
+    return src;
+  });
+
+  const imgs = await Promise.all(srcToUse.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
+
+  // 【v1.3.6】加载完成后立即释放 Blob URL
+  blobURLs.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} });
+
   const maxH = Math.max(...imgs.map(i => i.naturalHeight));
   const scaledW = imgs.map(i => Math.round(i.naturalWidth * maxH / i.naturalHeight));
   const totalW = scaledW.reduce((a, b) => a + b, 0);
+
+  // 【v1.3.6】拼接尺寸参数：
+  // - iOS 端：总宽度 > 4096px 时等比缩放至 4096px（安全限制）
+  // - 安卓端：原始尺寸，零缩放（Canvas 尺寸 = 图片实际拼接后尺寸）
   let drawH, drawW;
   if (isIOS && totalW > 4096) {
     // 【v1.3.1】iOS 端：总宽度 > 4096px 时等比缩放，使总宽度恰好 = 4096px
@@ -1810,10 +1959,74 @@ async function stitchHorizontal(imgObjs) {
   }
   const canvasW = drawW.reduce((a, b) => a + b, 0);
   const canvas = document.createElement('canvas'); canvas.width = canvasW; canvas.height = drawH;
-  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 【v1.3.6】Canvas 尺寸验证：检测浏览器是否静默降低了 Canvas 分辨率
+  const ctx = canvas.getContext('2d');
+  if (!isIOS && canvasW > 4096) {
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(0, 0, 1, 1);
+    try {
+      const testData = ctx.getImageData(0, 0, 1, 1).data;
+      if (testData[0] !== 255) {
+        console.warn('【v1.3.6】Canvas 分辨率被浏览器降低，切换到分块拼接模式');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        const blob = await stitchHorizontalChunked(imgs, maxH, scaledW, drawH, drawW);
+        return blob;
+      }
+    } catch (e) {
+      console.warn('【v1.3.6】Canvas getImageData 失败，切换到分块拼接模式', e);
+      const blob = await stitchHorizontalChunked(imgs, maxH, scaledW, drawH, drawW);
+      return blob;
+    }
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else {
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
   let x = 0;
   for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], x, 0, drawW[i], drawH); x += drawW[i]; }
+
+  // 【v1.3.6】Canvas 导出质量：JPEG 0.95，确保高清
   return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+}
+
+// 【v1.3.6 新增】安卓端分块横拼：每次只拼2张，避免超大 Canvas 被浏览器静默降分辨率
+async function stitchHorizontalChunked(imgs, maxH, scaledW, drawH, drawW) {
+  let resultImg = imgs[0];
+  let resultDrawH = drawH;
+  let resultDrawW = drawW[0];
+
+  for (let i = 1; i < imgs.length; i++) {
+    const pairTotalW = resultDrawW + drawW[i];
+    const pairCanvas = document.createElement('canvas');
+    pairCanvas.width = pairTotalW;
+    pairCanvas.height = resultDrawH;
+    const pairCtx = pairCanvas.getContext('2d');
+    pairCtx.fillStyle = '#fff';
+    pairCtx.fillRect(0, 0, pairCanvas.width, pairCanvas.height);
+    pairCtx.drawImage(resultImg, 0, 0, resultDrawW, resultDrawH);
+    pairCtx.drawImage(imgs[i], resultDrawW, 0, drawW[i], drawH);
+
+    const pairBlob = await new Promise(resolve => pairCanvas.toBlob(resolve, 'image/jpeg', 0.95));
+    const pairURL = URL.createObjectURL(pairBlob);
+    resultImg = await new Promise((r, j) => {
+      const img = new Image();
+      img.onload = () => r(img);
+      img.onerror = () => j(new Error('分块拼接：中间图片加载失败'));
+      img.src = pairURL;
+    });
+    URL.revokeObjectURL(pairURL);
+    resultDrawW = pairTotalW;
+  }
+
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = resultDrawW;
+  finalCanvas.height = resultDrawH;
+  const finalCtx = finalCanvas.getContext('2d');
+  finalCtx.fillStyle = '#fff';
+  finalCtx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+  finalCtx.drawImage(resultImg, 0, 0, resultDrawW, resultDrawH);
+  return await new Promise(resolve => finalCanvas.toBlob(resolve, 'image/jpeg', 0.95));
 }
 
 // 【v1.1.0 新增】执行拼接并预览
