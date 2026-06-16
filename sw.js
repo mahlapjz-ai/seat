@@ -6,7 +6,8 @@
 //   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
 //   其他同源资源 → Stale-While-Revalidate（先返回缓存，后台静默更新）
 
-const CACHE_NAME = 'seat-cache-v5';
+// 【v1.2.0 iOS兼容】更新缓存版本号，确保 iOS Safari 正确激活新 SW
+const CACHE_NAME = 'seat-cache-v6';
 
 // 预缓存资源列表（安装时一次性缓存）
 const PRECACHE_ASSETS = [
@@ -25,9 +26,12 @@ const CACHE_FIRST_URLS = [
 
 // ===== 安装事件 =====
 // 预缓存核心资源，不自动 skipWaiting（等用户确认更新提示后再激活）
+// 【v1.2.0 iOS兼容】添加 try-catch 防止 iOS 缓存失败导致 SW 安装中断
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE_ASSETS))
+    caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE_ASSETS)).catch(err => {
+      console.warn('SW 预缓存失败（iOS 可能限制），继续安装:', err);
+    })
   );
 });
 
