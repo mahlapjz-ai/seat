@@ -368,8 +368,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.2.1 修复安卓拍照延迟：JPEG 直接读取不走 Canvas 转换，HEIC 才转换
-const APP_VERSION = 'v1.2.1';
+// v1.2.2 修复iOS拍照调不出相机、微信浏览器崩溃自动重启
+const APP_VERSION = 'v1.2.2';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 
@@ -3039,7 +3039,9 @@ document.addEventListener('click', async (e) => {
   const checkbox = target.closest('[data-action="toggle-select"]');
   if (checkbox) { if (checkbox.classList.contains('disabled')) return; const ck = checkbox.dataset.cellKey, idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); checkbox.classList.remove('checked'); } else { state.selectedCells.push(ck); checkbox.classList.add('checked'); } updateBottomBar(); return; }
   const captureBtn = target.closest('[data-action="capture"]');
-  if (captureBtn) { const ck = captureBtn.dataset.cellKey, cd = await getCellData(ck); if (cd && cd.images && cd.images.length >= MAX_IMAGES) { showToast('该时段图片已满'); return; } currentCaptureCellKey = ck; captureInput.value = ''; captureInput.click(); return; }
+  // 【v1.2.2 iOS修复】先同步触发 click()，再在 change 回调中检查图片数量
+  // iOS PWA 中 await 后调用 click() 会被系统阻止，必须在用户交互同步栈中触发
+  if (captureBtn) { const ck = captureBtn.dataset.cellKey; currentCaptureCellKey = ck; captureInput.value = ''; captureInput.click(); return; }
   const uploadBtn = target.closest('[data-action="upload"]');
   if (uploadBtn) { const ck = uploadBtn.dataset.cellKey, cd = await getCellData(ck); if (cd && cd.images && cd.images.length >= MAX_IMAGES) { showToast('该时段图片已满'); return; } currentUploadCellKey = ck; uploadInput.value = ''; uploadInput.click(); return; }
   const delBtn = target.closest('[data-action="delete-img"]');
@@ -3369,6 +3371,18 @@ funcPanelBody.addEventListener('click', (e) => {
 // ============================================================
 // 十三、初始化
 // ============================================================
+// 【v1.2.2 微信兼容】全局未捕获异常处理，防止页面崩溃触发微信自动重载
+window.addEventListener('unhandledrejection', (e) => {
+  console.warn('未捕获的 Promise 异常:', e.reason);
+  e.preventDefault(); // 阻止默认的控制台报错行为
+});
+window.addEventListener('error', (e) => {
+  console.warn('全局异常:', e.message);
+});
+
+// 【v1.2.2 微信兼容】检测微信内置浏览器
+const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+
 async function init() {
   try {
     await openDB();
@@ -3383,58 +3397,60 @@ async function init() {
     loadUIState();
     loadFilterState();
     loadAutoShareState();
-    loadAllowDeleteState(); // 【修改1】加载允许删除座位开关状态
-    // 【修复文字消失】page-header 是静态 DOM，只需在 init 时启动一次 Observer
+    loadAllowDeleteState();
     ensureFuncBtnText();
     startFuncBtnObserver();
     await renderMain();
-    // 设置底部版本号
     const verEl = document.querySelector('.app-footer .version');
     if (verEl) verEl.textContent = APP_VERSION;
   } catch (err) {
     console.error('初始化失败:', err);
-    app.innerHTML = '<p style="padding:20px;color:red;">初始化失败，请检查浏览器是否支持 IndexedDB。</p>';
+    // 【v1.2.2 微信兼容】初始化失败时显示友好提示，不崩溃
+    try { app.innerHTML = '<p style="padding:20px;color:#666;">初始化遇到问题，请刷新页面重试。如持续出现，请使用系统浏览器打开。</p>'; } catch(e) {}
   }
-  // 注册 Service Worker + 新版本更新提示
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      // 检测到新版本等待激活时，显示更新提示
-      if (reg.waiting) {
-        showUpdateBar(reg.waiting);
-      }
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // 新版本已安装，等待激活
-            showUpdateBar(newWorker);
-          }
+  // 【v1.2.2 微信兼容】SW 注册包裹在 try-catch 中，微信浏览器中失败不影响主功能
+  // 微信内置浏览器中跳过 SW 注册（兼容性差且无 PWA 需求）
+  if (!isWeChat && 'serviceWorker' in navigator) {
+    try {
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        if (reg.waiting) { try { showUpdateBar(reg.waiting); } catch(e) {} }
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              try { showUpdateBar(newWorker); } catch(e) {}
+            }
+          });
         });
-      });
-      // 定时检查更新（每30分钟）
-      setInterval(() => reg.update(), 30 * 60 * 1000);
-    }).catch(() => {});
+        setInterval(() => { try { reg.update(); } catch(e) {} }, 30 * 60 * 1000);
+      }).catch(() => {});
+    } catch (e) { console.warn('SW 注册失败，不影响使用:', e); }
   }
-  // 更新提示条：点击后通知新 SW 激活并刷新页面
   function showUpdateBar(worker) {
-    const bar = document.getElementById('update-bar');
-    if (!bar || bar.classList.contains('show')) return;
-    bar.classList.add('show');
-    bar.onclick = () => {
-      if (worker && worker.postMessage) {
-        worker.postMessage({ type: 'SKIP_WAITING' });
-      }
-      // 等待新 SW 接管后刷新
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-      });
-      // 兜底：1秒后强制刷新
-      setTimeout(() => window.location.reload(), 1000);
-    };
+    try {
+      const bar = document.getElementById('update-bar');
+      if (!bar || bar.classList.contains('show')) return;
+      bar.classList.add('show');
+      bar.onclick = () => {
+        if (worker && worker.postMessage) {
+          worker.postMessage({ type: 'SKIP_WAITING' });
+        }
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload();
+        });
+        setTimeout(() => window.location.reload(), 1000);
+      };
+    } catch(e) {}
   }
 }
-init();
+// 【v1.2.2 微信兼容】最外层 try-catch 防止任何未捕获异常导致页面崩溃
+try {
+  init();
+} catch(e) {
+  console.error('应用启动异常:', e);
+  try { document.getElementById('app').innerHTML = '<p style="padding:20px;color:#666;">应用启动异常，请刷新页面重试。</p>'; } catch(e2) {}
+}
 </script>
 </body>
 </html>
