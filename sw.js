@@ -6,8 +6,8 @@
 //   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
 //   其他同源资源 → Stale-While-Revalidate（先返回缓存，后台静默更新）
 
-// 【v1.3.1】更新缓存版本号
-const CACHE_NAME = 'seat-cache-v8';
+// 【v1.3.3】更新缓存版本号
+const CACHE_NAME = 'seat-cache-v10';
 
 // 预缓存资源列表（安装时一次性缓存）
 const PRECACHE_ASSETS = [
@@ -15,13 +15,15 @@ const PRECACHE_ASSETS = [
   './index.html',
   './manifest.json',
   './seat-icon.png',
-  './seat-icon-192.png'
+  './seat-icon-192.png',
+  './shenyelogo.png'
 ];
 
 // Cache-First 资源：不常变，优先从缓存读取
 const CACHE_FIRST_URLS = [
   './seat-icon.png',
-  './seat-icon-192.png'
+  './seat-icon-192.png',
+  './shenyelogo.png'
 ];
 
 // ===== 安装事件 =====
