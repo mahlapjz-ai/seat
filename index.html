@@ -17,7 +17,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:15px;color:#333;background:#f0f2f5;-webkit-tap-highlight-color:transparent}
-#app{max-width:480px;margin:0 auto;padding:0 10px 100px;min-height:calc(100vh - 50px)}
+#app{max-width:480px;margin:0 auto;padding:0 10px 140px;min-height:calc(100vh - 50px)}
 
 /* 【修复文字消失】page-header 从 app 中移出，作为独立固定元素 */
 .page-header{display:flex;align-items:center;justify-content:center;padding:14px 10px 10px;gap:8px;flex-wrap:wrap;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:10}
@@ -136,9 +136,30 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 #selected-count{font-size:13px;color:#666;flex-shrink:0;white-space:nowrap}
 #btn-clear-select{padding:8px 12px;font-size:13px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;color:#666;cursor:pointer;flex-shrink:0}
 .bar-btn{padding:12px 10px;font-size:14px;font-weight:600;border:none;border-radius:8px;cursor:pointer;flex:1;min-width:0;white-space:nowrap}
+.app-footer{text-align:center;padding:12px 0 16px;max-width:480px;margin:0 auto}
+.app-footer .contact{font-size:12px;color:#999}
+.app-footer .version{font-size:11px;color:#aaa;margin-top:2px}
 .bar-btn:active{opacity:.8}
 #btn-download-separate{background:#1890ff;color:#fff;flex-shrink:0;min-width:auto}
 #btn-download-concat{background:#fa8c16;color:#fff}
+#btn-download-concat:disabled{background:#ccc;color:#999;cursor:not-allowed}
+.concat-hint{font-size:11px;color:#999;width:100%;text-align:center;margin-top:2px}
+/* 【v1.1.0 新增】拼接选择弹窗样式 */
+#concat-modal .concat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+#concat-modal .concat-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#f5f5f5}
+#concat-modal .concat-thumb.selected{border-color:#1890ff}
+#concat-modal .concat-thumb.disabled{opacity:.4;cursor:not-allowed}
+#concat-modal .concat-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+#concat-modal .concat-thumb .thumb-expand{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;cursor:pointer;z-index:1}
+#concat-modal .concat-thumb .thumb-check{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+#concat-modal .concat-thumb.selected .thumb-check{background:#1890ff}
+#concat-modal .concat-btns{display:flex;gap:10px;margin-top:16px}
+#concat-modal .concat-btns button{flex:1;padding:12px;font-size:15px;font-weight:600;border:none;border-radius:8px;cursor:pointer}
+#concat-modal .concat-btns button:active{opacity:.8}
+#concat-modal .concat-btns .concat-h{background:#1890ff;color:#fff}
+#concat-modal .concat-btns .concat-v{background:#722ed1;color:#fff}
+#concat-modal .concat-btns .concat-cancel{background:#f0f0f0;color:#333}
+#concat-modal .concat-btns button:disabled{background:#ccc;color:#999;cursor:not-allowed}
 
 #preview-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:200;overflow:hidden;touch-action:none}
 #preview-modal.show{display:block}
@@ -255,6 +276,18 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
     <div class="cleanup-btns"><button class="cleanup-cancel" id="cleanup-cancel-btn">取消</button><button class="cleanup-exec" id="cleanup-exec-btn">执行清理</button></div>
   </div>
 </div>
+<!-- 【v1.1.0 新增】拼接选择弹窗 -->
+<div class="modal-overlay" id="concat-modal">
+  <div class="modal-box">
+    <h3 id="concat-modal-title">拼接预览</h3>
+    <div class="concat-grid" id="concat-grid"></div>
+    <div class="concat-btns">
+      <button class="concat-cancel" id="concat-cancel-btn">取消</button>
+      <button class="concat-h" id="concat-h-btn">横拼</button>
+      <button class="concat-v" id="concat-v-btn">竖拼</button>
+    </div>
+  </div>
+</div>
 <div class="filter-sheet-overlay" id="filter-overlay"></div>
 <div class="filter-sheet" id="filter-sheet">
   <div class="filter-sheet-header"><span class="filter-sheet-title">选择显示时段（打勾为显示时段）</span><button class="filter-sheet-close" id="filter-close">&times;</button></div>
@@ -313,6 +346,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
+// v1.1.0 新增横拼方式、拼接预览交互改造（按图片总数分三种交互）
+const APP_VERSION = 'v1.1.0';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 
@@ -624,6 +659,7 @@ async function renderMain() {
     });
     html += '</div>';
   });
+  html += '<div class="app-footer"><div class="contact">如有使用建议可联系老范尝试优化。</div><div class="version"></div></div>';
   app.innerHTML = html;
   // 【修复BUG】串行执行 renderTimeSlots，避免并发 DOM 操作冲突
   // 【修复Bug3】每次 await 前检查序列号，旧调用自动让路
@@ -1496,14 +1532,47 @@ async function shareSelectedImages() {
   }
 }
 
-// 【修改1】拼接下载改为拼接预览：拼接后打开全屏预览，不直接下载
-async function downloadConcatenated() {
-  if (state.selectedCells.length === 0) return;
-  // 拼接功能最多选择 2 个时段
-  const uniqueTimeSlots = new Set(state.selectedCells.map(ck => ck.split('-')[3]));
-  if (uniqueTimeSlots.size > 2) { showToast('拼接功能只能选择 2 个时段'); return; }
-  try {
-  // 【性能优化】只读取选中单元格的数据，不加载全部
+// 【v1.1.0 改造】拼接预览交互改造：按图片总数分三种交互，新增横拼方式
+const concatModal = document.getElementById('concat-modal');
+const concatGrid = document.getElementById('concat-grid');
+const concatModalTitle = document.getElementById('concat-modal-title');
+const concatHBtn = document.getElementById('concat-h-btn');
+const concatVBtn = document.getElementById('concat-v-btn');
+const concatCancelBtn = document.getElementById('concat-cancel-btn');
+const concatBtn = document.getElementById('btn-download-concat');
+
+// 拼接弹窗状态
+let concatImageData = [];   // 当前可选的全部图片对象
+let concatSelected = [];    // 当前选中的索引（按勾选顺序）
+let concatMaxSelect = 3;    // 最多可选张数
+let concatMode = 'select';  // 'simple'=2~3张直接选横/竖拼, 'select'=4~6张需选图片
+
+// 【v1.1.0 新增】根据选中时段图片总数，更新拼接按钮状态
+function updateConcatBtnState() {
+  // 移除旧提示
+  const oldHint = document.querySelector('.concat-hint');
+  if (oldHint) oldHint.remove();
+  if (state.selectedCells.length === 0) {
+    concatBtn.disabled = false;
+    return;
+  }
+  let totalImgs = 0;
+  for (const ck of state.selectedCells) {
+    totalImgs += imageCountCache.get(ck) || 0;
+  }
+  if (totalImgs < 2) {
+    concatBtn.disabled = true;
+    const hint = document.createElement('span');
+    hint.className = 'concat-hint';
+    hint.textContent = '需选择2张及以上图片才能拼接';
+    concatBtn.parentNode.insertBefore(hint, concatBtn.nextSibling);
+  } else {
+    concatBtn.disabled = false;
+  }
+}
+
+// 【v1.1.0 新增】获取选中时段的所有图片数据
+async function getSelectedImagesData() {
   const cellDataMap = await getCellDataBatch(state.selectedCells);
   const allImageData = [];
   for (const ck of state.selectedCells) {
@@ -1511,18 +1580,30 @@ async function downloadConcatenated() {
     if (!cellData || !cellData.images || cellData.images.length === 0) continue;
     for (const imgObj of cellData.images) allImageData.push(imgObj);
   }
-  if (allImageData.length === 0) { showToast('无图片可拼接'); return; }
-  // 【终极方案】拼接时优先使用 Blob URL（拍照后可能 data 还未存入 IndexedDB）
-  showToast('正在拼接...');
-  // 构建图片源：优先 _fullBlobURL > _fullBlob(Blob) > data(Base64)
-  const imgSrcs = allImageData.map((imgObj, idx) => {
-    if (imgObj._fullBlobURL) return imgObj._fullBlobURL;
-    if (imgObj._fullBlob) return URL.createObjectURL(imgObj._fullBlob);
-    if (imgObj.data) return imgObj.data;
-    return null;
-  });
-  if (imgSrcs.some(s => !s)) { showToast('部分图片尚未就绪，请稍后重试'); return; }
-  const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(); img.src = src; })));
+  return allImageData;
+}
+
+// 【v1.1.0 新增】获取图片源 URL
+function getImgSrc(imgObj) {
+  if (imgObj._fullBlobURL) return imgObj._fullBlobURL;
+  if (imgObj._fullBlob) return URL.createObjectURL(imgObj._fullBlob);
+  if (imgObj.data) return imgObj.data;
+  return null;
+}
+
+// 【v1.1.0 新增】获取缩略图源 URL
+function getThumbSrc(imgObj) {
+  if (imgObj._thumbBlobURL) return imgObj._thumbBlobURL;
+  if (imgObj.thumbnail) return imgObj.thumbnail;
+  if (imgObj.thumb) return imgObj.thumb;
+  return getImgSrc(imgObj);
+}
+
+// 【v1.1.0 新增】竖拼绘制：宽度取最大宽度，高度按比例缩放后累加
+async function stitchVertical(imgObjs) {
+  const imgSrcs = imgObjs.map(getImgSrc);
+  if (imgSrcs.some(s => !s)) throw new Error('部分图片尚未就绪');
+  const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
   const maxW = Math.max(...imgs.map(i => i.naturalWidth));
   const scaledH = imgs.map(i => Math.round(i.naturalHeight * maxW / i.naturalWidth));
   const totalH = scaledH.reduce((a, b) => a + b, 0);
@@ -1530,10 +1611,161 @@ async function downloadConcatenated() {
   const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, maxW, totalH);
   let y = 0;
   for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], 0, y, maxW, scaledH[i]); y += scaledH[i]; }
-  // 【修复】拼接预览模糊：使用 Blob URL 替代 dataURL，避免浏览器对超大 dataURL 降质渲染
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
-  const blobURL = URL.createObjectURL(blob);
-  showPreviewFromBlobURL(blobURL, blob, '拼接结果');
+  return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+}
+
+// 【v1.1.0 新增】横拼绘制：高度取最大高度，宽度按比例缩放后累加，顶部对齐
+async function stitchHorizontal(imgObjs) {
+  const imgSrcs = imgObjs.map(getImgSrc);
+  if (imgSrcs.some(s => !s)) throw new Error('部分图片尚未就绪');
+  const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
+  const maxH = Math.max(...imgs.map(i => i.naturalHeight));
+  const scaledW = imgs.map(i => Math.round(i.naturalWidth * maxH / i.naturalHeight));
+  const totalW = scaledW.reduce((a, b) => a + b, 0);
+  const canvas = document.createElement('canvas'); canvas.width = totalW; canvas.height = maxH;
+  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, totalW, maxH);
+  let x = 0;
+  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], x, 0, scaledW[i], maxH); x += scaledW[i]; }
+  return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+}
+
+// 【v1.1.0 新增】执行拼接并预览
+async function doStitch(imgObjs, direction) {
+  try {
+    showToast('正在拼接...');
+    const blob = direction === 'horizontal' ? await stitchHorizontal(imgObjs) : await stitchVertical(imgObjs);
+    const blobURL = URL.createObjectURL(blob);
+    showPreviewFromBlobURL(blobURL, blob, '拼接结果');
+  } catch (err) {
+    console.error('拼接预览出错:', err);
+    showToast('拼接出错: ' + (err.message || '未知错误'));
+  }
+}
+
+// 【v1.1.0 新增】渲染拼接选择弹窗（4~6张图片时显示缩略图网格）
+function showConcatSelectModal(allImgs) {
+  concatImageData = allImgs;
+  concatSelected = [];
+  concatMaxSelect = 3;
+  // 默认勾选前3张
+  const defaultCount = Math.min(3, allImgs.length);
+  for (let i = 0; i < defaultCount; i++) concatSelected.push(i);
+
+  concatModalTitle.textContent = '选择拼接图片（最多3张）';
+  concatGrid.innerHTML = '';
+  allImgs.forEach((imgObj, idx) => {
+    const thumbSrc = getThumbSrc(imgObj);
+    const div = document.createElement('div');
+    div.className = 'concat-thumb' + (concatSelected.includes(idx) ? ' selected' : '');
+    div.dataset.idx = idx;
+    div.innerHTML = `<img src="${thumbSrc || ''}" /><span class="thumb-expand">展开</span><span class="thumb-check">✓</span>`;
+    concatGrid.appendChild(div);
+  });
+  updateConcatThumbStates();
+  concatHBtn.disabled = false;
+  concatVBtn.disabled = false;
+  concatModal.classList.add('show');
+}
+
+// 【v1.1.0 新增】更新缩略图选中/禁用状态
+function updateConcatThumbStates() {
+  const thumbs = concatGrid.querySelectorAll('.concat-thumb');
+  thumbs.forEach(thumb => {
+    const idx = parseInt(thumb.dataset.idx);
+    const isSelected = concatSelected.includes(idx);
+    thumb.classList.toggle('selected', isSelected);
+    // 已选3张且当前未选中 → 禁用
+    if (concatSelected.length >= concatMaxSelect && !isSelected) {
+      thumb.classList.add('disabled');
+    } else {
+      thumb.classList.remove('disabled');
+    }
+  });
+}
+
+// 【v1.1.0 新增】拼接弹窗点击事件
+concatGrid.addEventListener('click', (e) => {
+  // 点击"展开"按钮 → 全屏预览该图片
+  const expandBtn = e.target.closest('.thumb-expand');
+  if (expandBtn) {
+    const thumb = expandBtn.closest('.concat-thumb');
+    const idx = parseInt(thumb.dataset.idx);
+    const imgObj = concatImageData[idx];
+    const src = getImgSrc(imgObj);
+    if (src) {
+      // 临时打开预览，不改变拼接弹窗状态
+      const blob = imgObj._fullBlob || null;
+      showPreviewFromBlobURL(src, blob, '图片预览');
+    }
+    return;
+  }
+  // 点击图片 → 勾选/取消勾选
+  const thumb = e.target.closest('.concat-thumb');
+  if (!thumb || thumb.classList.contains('disabled')) return;
+  const idx = parseInt(thumb.dataset.idx);
+  const selIdx = concatSelected.indexOf(idx);
+  if (selIdx >= 0) {
+    concatSelected.splice(selIdx, 1);
+  } else {
+    if (concatSelected.length >= concatMaxSelect) return;
+    concatSelected.push(idx);
+  }
+  updateConcatThumbStates();
+});
+
+// 【v1.1.0 新增】横拼/竖拼按钮：根据 concatMode 决定行为
+concatHBtn.addEventListener('click', async () => {
+  concatModal.classList.remove('show');
+  if (concatMode === 'simple') {
+    // 2~3张：直接用全部图片
+    await doStitch(concatImageData, 'horizontal');
+  } else {
+    // 4~6张：用选中的图片
+    const selectedImgs = concatSelected.map(i => concatImageData[i]);
+    if (selectedImgs.length < 2) { showToast('需选择2张及以上图片'); return; }
+    await doStitch(selectedImgs, 'horizontal');
+  }
+});
+concatVBtn.addEventListener('click', async () => {
+  concatModal.classList.remove('show');
+  if (concatMode === 'simple') {
+    await doStitch(concatImageData, 'vertical');
+  } else {
+    const selectedImgs = concatSelected.map(i => concatImageData[i]);
+    if (selectedImgs.length < 2) { showToast('需选择2张及以上图片'); return; }
+    await doStitch(selectedImgs, 'vertical');
+  }
+});
+concatCancelBtn.addEventListener('click', () => { concatModal.classList.remove('show'); });
+
+// 【v1.1.0 改造】拼接预览主入口：根据图片总数分三种交互
+async function downloadConcatenated() {
+  if (state.selectedCells.length === 0) return;
+  // 拼接功能最多选择 2 个时段
+  const uniqueTimeSlots = new Set(state.selectedCells.map(ck => ck.split('-')[3]));
+  if (uniqueTimeSlots.size > 2) { showToast('拼接功能只能选择 2 个时段'); return; }
+  try {
+  const allImageData = await getSelectedImagesData();
+  if (allImageData.length === 0) { showToast('无图片可拼接'); return; }
+
+  if (allImageData.length === 1) {
+    // 情况1：1张 → 按钮已置灰，不应进入此处
+    showToast('需选择2张及以上图片才能拼接');
+    return;
+  } else if (allImageData.length <= 3) {
+    // 情况2：2~3张 → 弹出横拼/竖拼选择（不显示缩略图网格）
+    concatMode = 'simple';
+    concatImageData = allImageData;
+    concatModalTitle.textContent = '选择拼接方式';
+    concatGrid.innerHTML = '';
+    concatHBtn.disabled = false;
+    concatVBtn.disabled = false;
+    concatModal.classList.add('show');
+  } else {
+    // 情况3：4~6张 → 弹出缩略图网格选择
+    concatMode = 'select';
+    showConcatSelectModal(allImageData);
+  }
   } catch (err) {
     console.error('拼接预览出错:', err);
     showToast('拼接出错: ' + (err.message || '未知错误'));
@@ -2637,7 +2869,7 @@ document.getElementById('cleanup-exec-btn').addEventListener('click', async () =
 // ============================================================
 function showToast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2100); }
 const bottomBar = document.getElementById('bottom-bar'), selectedCount = document.getElementById('selected-count');
-function updateBottomBar() { if (state.selectedCells.length > 0) { bottomBar.classList.add('show'); selectedCount.textContent = `已选 ${state.selectedCells.length} 个时段`; } else bottomBar.classList.remove('show'); }
+function updateBottomBar() { if (state.selectedCells.length > 0) { bottomBar.classList.add('show'); selectedCount.textContent = `已选 ${state.selectedCells.length} 个时段`; } else bottomBar.classList.remove('show'); updateConcatBtnState(); }
 document.getElementById('btn-download-separate').addEventListener('click', shareSelectedImages);
 document.getElementById('btn-download-concat').addEventListener('click', downloadConcatenated);
 document.getElementById('btn-clear-select').addEventListener('click', () => { state.selectedCells = []; document.querySelectorAll('.ts-checkbox.checked').forEach(cb => cb.classList.remove('checked')); updateBottomBar(); });
@@ -3031,6 +3263,9 @@ async function init() {
     ensureFuncBtnText();
     startFuncBtnObserver();
     await renderMain();
+    // 设置底部版本号
+    const verEl = document.querySelector('.app-footer .version');
+    if (verEl) verEl.textContent = APP_VERSION;
   } catch (err) {
     console.error('初始化失败:', err);
     app.innerHTML = '<p style="padding:20px;color:red;">初始化失败，请检查浏览器是否支持 IndexedDB。</p>';
