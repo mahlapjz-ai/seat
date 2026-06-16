@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="座位管理">
 <link rel="apple-touch-icon" href="seat-icon.png">
-<title>图书馆座位分时段图片管理</title>
+<title>座位图片管理</title>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -263,7 +263,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 <body>
 <div class="update-bar" id="update-bar">有新版本可用，点击刷新</div>
 <!-- 【修复文字消失】page-header 移出 app，作为静态 DOM，不会被 renderMain 重建 -->
-<div class="page-header" id="page-header"><span class="page-title">图书馆座位图片管理</span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">菜单</button></div>
+<div class="page-header" id="page-header"><span class="page-title">座位图片管理 <small style="font-size:12px;font-weight:400;color:#999;letter-spacing:0" id="header-version"></small></span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">菜单</button></div>
 <div id="app"></div>
 <div id="bottom-bar">
   <span id="selected-count">已选 0 个时段</span>
@@ -374,8 +374,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.3.3 LOGO水印改为文件加载（移除Base64嵌入）
-const APP_VERSION = 'v1.3.3';
+// v1.3.5 修改下载提示语时机、菜单说明文字
+const APP_VERSION = 'v1.3.5';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -726,10 +726,10 @@ async function renderMain() {
     });
     html += '</div>';
   });
-  // 【v1.2.5】底部信息：免责声明常显 + 联系小字仅版本更新后短暂显示 + 版本号常显
+  // 【v1.3.4】底部信息：免责声明常显 + 联系小字仅版本更新后短暂显示（版本号已移至标题旁）
   const lastVer = localStorage.getItem('lastShownVersion');
   const showContact = lastVer !== APP_VERSION;
-  html += `<div class="app-footer"><div class="disclaimer">内部参考工具，功能尚不完善，数据可能丢失，不承担准确性与隐私责任</div><div class="contact${showContact ? '' : ' hidden'}">如有使用建议可联系老范尝试优化。</div><div class="version">${APP_VERSION}</div></div>`;
+  html += `<div class="app-footer"><div class="disclaimer">内部参考工具，功能尚不完善，数据可能丢失，不承担准确性与隐私责任</div><div class="contact${showContact ? '' : ' hidden'}">如有使用建议可联系老范尝试优化。</div></div>`;
   app.innerHTML = html;
   // 【v1.2.5】联系小字：版本更新后显示2秒再淡出
   if (showContact) {
@@ -751,8 +751,11 @@ async function renderMain() {
 function ensureFuncBtnText() {
   const btn = document.getElementById('func-btn');
   if (btn && !btn.textContent.trim()) {
-    btn.textContent = '功能';
+    btn.textContent = '菜单';
   }
+  // 【v1.3.4】标题旁显示版本号
+  const verEl = document.getElementById('header-version');
+  if (verEl && !verEl.textContent) verEl.textContent = APP_VERSION;
 }
 
 // 【修复Bug3】MutationObserver 持续监控功能按钮，文字被清空时立即恢复
@@ -762,7 +765,7 @@ function startFuncBtnObserver() {
   const btn = document.getElementById('func-btn');
   if (!btn) return;
   _funcBtnObserver = new MutationObserver(() => {
-    if (!btn.textContent.trim()) btn.textContent = '功能';
+    if (!btn.textContent.trim()) btn.textContent = '菜单';
   });
   _funcBtnObserver.observe(btn, { childList: true, characterData: true, subtree: true });
 }
@@ -1161,23 +1164,8 @@ function addWatermarkBlob(imageData, seatName, beijingTime) {
         const maxTW = Math.max(tw1, tw2, tw3);
         const totalH = fs_date + fs_time + fs_seat + lineGap * 2;
         const bgX = 24, bgW = maxTW + pad * 2, bgH = totalH + vpad * 2;
-        // 【v1.3.2 新功能3】计算 LOGO 高度（如启用），调整文字水印位置
-        const logoAspect = 913 / 2662; // LOGO 原始宽高比
-        const logoGap = Math.round(fs_time * 0.15); // LOGO 与文字水印间距
-        let logoH = 0;
-        if (state.showLogo) {
-          logoH = Math.round(bgW * logoAspect);
-        }
-        const bgY = canvas.height - totalH - vpad * 2 - 24 - (logoH > 0 ? logoH + logoGap : 0);
-        // 【v1.3.2 新功能3】绘制 LOGO（在文字水印正上方，左对齐，不透明度 1）
-        if (state.showLogo && logoH > 0) {
-          const logoImg = await getLogoImage();
-          if (logoImg) {
-            ctx.globalAlpha = 1;
-            ctx.drawImage(logoImg, bgX, bgY - logoH - logoGap, bgW, logoH);
-            ctx.globalAlpha = 1;
-          }
-        }
+        // 【v1.3.4 Bug2修复】文字水印位置固定：距下边缘 24px，不受 LOGO 影响
+        const bgY = canvas.height - totalH - vpad * 2 - 24;
         // 半透明圆角背景
         ctx.fillStyle = 'rgba(0,0,0,0.55)';
         ctx.beginPath();
@@ -1202,6 +1190,17 @@ function addWatermarkBlob(imageData, seatName, beijingTime) {
         curY += fs_time + lineGap;
         ctx.font = `400 ${fs_seat}px ${fontFam}`;
         ctx.fillText(seatName, textX, curY);
+        // 【v1.3.4 Bug2修复】LOGO 绘制在文字水印正上方，文字位置不受影响
+        if (state.showLogo) {
+          const logoAspect = 913 / 2662; // LOGO 原始宽高比
+          const logoH = Math.round(bgW * logoAspect);
+          const logoGap = Math.round(fs_time * 0.15);
+          const logoImg = await getLogoImage();
+          if (logoImg) {
+            ctx.globalAlpha = 1;
+            ctx.drawImage(logoImg, bgX, bgY - logoH - logoGap, bgW, logoH);
+          }
+        }
         // 一次 Canvas 绘制，同时导出原图 Blob 和缩略图 Blob
         const fullPromise = new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
         // 从同一个 Canvas 生成缩略图
@@ -1642,7 +1641,9 @@ async function downloadSelectedImages() {
       const safeTimeSlot = timeSlot.replace(/:/g, '-');
       const safeName = sName.replace(/[^\w\u4e00-\u9fff.-]/g, '_');
       const filename = `${safeName}_${safeTimeSlot}_${i + 1}.jpg`;
-      items.push({ blob, filename });
+      // 【v1.3.4 优化3】记录拍摄时间戳，用于 ZIP 文件修改时间
+      const timestamp = cellData.images[i].createdAt || cellData.images[i].timestamp || null;
+      items.push({ blob, filename, timestamp });
     }
   }
   if (items.length === 0) { showToast('无图片可下载'); return; }
@@ -1650,17 +1651,28 @@ async function downloadSelectedImages() {
   // 【v1.3.0】单张直接下载，多张打包 ZIP
   if (items.length === 1) {
     downloadBlob(items[0].blob, items[0].filename);
-    showToast('已开始下载');
+    // 【v1.3.5】提示语修正：下载已提交，等待浏览器确认
+    showToast('下载已提交');
   } else {
     showToast('正在打包...');
     try {
       const zip = new JSZip();
-      // 【v1.3.2 Bug2修复】合规 DOS 时间戳，使用本地时间避免 UTC 偏移导致 1999 年显示
-      const safeDate = new Date('2024-01-01T12:00:00');
-      items.forEach(it => zip.file(it.filename, it.blob, { date: safeDate }));
+      // 【v1.3.4 优化3】ZIP 文件修改时间使用真实拍摄时间，缺失时回退当前时间（秒数取偶数）
+      items.forEach(it => {
+        let fileDate;
+        if (it.timestamp) {
+          fileDate = new Date(it.timestamp);
+        } else {
+          fileDate = new Date();
+        }
+        // 确保 DOS 时间戳合规：秒数取偶数（DOS 时间精度为 2 秒）
+        fileDate.setSeconds(fileDate.getSeconds() & ~1);
+        zip.file(it.filename, it.blob, { date: fileDate });
+      });
       const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
       downloadBlob(zipBlob, `图片导出_${Date.now()}.zip`);
-      showToast(`已下载 ${items.length} 张图片`);
+      // 【v1.3.5】提示语修正：打包完成已提交下载，等待浏览器确认
+      showToast(`已打包 ${items.length} 张图片，等待下载确认`);
     } catch (err) { console.error('打包出错:', err); showToast('打包出错'); }
   }
 }
@@ -2051,8 +2063,6 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
     }
     const cellDataMap = await getCellDataBatch(neededKeys);
     const zip = new JSZip(); let count = 0;
-    // 【v1.3.2 Bug2修复】合规 DOS 时间戳，使用本地时间避免 UTC 偏移导致 1999 年显示
-    const safeDate = new Date('2024-01-01T12:00:00');
     for (const ak of batchSelectedAreas) {
       const parts = ak.split('-'), fid = parseInt(parts[0]), aname = parts[1];
       const seatCount = getAreaSeatCount(fid, aname);
@@ -2095,8 +2105,11 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
             const folder = `${floorObj.name}_${aname}`;
             // 文件名中冒号在 Android 文件系统非法，替换为短横线
             const safeTimeSlot = TIME_SLOTS[tIdx].replace(/:/g, '-');
+            // 【v1.3.4 优化3】ZIP 文件修改时间使用真实拍摄时间
+            let fileDate = img.createdAt || img.timestamp ? new Date(img.createdAt || img.timestamp) : new Date();
+            fileDate.setSeconds(fileDate.getSeconds() & ~1); // DOS 时间戳合规：秒数取偶数
             // 用路径字符串代替 zip.folder()，避免生成 STORED 目录条目导致 Android 解压失败
-            zip.file(`${folder}/${sName}_${safeTimeSlot}_${i + 1}.jpg`, blob, { date: safeDate });
+            zip.file(`${folder}/${sName}_${safeTimeSlot}_${i + 1}.jpg`, blob, { date: fileDate });
             count++;
           }
         }
@@ -2105,7 +2118,8 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
     if (count === 0) { showToast('所选范围内无图片'); return; }
     const blob = await zip.generateAsync({ type: 'blob' });
     downloadBlob(blob, `批量下载_${count}张.zip`);
-    showToast(`已下载 ${count} 张图片`);
+    // 【v1.3.5】提示语修正：打包完成已提交下载，等待浏览器确认
+      showToast(`已打包 ${count} 张图片，等待下载确认`);
   } catch (err) { console.error('批量下载出错:', err); showToast('下载出错'); }
 });
 
@@ -3422,7 +3436,7 @@ function renderFuncPanelBody() {
       <span style="color:#bfbfbf;font-size:18px">›</span>
     </div>
     <div class="func-item" data-func="toggle-auto-share">
-      <div class="func-item-label">拍照后下载<div class="func-item-desc">拍照完成后自动下载图片</div></div>
+      <div class="func-item-label">拍照后下载<div class="func-item-desc">拍照完成后提示下载图片</div></div>
       <div class="func-toggle ${state.autoShare ? 'on' : ''}" id="func-toggle-share"></div>
     </div>
     <div class="func-item" data-func="toggle-allow-delete">
