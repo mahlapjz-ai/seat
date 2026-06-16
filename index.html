@@ -59,7 +59,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 .func-toggle.on::after{transform:translateX(20px)}
 
 /* 【修改4】预览保存按钮淡出 */
-#preview-save-btn{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);padding:10px 28px;font-size:14px;font-weight:600;border:none;border-radius:8px;background:rgba(24,144,255,.9);color:#fff;cursor:pointer;z-index:202;box-shadow:0 2px 12px rgba(24,144,255,.4);transition:opacity .5s ease}
+#preview-save-btn{position:absolute;bottom:50px;left:50%;transform:translateX(-50%);padding:10px 28px;font-size:14px;font-weight:600;border:none;border-radius:8px;background:rgba(24,144,255,.9);color:#fff;cursor:pointer;z-index:301;box-shadow:0 2px 12px rgba(24,144,255,.4);transition:opacity .5s ease}
 #preview-save-btn:active{opacity:.8}
 #preview-save-btn.faded{opacity:.1}
 
@@ -144,31 +144,45 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
 #btn-download-concat{background:#fa8c16;color:#fff}
 #btn-download-concat:disabled{background:#ccc;color:#999;cursor:not-allowed}
 .concat-hint{font-size:11px;color:#999;width:100%;text-align:center;margin-top:2px}
-/* 【v1.1.0 新增】拼接选择弹窗样式 */
-#concat-modal .concat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
-#concat-modal .concat-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#f5f5f5}
-#concat-modal .concat-thumb.selected{border-color:#1890ff}
-#concat-modal .concat-thumb.disabled{opacity:.4;cursor:not-allowed}
-#concat-modal .concat-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-#concat-modal .concat-thumb .thumb-expand{position:absolute;left:4px;bottom:4px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;cursor:pointer;z-index:1}
-#concat-modal .concat-thumb .thumb-check{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
-#concat-modal .concat-thumb.selected .thumb-check{background:#1890ff}
-#concat-modal .concat-btns{display:flex;gap:10px;margin-top:16px}
-#concat-modal .concat-btns button{flex:1;padding:12px;font-size:15px;font-weight:600;border:none;border-radius:8px;cursor:pointer}
-#concat-modal .concat-btns button:active{opacity:.8}
-#concat-modal .concat-btns .concat-h{background:#1890ff;color:#fff}
-#concat-modal .concat-btns .concat-v{background:#722ed1;color:#fff}
-#concat-modal .concat-btns .concat-cancel{background:#f0f0f0;color:#333}
-#concat-modal .concat-btns button:disabled{background:#ccc;color:#999;cursor:not-allowed}
+/* 【v1.1.1 改造】拼接选择改为底部滑出面板 */
+#concat-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:260}
+#concat-overlay.show{display:block}
+#concat-sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:261;transform:translateY(100%);transition:transform .3s ease;max-height:75vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
+#concat-sheet.show{transform:translateY(0)}
+#concat-sheet .sheet-header{display:flex;align-items:center;justify-content:center;padding:14px 20px 8px;flex-shrink:0}
+#concat-sheet .sheet-title{font-size:15px;font-weight:600;color:#666}
+#concat-sheet .sheet-handle{width:36px;height:4px;border-radius:2px;background:#ddd;margin:0 auto 8px}
+#concat-sheet .concat-btns-simple{display:none;flex-direction:column;gap:10px;padding:8px 20px 24px;flex-shrink:0}
+#concat-sheet .concat-btns-simple button{width:100%;padding:14px;font-size:16px;font-weight:600;border:none;border-radius:10px;cursor:pointer;min-height:48px}
+#concat-sheet .concat-btns-simple button:active{opacity:.8}
+#concat-sheet .concat-btns-simple button:disabled{background:#ccc;color:#999;cursor:not-allowed}
+#concat-sheet .concat-btns-simple .concat-h{background:#1890ff;color:#fff}
+#concat-sheet .concat-btns-simple .concat-v{background:#722ed1;color:#fff}
+#concat-sheet .concat-grid{display:none;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 20px 8px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+#concat-sheet .concat-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#f5f5f5}
+#concat-sheet .concat-thumb.selected{border-color:#1890ff}
+#concat-sheet .concat-thumb.disabled{opacity:.4;cursor:not-allowed}
+#concat-sheet .concat-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+/* 【v1.1.1】全屏图标替换"展开"文字 */
+#concat-sheet .concat-thumb .thumb-expand{position:absolute;left:4px;bottom:4px;width:24px;height:24px;background:rgba(0,0,0,.5);border-radius:4px;cursor:pointer;z-index:1;display:flex;align-items:center;justify-content:center}
+#concat-sheet .concat-thumb .thumb-expand svg{width:14px;height:14px;fill:#fff}
+#concat-sheet .concat-thumb .thumb-check{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+#concat-sheet .concat-thumb.selected .thumb-check{background:#1890ff}
+#concat-sheet .concat-btns-grid{display:none;gap:10px;padding:12px 20px 24px;flex-shrink:0}
+#concat-sheet .concat-btns-grid button{flex:1;padding:14px;font-size:16px;font-weight:600;border:none;border-radius:10px;cursor:pointer;min-height:48px}
+#concat-sheet .concat-btns-grid button:active{opacity:.8}
+#concat-sheet .concat-btns-grid button:disabled{background:#ccc;color:#999;cursor:not-allowed}
+#concat-sheet .concat-btns-grid .concat-h{background:#1890ff;color:#fff}
+#concat-sheet .concat-btns-grid .concat-v{background:#722ed1;color:#fff}
 
-#preview-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:200;overflow:hidden;touch-action:none}
+#preview-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:300;overflow:hidden;touch-action:none}
 #preview-modal.show{display:block}
-#preview-close{position:absolute;top:12px;right:16px;font-size:32px;color:#fff;cursor:pointer;z-index:201;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:50%}
+#preview-close{position:absolute;top:12px;right:16px;font-size:32px;color:#fff;cursor:pointer;z-index:301;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:50%}
 #preview-scroller{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;will-change:transform}
 .pv-slide{flex:0 0 100%;width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
 .pv-slide img{max-width:100vw;max-height:100vh;object-fit:contain;border-radius:4px;transform-origin:center center;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:none;will-change:transform;transition:opacity .15s ease-out}
 .pv-slide img[data-decoding]{opacity:0}
-#preview-indicator{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:201}
+#preview-indicator{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:301}
 #preview-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.4);font-size:12px;pointer-events:none}
 
 .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:250;align-items:center;justify-content:center}
@@ -276,16 +290,21 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","P
     <div class="cleanup-btns"><button class="cleanup-cancel" id="cleanup-cancel-btn">取消</button><button class="cleanup-exec" id="cleanup-exec-btn">执行清理</button></div>
   </div>
 </div>
-<!-- 【v1.1.0 新增】拼接选择弹窗 -->
-<div class="modal-overlay" id="concat-modal">
-  <div class="modal-box">
-    <h3 id="concat-modal-title">拼接预览</h3>
-    <div class="concat-grid" id="concat-grid"></div>
-    <div class="concat-btns">
-      <button class="concat-cancel" id="concat-cancel-btn">取消</button>
-      <button class="concat-h" id="concat-h-btn">横拼</button>
-      <button class="concat-v" id="concat-v-btn">竖拼</button>
-    </div>
+<!-- 【v1.1.1 改造】拼接选择改为底部滑出面板 -->
+<div id="concat-overlay"></div>
+<div id="concat-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header"><span class="sheet-title" id="concat-sheet-title">选择拼接方式</span></div>
+  <!-- 情况2：2~3张，只显示横拼/竖拼按钮 -->
+  <div class="concat-btns-simple" id="concat-btns-simple">
+    <button class="concat-h" id="concat-h-btn">横拼</button>
+    <button class="concat-v" id="concat-v-btn">竖拼</button>
+  </div>
+  <!-- 情况3：4~6张，显示缩略图网格+底部按钮 -->
+  <div class="concat-grid" id="concat-grid"></div>
+  <div class="concat-btns-grid" id="concat-btns-grid">
+    <button class="concat-h" id="concat-h-btn2">横拼</button>
+    <button class="concat-v" id="concat-v-btn2">竖拼</button>
   </div>
 </div>
 <div class="filter-sheet-overlay" id="filter-overlay"></div>
@@ -346,8 +365,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.1.0 新增横拼方式、拼接预览交互改造（按图片总数分三种交互）
-const APP_VERSION = 'v1.1.0';
+// v1.1.1 拼接选择改为底部滑出面板、全屏图标替换展开文字、预览层z-index提升
+const APP_VERSION = 'v1.1.1';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 
@@ -1532,24 +1551,40 @@ async function shareSelectedImages() {
   }
 }
 
-// 【v1.1.0 改造】拼接预览交互改造：按图片总数分三种交互，新增横拼方式
-const concatModal = document.getElementById('concat-modal');
+// 【v1.1.1 改造】拼接选择改为底部滑出面板，点击外部关闭
+const concatOverlay = document.getElementById('concat-overlay');
+const concatSheet = document.getElementById('concat-sheet');
+const concatSheetTitle = document.getElementById('concat-sheet-title');
 const concatGrid = document.getElementById('concat-grid');
-const concatModalTitle = document.getElementById('concat-modal-title');
+const concatBtnsSimple = document.getElementById('concat-btns-simple');
+const concatBtnsGrid = document.getElementById('concat-btns-grid');
 const concatHBtn = document.getElementById('concat-h-btn');
 const concatVBtn = document.getElementById('concat-v-btn');
-const concatCancelBtn = document.getElementById('concat-cancel-btn');
+const concatHBtn2 = document.getElementById('concat-h-btn2');
+const concatVBtn2 = document.getElementById('concat-v-btn2');
 const concatBtn = document.getElementById('btn-download-concat');
 
-// 拼接弹窗状态
+// 拼接面板状态
 let concatImageData = [];   // 当前可选的全部图片对象
 let concatSelected = [];    // 当前选中的索引（按勾选顺序）
 let concatMaxSelect = 3;    // 最多可选张数
-let concatMode = 'select';  // 'simple'=2~3张直接选横/竖拼, 'select'=4~6张需选图片
+let concatMode = 'simple';  // 'simple'=2~3张直接选横/竖拼, 'select'=4~6张需选图片
+
+// 【v1.1.1】打开拼接面板
+function openConcatSheet() {
+  concatOverlay.classList.add('show');
+  concatSheet.classList.add('show');
+}
+// 【v1.1.1】关闭拼接面板
+function closeConcatSheet() {
+  concatOverlay.classList.remove('show');
+  concatSheet.classList.remove('show');
+}
+// 点击外部（overlay）关闭面板
+concatOverlay.addEventListener('click', closeConcatSheet);
 
 // 【v1.1.0 新增】根据选中时段图片总数，更新拼接按钮状态
 function updateConcatBtnState() {
-  // 移除旧提示
   const oldHint = document.querySelector('.concat-hint');
   if (oldHint) oldHint.remove();
   if (state.selectedCells.length === 0) {
@@ -1642,50 +1677,56 @@ async function doStitch(imgObjs, direction) {
   }
 }
 
-// 【v1.1.0 新增】渲染拼接选择弹窗（4~6张图片时显示缩略图网格）
+// 【v1.1.1】全屏图标 SVG
+const EXPAND_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z"/></svg>';
+
+// 【v1.1.1 改造】渲染拼接选择面板（4~6张图片时显示缩略图网格）
 function showConcatSelectModal(allImgs) {
   concatImageData = allImgs;
   concatSelected = [];
   concatMaxSelect = 3;
-  // 默认勾选前3张
   const defaultCount = Math.min(3, allImgs.length);
   for (let i = 0; i < defaultCount; i++) concatSelected.push(i);
 
-  concatModalTitle.textContent = '选择拼接图片（最多3张）';
+  concatSheetTitle.textContent = '选择拼接图片（最多3张）';
+  concatBtnsSimple.style.display = 'none';
+  concatBtnsGrid.style.display = 'flex';
+  concatGrid.style.display = 'grid';
   concatGrid.innerHTML = '';
   allImgs.forEach((imgObj, idx) => {
     const thumbSrc = getThumbSrc(imgObj);
     const div = document.createElement('div');
     div.className = 'concat-thumb' + (concatSelected.includes(idx) ? ' selected' : '');
     div.dataset.idx = idx;
-    div.innerHTML = `<img src="${thumbSrc || ''}" /><span class="thumb-expand">展开</span><span class="thumb-check">✓</span>`;
+    div.innerHTML = `<img src="${thumbSrc || ''}" /><span class="thumb-expand">${EXPAND_SVG}</span><span class="thumb-check">✓</span>`;
     concatGrid.appendChild(div);
   });
   updateConcatThumbStates();
-  concatHBtn.disabled = false;
-  concatVBtn.disabled = false;
-  concatModal.classList.add('show');
+  openConcatSheet();
 }
 
-// 【v1.1.0 新增】更新缩略图选中/禁用状态
+// 【v1.1.1 改造】更新缩略图选中/禁用状态，同时更新按钮可用性
 function updateConcatThumbStates() {
   const thumbs = concatGrid.querySelectorAll('.concat-thumb');
   thumbs.forEach(thumb => {
     const idx = parseInt(thumb.dataset.idx);
     const isSelected = concatSelected.includes(idx);
     thumb.classList.toggle('selected', isSelected);
-    // 已选3张且当前未选中 → 禁用
     if (concatSelected.length >= concatMaxSelect && !isSelected) {
       thumb.classList.add('disabled');
     } else {
       thumb.classList.remove('disabled');
     }
   });
+  // 拼接按钮仅当勾选张数 >= 2 且 <= 3 时可用
+  const canStitch = concatSelected.length >= 2 && concatSelected.length <= concatMaxSelect;
+  concatHBtn2.disabled = !canStitch;
+  concatVBtn2.disabled = !canStitch;
 }
 
-// 【v1.1.0 新增】拼接弹窗点击事件
+// 【v1.1.1 改造】缩略图网格点击事件
 concatGrid.addEventListener('click', (e) => {
-  // 点击"展开"按钮 → 全屏预览该图片
+  // 点击全屏图标 → 预览大图
   const expandBtn = e.target.closest('.thumb-expand');
   if (expandBtn) {
     const thumb = expandBtn.closest('.concat-thumb');
@@ -1693,7 +1734,6 @@ concatGrid.addEventListener('click', (e) => {
     const imgObj = concatImageData[idx];
     const src = getImgSrc(imgObj);
     if (src) {
-      // 临时打开预览，不改变拼接弹窗状态
       const blob = imgObj._fullBlob || null;
       showPreviewFromBlobURL(src, blob, '图片预览');
     }
@@ -1713,35 +1753,33 @@ concatGrid.addEventListener('click', (e) => {
   updateConcatThumbStates();
 });
 
-// 【v1.1.0 新增】横拼/竖拼按钮：根据 concatMode 决定行为
+// 【v1.1.1 改造】横拼/竖拼按钮事件
+// 情况2（2~3张）的按钮
 concatHBtn.addEventListener('click', async () => {
-  concatModal.classList.remove('show');
-  if (concatMode === 'simple') {
-    // 2~3张：直接用全部图片
-    await doStitch(concatImageData, 'horizontal');
-  } else {
-    // 4~6张：用选中的图片
-    const selectedImgs = concatSelected.map(i => concatImageData[i]);
-    if (selectedImgs.length < 2) { showToast('需选择2张及以上图片'); return; }
-    await doStitch(selectedImgs, 'horizontal');
-  }
+  closeConcatSheet();
+  await doStitch(concatImageData, 'horizontal');
 });
 concatVBtn.addEventListener('click', async () => {
-  concatModal.classList.remove('show');
-  if (concatMode === 'simple') {
-    await doStitch(concatImageData, 'vertical');
-  } else {
-    const selectedImgs = concatSelected.map(i => concatImageData[i]);
-    if (selectedImgs.length < 2) { showToast('需选择2张及以上图片'); return; }
-    await doStitch(selectedImgs, 'vertical');
-  }
+  closeConcatSheet();
+  await doStitch(concatImageData, 'vertical');
 });
-concatCancelBtn.addEventListener('click', () => { concatModal.classList.remove('show'); });
+// 情况3（4~6张）的按钮
+concatHBtn2.addEventListener('click', async () => {
+  const selectedImgs = concatSelected.map(i => concatImageData[i]);
+  if (selectedImgs.length < 2) { showToast('需选择2张及以上图片'); return; }
+  closeConcatSheet();
+  await doStitch(selectedImgs, 'horizontal');
+});
+concatVBtn2.addEventListener('click', async () => {
+  const selectedImgs = concatSelected.map(i => concatImageData[i]);
+  if (selectedImgs.length < 2) { showToast('需选择2张及以上图片'); return; }
+  closeConcatSheet();
+  await doStitch(selectedImgs, 'vertical');
+});
 
-// 【v1.1.0 改造】拼接预览主入口：根据图片总数分三种交互
+// 【v1.1.1 改造】拼接预览主入口：根据图片总数分三种交互
 async function downloadConcatenated() {
   if (state.selectedCells.length === 0) return;
-  // 拼接功能最多选择 2 个时段
   const uniqueTimeSlots = new Set(state.selectedCells.map(ck => ck.split('-')[3]));
   if (uniqueTimeSlots.size > 2) { showToast('拼接功能只能选择 2 个时段'); return; }
   try {
@@ -1749,20 +1787,21 @@ async function downloadConcatenated() {
   if (allImageData.length === 0) { showToast('无图片可拼接'); return; }
 
   if (allImageData.length === 1) {
-    // 情况1：1张 → 按钮已置灰，不应进入此处
     showToast('需选择2张及以上图片才能拼接');
     return;
   } else if (allImageData.length <= 3) {
-    // 情况2：2~3张 → 弹出横拼/竖拼选择（不显示缩略图网格）
+    // 情况2：2~3张 → 底部面板只显示横拼/竖拼按钮
     concatMode = 'simple';
     concatImageData = allImageData;
-    concatModalTitle.textContent = '选择拼接方式';
-    concatGrid.innerHTML = '';
+    concatSheetTitle.textContent = '选择拼接方式';
+    concatBtnsSimple.style.display = 'flex';
+    concatBtnsGrid.style.display = 'none';
+    concatGrid.style.display = 'none';
     concatHBtn.disabled = false;
     concatVBtn.disabled = false;
-    concatModal.classList.add('show');
+    openConcatSheet();
   } else {
-    // 情况3：4~6张 → 弹出缩略图网格选择
+    // 情况3：4~6张 → 底部面板显示缩略图网格+按钮
     concatMode = 'select';
     showConcatSelectModal(allImageData);
   }
