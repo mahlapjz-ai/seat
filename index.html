@@ -170,7 +170,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #concat-sheet .concat-thumb.disabled{opacity:.4;cursor:not-allowed}
 #concat-sheet .concat-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 /* 【v1.1.1】全屏图标替换"展开"文字 */
-#concat-sheet .concat-thumb .thumb-expand{position:absolute;left:4px;bottom:4px;width:24px;height:24px;background:rgba(0,0,0,.5);border-radius:4px;cursor:pointer;z-index:1;display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+/* 【v1.3.0 iOS修复】最小触摸区域 44×44px，防止手势拦截 */
+#concat-sheet .concat-thumb .thumb-expand{position:absolute;left:0;bottom:0;width:44px;height:44px;background:rgba(0,0,0,.5);border-radius:4px;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 #concat-sheet .concat-thumb .thumb-expand svg{width:14px;height:14px;fill:#fff}
 #concat-sheet .concat-thumb .thumb-check{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
 #concat-sheet .concat-thumb.selected .thumb-check{background:#1890ff}
@@ -260,12 +261,12 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 <body>
 <div class="update-bar" id="update-bar">有新版本可用，点击刷新</div>
 <!-- 【修复文字消失】page-header 移出 app，作为静态 DOM，不会被 renderMain 重建 -->
-<div class="page-header" id="page-header"><span class="page-title">图书馆座位图片管理</span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">功能</button></div>
+<div class="page-header" id="page-header"><span class="page-title">图书馆座位图片管理</span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">菜单</button></div>
 <div id="app"></div>
 <div id="bottom-bar">
   <span id="selected-count">已选 0 个时段</span>
   <button id="btn-clear-select">取消全选</button>
-  <button class="bar-btn" id="btn-download-separate">分享选中图片</button>
+  <button class="bar-btn" id="btn-download-separate">下载</button>
   <button class="bar-btn" id="btn-download-concat">拼接预览</button>
 </div>
 <div id="preview-modal">
@@ -326,7 +327,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 <!-- 【修改3】功能面板 -->
 <div class="func-panel-overlay" id="func-panel-overlay"></div>
 <div class="func-panel" id="func-panel">
-  <div class="func-panel-header"><span class="func-panel-title">功能</span><button class="func-panel-close" id="func-panel-close">&times;</button></div>
+  <div class="func-panel-header"><span class="func-panel-title">菜单</span><button class="func-panel-close" id="func-panel-close">&times;</button></div>
   <div class="func-panel-body" id="func-panel-body"></div>
 </div>
 <script>
@@ -371,8 +372,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.2.6 iOS专项修复：点击区域、网格双击缩放、拼接Canvas限制、分享回退
-const APP_VERSION = 'v1.2.6';
+// v1.3.0 iOS拼接安全缩放、统一下载逻辑、网格展开按钮修复、菜单改名+重置
+const APP_VERSION = 'v1.3.0';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 
@@ -1423,20 +1424,14 @@ captureInput.addEventListener('change', async (e) => {
           invalidateTimeslotCache(sk);
           await renderTimeSlots(sk);
         }
-        // 自动分享（【v1.2.0 iOS兼容】增强容错）
+        // 【v1.3.0】拍照后自动下载（替换原 Web Share API 分享）
         if (state.autoShare) {
           const safeSName = sName.replace(/[^\w\u4e00-\u9fff.-]/g, '_');
-          const shareName = `${safeSName}_${bTime.replace(/[: ]/g, '-')}.jpg`;
+          const dlName = `${safeSName}_${bTime.replace(/[: ]/g, '-')}.jpg`;
           try {
-            if (navigator.share && navigator.canShare) {
-              const shareFile = new File([fullBlob], shareName, { type: 'image/jpeg' });
-              if (navigator.canShare({ files: [shareFile] })) {
-                try { await navigator.share({ files: [shareFile] }); } catch (err) { if (err.name !== 'AbortError') console.error('分享出错:', err); }
-              } else { downloadBlob(fullBlob, shareName); }
-            } else { downloadBlob(fullBlob, shareName); }
+            downloadBlob(fullBlob, dlName);
           } catch (e) {
-            console.warn('自动分享失败，走下载回退:', e);
-            downloadBlob(fullBlob, shareName);
+            console.warn('自动下载失败:', e);
           }
         }
       } catch (err) {
@@ -1576,18 +1571,15 @@ async function getProcessedData(imgObj, fid, aname, sidx) {
   return data;
 }
 
-// 【优化】分享选中图片：批量读取选中数据，避免加载全部
-async function shareSelectedImages() {
+// 【v1.3.0 统一下载逻辑】替换原 Web Share API 分享，统一为下载/打包下载
+async function downloadSelectedImages() {
   if (state.selectedCells.length === 0) return;
-  // 【性能优化】只读取选中的单元格数据
   const cellDataMap = await getCellDataBatch(state.selectedCells);
-  // 【终极方案】分享时优先使用 Blob（拍照后可能 data 还未存入 IndexedDB）
   const allImgs = [];
   for (const ck of state.selectedCells) {
     const cellData = cellDataMap[ck];
     if (cellData && cellData.images) allImgs.push(...cellData.images);
   }
-  // 检查是否所有图片都有可用数据（Blob 或有效的 Base64 data）
   if (allImgs.some(img => !img._fullBlob && !img._fullBlobURL && (!img.data || !img.data.startsWith('data:') || img.data.split(',')[1].length <= 10))) { showToast('图片处理中，请稍后重试'); return; }
 
   const items = [];
@@ -1597,7 +1589,6 @@ async function shareSelectedImages() {
     const parts = ck.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]), tidx = parseInt(parts[3]);
     const sName = getSeatNameSync(fid, aname, sidx), timeSlot = TIME_SLOTS[tidx];
     for (let i = 0; i < cellData.images.length; i++) {
-      // 优先使用 _fullBlob（已是水印图 Blob），回退到 data（Base64）
       let blob = cellData.images[i]._fullBlob || null;
       if (!blob) {
         const memBlob = getMemoryBlobURL(ck, i);
@@ -1607,54 +1598,15 @@ async function shareSelectedImages() {
         try { blob = dataURLtoBlob(cellData.images[i].data); } catch (e) { blob = null; }
       }
       if (!blob || blob.size === 0) continue;
-      // 文件名中冒号在 Android 文件系统非法，替换为短横线
-      // 【v1.2.0 iOS兼容】文件名只使用 ASCII 安全字符，避免 iOS 分享失败
       const safeTimeSlot = timeSlot.replace(/:/g, '-');
       const safeName = sName.replace(/[^\w\u4e00-\u9fff.-]/g, '_');
       const filename = `${safeName}_${safeTimeSlot}_${i + 1}.jpg`;
       items.push({ blob, filename });
     }
   }
-  if (items.length === 0) { showToast('无图片可分享'); return; }
+  if (items.length === 0) { showToast('无图片可下载'); return; }
 
-  // 优先使用系统分享（【v1.2.6 iOS修复】多图分享回退逻辑）
-  if (navigator.share && navigator.canShare) {
-    try {
-      const files = items.map(it => new File([it.blob], it.filename, { type: 'image/jpeg' }));
-      if (navigator.canShare({ files })) {
-        try {
-          await navigator.share({ files });
-          return;
-        } catch (err) {
-          if (err.name === 'AbortError') return;
-          // 【v1.2.6】多图分享失败，回退到分享第一张
-          if (files.length > 1) {
-            try {
-              await navigator.share({ files: [files[0]] });
-              return;
-            } catch (err2) {
-              if (err2.name === 'AbortError') return;
-            }
-          }
-        }
-      } else if (files.length > 0) {
-        // 【v1.2.6】canShare 返回 false 时，尝试分享单张
-        try {
-          if (navigator.canShare({ files: [files[0]] })) {
-            await navigator.share({ files: [files[0]] });
-            return;
-          }
-        } catch (err2) {
-          if (err2.name === 'AbortError') return;
-        }
-      }
-    } catch (e) {
-      // canShare 可能抛出异常（iOS 某些版本），直接走下载回退
-      console.warn('Web Share API 不可用，走下载回退:', e);
-    }
-  }
-
-  // 回退：单张直接下载，多张打包 zip
+  // 【v1.3.0】单张直接下载，多张打包 ZIP
   if (items.length === 1) {
     downloadBlob(items[0].blob, items[0].filename);
     showToast('已开始下载');
@@ -1662,8 +1614,10 @@ async function shareSelectedImages() {
     showToast('正在打包...');
     try {
       const zip = new JSZip();
-      items.forEach(it => zip.file(it.filename, it.blob));
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      // 【v1.3.0】合规 DOS 时间戳（固定 2000-01-01），确保手机和电脑均可正常解压
+      const safeDate = new Date(2000, 0, 1, 0, 0, 0);
+      items.forEach(it => zip.file(it.filename, it.blob, { date: safeDate }));
+      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
       downloadBlob(zipBlob, `图片导出_${Date.now()}.zip`);
       showToast(`已下载 ${items.length} 张图片`);
     } catch (err) { console.error('打包出错:', err); showToast('打包出错'); }
@@ -1754,40 +1708,52 @@ function getThumbSrc(imgObj) {
 }
 
 // 【v1.1.0 新增】竖拼绘制：宽度取最大宽度，高度按比例缩放后累加
-// 【v1.2.6 iOS修复】Canvas 尺寸限制在 4096px 以内，防止 iOS 崩溃
+// 【v1.3.0 iOS适配】iOS 端总高度 > 4096px 时等比缩放至 4096px，确保完整显示；安卓端保持原始高清
 async function stitchVertical(imgObjs) {
   const imgSrcs = imgObjs.map(getImgSrc);
   if (imgSrcs.some(s => !s)) throw new Error('部分图片尚未就绪');
   const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
   const maxW = Math.max(...imgs.map(i => i.naturalWidth));
-  // 【v1.2.6】iOS Canvas 最大尺寸限制为 4096px
-  const scale = maxW > 4096 ? 4096 / maxW : 1;
-  const drawW = Math.round(maxW * scale);
-  const scaledH = imgs.map(i => Math.round(i.naturalHeight * drawW / i.naturalWidth));
+  // 先按最大宽度统一缩放，计算各图高度
+  const scaledH = imgs.map(i => Math.round(i.naturalHeight * maxW / i.naturalWidth));
   const totalH = scaledH.reduce((a, b) => a + b, 0);
-  const canvas = document.createElement('canvas'); canvas.width = drawW; canvas.height = Math.min(totalH, 4096);
+  let drawW = maxW, finalScaledH = scaledH;
+  // 【v1.3.0】iOS 端：总高度 > 4096px 时等比缩放，使总高度恰好 = 4096px
+  if (isIOS && totalH > 4096) {
+    const globalScale = 4096 / totalH;
+    drawW = Math.round(maxW * globalScale);
+    finalScaledH = scaledH.map(h => Math.round(h * globalScale));
+  }
+  const canvasH = isIOS ? (finalScaledH.reduce((a, b) => a + b, 0)) : totalH;
+  const canvas = document.createElement('canvas'); canvas.width = drawW; canvas.height = canvasH;
   const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   let y = 0;
-  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], 0, y, drawW, scaledH[i]); y += scaledH[i]; }
+  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], 0, y, drawW, finalScaledH[i]); y += finalScaledH[i]; }
   return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
 }
 
 // 【v1.1.0 新增】横拼绘制：高度取最大高度，宽度按比例缩放后累加，顶部对齐
-// 【v1.2.6 iOS修复】Canvas 尺寸限制在 4096px 以内，防止 iOS 崩溃
+// 【v1.3.0 iOS适配】iOS 端总宽度 > 4096px 时等比缩放至 4096px，确保完整显示；安卓端保持原始高清
 async function stitchHorizontal(imgObjs) {
   const imgSrcs = imgObjs.map(getImgSrc);
   if (imgSrcs.some(s => !s)) throw new Error('部分图片尚未就绪');
   const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
   const maxH = Math.max(...imgs.map(i => i.naturalHeight));
-  // 【v1.2.6】iOS Canvas 最大尺寸限制为 4096px
-  const scale = maxH > 4096 ? 4096 / maxH : 1;
-  const drawH = Math.round(maxH * scale);
-  const scaledW = imgs.map(i => Math.round(i.naturalWidth * drawH / i.naturalHeight));
+  // 先按最大高度统一缩放，计算各图宽度
+  const scaledW = imgs.map(i => Math.round(i.naturalWidth * maxH / i.naturalHeight));
   const totalW = scaledW.reduce((a, b) => a + b, 0);
-  const canvas = document.createElement('canvas'); canvas.width = Math.min(totalW, 4096); canvas.height = drawH;
+  let drawH = maxH, finalScaledW = scaledW;
+  // 【v1.3.0】iOS 端：总宽度 > 4096px 时等比缩放，使总宽度恰好 = 4096px
+  if (isIOS && totalW > 4096) {
+    const globalScale = 4096 / totalW;
+    drawH = Math.round(maxH * globalScale);
+    finalScaledW = scaledW.map(w => Math.round(w * globalScale));
+  }
+  const canvasW = isIOS ? (finalScaledW.reduce((a, b) => a + b, 0)) : totalW;
+  const canvas = document.createElement('canvas'); canvas.width = canvasW; canvas.height = drawH;
   const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   let x = 0;
-  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], x, 0, scaledW[i], drawH); x += scaledW[i]; }
+  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], x, 0, finalScaledW[i], drawH); x += finalScaledW[i]; }
   return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
 }
 
@@ -1855,9 +1821,11 @@ function updateConcatThumbStates() {
 
 // 【v1.1.1 改造】缩略图网格点击事件
 concatGrid.addEventListener('click', (e) => {
-  // 点击全屏图标 → 预览大图
+  // 点击全屏图标 → 预览大图（【v1.3.0 iOS修复】阻止事件冒泡，防止被父容器手势拦截）
   const expandBtn = e.target.closest('.thumb-expand');
   if (expandBtn) {
+    e.stopPropagation();
+    e.preventDefault();
     const thumb = expandBtn.closest('.concat-thumb');
     const idx = parseInt(thumb.dataset.idx);
     const imgObj = concatImageData[idx];
@@ -1881,6 +1849,23 @@ concatGrid.addEventListener('click', (e) => {
   }
   updateConcatThumbStates();
 });
+
+// 【v1.3.0 iOS修复】为展开按钮添加独立的触摸事件监听，防止 iOS 手势拦截
+concatGrid.addEventListener('touchend', (e) => {
+  const expandBtn = e.target.closest('.thumb-expand');
+  if (expandBtn) {
+    e.stopPropagation();
+    e.preventDefault();
+    const thumb = expandBtn.closest('.concat-thumb');
+    const idx = parseInt(thumb.dataset.idx);
+    const imgObj = concatImageData[idx];
+    const src = getImgSrc(imgObj);
+    if (src) {
+      const blob = imgObj._fullBlob || null;
+      showPreviewFromBlobURL(src, blob, '图片预览');
+    }
+  }
+}, { passive: false });
 
 // 【v1.1.1 改造】横拼/竖拼按钮事件
 // 情况2（2~3张）的按钮
@@ -2019,6 +2004,8 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
     }
     const cellDataMap = await getCellDataBatch(neededKeys);
     const zip = new JSZip(); let count = 0;
+    // 【v1.3.0】合规 DOS 时间戳（固定 2000-01-01），确保手机和电脑均可正常解压
+    const safeDate = new Date(2000, 0, 1, 0, 0, 0);
     for (const ak of batchSelectedAreas) {
       const parts = ak.split('-'), fid = parseInt(parts[0]), aname = parts[1];
       const seatCount = getAreaSeatCount(fid, aname);
@@ -2062,7 +2049,7 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
             // 文件名中冒号在 Android 文件系统非法，替换为短横线
             const safeTimeSlot = TIME_SLOTS[tIdx].replace(/:/g, '-');
             // 用路径字符串代替 zip.folder()，避免生成 STORED 目录条目导致 Android 解压失败
-            zip.file(`${folder}/${sName}_${safeTimeSlot}_${i + 1}.jpg`, blob);
+            zip.file(`${folder}/${sName}_${safeTimeSlot}_${i + 1}.jpg`, blob, { date: safeDate });
             count++;
           }
         }
@@ -3037,8 +3024,30 @@ document.getElementById('cleanup-exec-btn').addEventListener('click', async () =
 // ============================================================
 function showToast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2100); }
 const bottomBar = document.getElementById('bottom-bar'), selectedCount = document.getElementById('selected-count');
-function updateBottomBar() { if (state.selectedCells.length > 0) { bottomBar.classList.add('show'); selectedCount.textContent = `已选 ${state.selectedCells.length} 个时段`; } else bottomBar.classList.remove('show'); updateConcatBtnState(); }
-document.getElementById('btn-download-separate').addEventListener('click', shareSelectedImages);
+function updateBottomBar() {
+  if (state.selectedCells.length > 0) {
+    bottomBar.classList.add('show');
+    selectedCount.textContent = `已选 ${state.selectedCells.length} 个时段`;
+  } else {
+    bottomBar.classList.remove('show');
+  }
+  updateConcatBtnState();
+  // 【v1.3.0 统一下载逻辑】根据图片总数更新按钮文字
+  updateDownloadBtnText();
+}
+// 【v1.3.0】更新下载按钮文字：1张→下载，>1张→打包下载（ZIP）
+function updateDownloadBtnText() {
+  const dlBtn = document.getElementById('btn-download-separate');
+  if (!dlBtn) return;
+  if (state.selectedCells.length === 0) { dlBtn.textContent = '下载'; return; }
+  let totalImgs = 0;
+  for (const ck of state.selectedCells) {
+    totalImgs += imageCountCache.get(ck) || 0;
+  }
+  dlBtn.textContent = totalImgs <= 1 ? '下载' : '打包下载（ZIP）';
+}
+// 【v1.3.0】事件绑定：下载按钮替换原分享按钮
+document.getElementById('btn-download-separate').addEventListener('click', downloadSelectedImages);
 document.getElementById('btn-download-concat').addEventListener('click', downloadConcatenated);
 document.getElementById('btn-clear-select').addEventListener('click', () => { state.selectedCells = []; document.querySelectorAll('.ts-checkbox.checked').forEach(cb => cb.classList.remove('checked')); updateBottomBar(); });
 
@@ -3366,12 +3375,17 @@ function renderFuncPanelBody() {
       <span style="color:#bfbfbf;font-size:18px">›</span>
     </div>
     <div class="func-item" data-func="toggle-auto-share">
-      <div class="func-item-label">拍照后分享<div class="func-item-desc">拍照完成后弹出分享面板</div></div>
+      <div class="func-item-label">拍照后下载<div class="func-item-desc">拍照完成后自动下载图片</div></div>
       <div class="func-toggle ${state.autoShare ? 'on' : ''}" id="func-toggle-share"></div>
     </div>
     <div class="func-item" data-func="toggle-allow-delete">
       <div class="func-item-label">允许删除座位<div class="func-item-desc">开启后显示座位删除按钮</div></div>
       <div class="func-toggle ${state.allowDeleteSeat ? 'on' : ''}" id="func-toggle-delete"></div>
+    </div>
+    <!-- 【v1.3.0 菜单改名+重置功能】新增重置应用按钮 -->
+    <div class="func-item" data-func="reset-app" style="border-top:1px solid #e8e8e8;margin-top:8px;padding-top:16px">
+      <div class="func-item-label" style="color:#ff4d4f;font-weight:600">重置应用<div class="func-item-desc" style="color:#ff7875">清除所有图片和设置，不可恢复</div></div>
+      <span style="color:#ff4d4f;font-size:18px">›</span>
     </div>`;
 }
 
@@ -3415,6 +3429,36 @@ funcPanelBody.addEventListener('click', (e) => {
     invalidateAllTimeslotCache();
     state.expandedSeats.forEach(sk => renderTimeSlots(sk));
   }
+  // 【v1.3.0 菜单改名+重置功能】重置应用
+  else if (func === 'reset-app') {
+    if (!confirm('此操作将清除所有图片和设置，不可恢复。确认重置？')) return;
+    closeFuncPanel();
+    (async () => {
+      try {
+        // 清空 IndexedDB 中所有图片数据
+        if (dbIsFallback) {
+          dbFallback = {};
+        } else if (dbInstance) {
+          const storeNames = ['cells', 'seatNames', 'extraSeats', 'deletedSeats'];
+          for (const storeName of storeNames) {
+            try {
+              const tx = dbInstance.transaction(storeName, 'readwrite');
+              const store = tx.objectStore(storeName);
+              store.clear();
+              await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = reject; });
+            } catch (e) { console.warn('清空 store 出错:', storeName, e); }
+          }
+        }
+        // 清空 localStorage 中所有设置
+        try { localStorage.clear(); } catch (e) {}
+        // 刷新页面，回到初始状态
+        location.reload();
+      } catch (err) {
+        console.error('重置出错:', err);
+        showToast('重置出错，请手动清除浏览器数据');
+      }
+    })();
+  }
 });
 
 // ============================================================
@@ -3431,6 +3475,8 @@ window.addEventListener('error', (e) => {
 
 // 【v1.2.2 微信兼容】检测微信内置浏览器
 const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+// 【v1.3.0 iOS适配】检测 iOS 设备（供拼接安全缩放使用）
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 async function init() {
   try {
