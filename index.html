@@ -368,8 +368,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.2.0 iOS兼容性专项修复：安全区域、IndexedDB回退、HEIC转换、Web Share容错、触摸优化
-const APP_VERSION = 'v1.2.0';
+// v1.2.1 修复安卓拍照延迟：JPEG 直接读取不走 Canvas 转换，HEIC 才转换
+const APP_VERSION = 'v1.2.1';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 
@@ -1327,6 +1327,16 @@ function convertToJPEGDataURL(file) {
     img.src = url;
   });
 }
+// 【v1.2.1 安卓修复】智能读取图片：JPEG 直接读 DataURL（快），HEIC/其他走 Canvas 转换
+function readImageAsDataURL(file) {
+  const type = (file.type || '').toLowerCase();
+  // JPEG/PNG/GIF/WebP 等浏览器原生支持的格式，直接读取，无需 Canvas 转换
+  if (type === 'image/jpeg' || type === 'image/png' || type === 'image/gif' || type === 'image/webp' || type === 'image/bmp') {
+    return readFileAsDataURL(file);
+  }
+  // HEIC/HEIF 或未知格式（iOS 拍照可能返回），走 Canvas 转 JPEG
+  return convertToJPEGDataURL(file);
+}
 
 captureInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
@@ -1342,8 +1352,8 @@ captureInput.addEventListener('change', async (e) => {
     const sk = cellToSeatKey(ck);
 
     // 【终极方案】同步绘制水印：拍照后立即生成带水印的缩略图和原图 Blob
-    // 1. 读取文件为 JPEG DataURL（【v1.2.0 iOS兼容】使用 Canvas 转换处理 HEIC）
-    const rawOriginal = await convertToJPEGDataURL(file);
+    // 1. 读取文件为 DataURL（【v1.2.1】JPEG 直接读，HEIC 走 Canvas 转换）
+    const rawOriginal = await readImageAsDataURL(file);
     // 2. 同步绘制水印 + 导出 fullBlob 和 thumbBlob（一次 Canvas 绘制）
     const { fullBlob, thumbBlob } = await addWatermarkBlob(rawOriginal, sName, bTime);
     // 3. 生成 Blob URL 用于即时显示和预览
@@ -1475,8 +1485,8 @@ uploadInput.addEventListener('change', async (e) => {
     // 第二步：后台异步压缩+缩略图+正式存储
     const doProcess = async () => {
       try {
-        // 【v1.2.0 iOS兼容】使用 Canvas 转换处理 HEIC 等非标准格式
-        const rawOriginal = await convertToJPEGDataURL(file);
+        // 【v1.2.1】JPEG 直接读，HEIC 走 Canvas 转换
+        const rawOriginal = await readImageAsDataURL(file);
         const original = await compressImage(rawOriginal, 0.95);
         const thumbnail = await generateThumbnail(original);
         const cd = await getCellData(ck);
