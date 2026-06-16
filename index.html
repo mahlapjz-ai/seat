@@ -140,7 +140,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #btn-clear-select{padding:8px 12px;font-size:13px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;color:#666;cursor:pointer;flex-shrink:0}
 .bar-btn{padding:12px 10px;font-size:14px;font-weight:600;border:none;border-radius:8px;cursor:pointer;flex:1;min-width:0;white-space:nowrap}
 .app-footer{text-align:center;padding:12px 0 16px;max-width:480px;margin:0 auto}
-.app-footer .contact{font-size:12px;color:#999}
+.app-footer .disclaimer{font-size:10px;color:#999}
+.app-footer .contact{font-size:9px;color:#999;margin-top:2px}
 .app-footer .version{font-size:11px;color:#aaa;margin-top:2px}
 .bar-btn:active{opacity:.8}
 #btn-download-separate{background:#1890ff;color:#fff;flex-shrink:0;min-width:auto}
@@ -368,8 +369,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.2.3 修复iOS上传按钮无法调起相册（同步触发fileInput.click）
-const APP_VERSION = 'v1.2.3';
+// v1.2.4 新增免责声明、调整底部样式、修复版本号消失
+const APP_VERSION = 'v1.2.4';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 
@@ -712,7 +713,8 @@ async function renderMain() {
     });
     html += '</div>';
   });
-  html += '<div class="app-footer"><div class="contact">如有使用建议可联系老范尝试优化。</div><div class="version"></div></div>';
+  // 【v1.2.4】底部信息：免责声明 + 联系方式 + 版本号（版本号直接写入，防止renderMain后消失）
+  html += `<div class="app-footer"><div class="disclaimer">内部参考工具，功能尚不完善，数据可能丢失，不承担准确性与隐私责任</div><div class="contact">如有使用建议可联系老范尝试优化。</div><div class="version">${APP_VERSION}</div></div>`;
   app.innerHTML = html;
   // 【修复BUG】串行执行 renderTimeSlots，避免并发 DOM 操作冲突
   // 【修复Bug3】每次 await 前检查序列号，旧调用自动让路
@@ -3403,8 +3405,7 @@ async function init() {
     ensureFuncBtnText();
     startFuncBtnObserver();
     await renderMain();
-    const verEl = document.querySelector('.app-footer .version');
-    if (verEl) verEl.textContent = APP_VERSION;
+    // 【v1.2.4】版本号已在 renderMain 中直接写入 HTML，无需再手动设置
   } catch (err) {
     console.error('初始化失败:', err);
     // 【v1.2.2 微信兼容】初始化失败时显示友好提示，不崩溃
