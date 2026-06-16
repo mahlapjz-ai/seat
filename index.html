@@ -131,7 +131,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .thumb-wrap{position:relative;width:80px;height:80px;border-radius:6px;overflow:hidden;border:1px solid #e8e8e8;flex-shrink:0}
 .thumb-wrap img{width:100%;height:100%;object-fit:cover;cursor:pointer;background:#f0f0f0}
 .thumb-wrap img[data-thumb-src]:not([src]){min-width:80px;min-height:80px}
-.thumb-del{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:14px;line-height:22px;text-align:center;cursor:pointer;z-index:2}
+.thumb-del{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:14px;line-height:22px;text-align:center;cursor:pointer;z-index:2;box-sizing:content-box;padding:11px;margin:-11px}
 .thumb-del:active{background:rgba(255,0,0,.7)}
 
 #bottom-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;box-shadow:0 -2px 8px rgba(0,0,0,.12);padding:10px 12px;padding-bottom:calc(10px + constant(safe-area-inset-bottom));padding-bottom:calc(10px + env(safe-area-inset-bottom));z-index:100;max-width:480px;margin:0 auto;flex-wrap:wrap}
@@ -163,13 +163,13 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #concat-sheet .concat-btns-simple button:disabled{background:#ccc;color:#999;cursor:not-allowed}
 #concat-sheet .concat-btns-simple .concat-h{background:#1890ff;color:#fff}
 #concat-sheet .concat-btns-simple .concat-v{background:#722ed1;color:#fff}
-#concat-sheet .concat-grid{display:none;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 20px 8px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+#concat-sheet .concat-grid{display:none;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 20px 8px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;touch-action:manipulation}
 #concat-sheet .concat-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#f5f5f5}
 #concat-sheet .concat-thumb.selected{border-color:#1890ff}
 #concat-sheet .concat-thumb.disabled{opacity:.4;cursor:not-allowed}
 #concat-sheet .concat-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 /* 【v1.1.1】全屏图标替换"展开"文字 */
-#concat-sheet .concat-thumb .thumb-expand{position:absolute;left:4px;bottom:4px;width:24px;height:24px;background:rgba(0,0,0,.5);border-radius:4px;cursor:pointer;z-index:1;display:flex;align-items:center;justify-content:center}
+#concat-sheet .concat-thumb .thumb-expand{position:absolute;left:4px;bottom:4px;width:24px;height:24px;background:rgba(0,0,0,.5);border-radius:4px;cursor:pointer;z-index:1;display:flex;align-items:center;justify-content:center;touch-action:manipulation}
 #concat-sheet .concat-thumb .thumb-expand svg{width:14px;height:14px;fill:#fff}
 #concat-sheet .concat-thumb .thumb-check{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
 #concat-sheet .concat-thumb.selected .thumb-check{background:#1890ff}
@@ -370,8 +370,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.2.5 联系小字仅版本更新后短暂显示2秒淡出
-const APP_VERSION = 'v1.2.5';
+// v1.2.6 iOS专项修复：点击区域、网格双击缩放、拼接Canvas限制、分享回退
+const APP_VERSION = 'v1.2.6';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 
@@ -1616,13 +1616,36 @@ async function shareSelectedImages() {
   }
   if (items.length === 0) { showToast('无图片可分享'); return; }
 
-  // 优先使用系统分享（【v1.2.0 iOS兼容】增强 canShare 容错）
+  // 优先使用系统分享（【v1.2.6 iOS修复】多图分享回退逻辑）
   if (navigator.share && navigator.canShare) {
     try {
       const files = items.map(it => new File([it.blob], it.filename, { type: 'image/jpeg' }));
       if (navigator.canShare({ files })) {
-        try { await navigator.share({ files }); return; }
-        catch (err) { if (err.name === 'AbortError') return; }
+        try {
+          await navigator.share({ files });
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+          // 【v1.2.6】多图分享失败，回退到分享第一张
+          if (files.length > 1) {
+            try {
+              await navigator.share({ files: [files[0]] });
+              return;
+            } catch (err2) {
+              if (err2.name === 'AbortError') return;
+            }
+          }
+        }
+      } else if (files.length > 0) {
+        // 【v1.2.6】canShare 返回 false 时，尝试分享单张
+        try {
+          if (navigator.canShare({ files: [files[0]] })) {
+            await navigator.share({ files: [files[0]] });
+            return;
+          }
+        } catch (err2) {
+          if (err2.name === 'AbortError') return;
+        }
       }
     } catch (e) {
       // canShare 可能抛出异常（iOS 某些版本），直接走下载回退
@@ -1730,45 +1753,55 @@ function getThumbSrc(imgObj) {
 }
 
 // 【v1.1.0 新增】竖拼绘制：宽度取最大宽度，高度按比例缩放后累加
+// 【v1.2.6 iOS修复】Canvas 尺寸限制在 4096px 以内，防止 iOS 崩溃
 async function stitchVertical(imgObjs) {
   const imgSrcs = imgObjs.map(getImgSrc);
   if (imgSrcs.some(s => !s)) throw new Error('部分图片尚未就绪');
   const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
   const maxW = Math.max(...imgs.map(i => i.naturalWidth));
-  const scaledH = imgs.map(i => Math.round(i.naturalHeight * maxW / i.naturalWidth));
+  // 【v1.2.6】iOS Canvas 最大尺寸限制为 4096px
+  const scale = maxW > 4096 ? 4096 / maxW : 1;
+  const drawW = Math.round(maxW * scale);
+  const scaledH = imgs.map(i => Math.round(i.naturalHeight * drawW / i.naturalWidth));
   const totalH = scaledH.reduce((a, b) => a + b, 0);
-  const canvas = document.createElement('canvas'); canvas.width = maxW; canvas.height = totalH;
-  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, maxW, totalH);
+  const canvas = document.createElement('canvas'); canvas.width = drawW; canvas.height = Math.min(totalH, 4096);
+  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   let y = 0;
-  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], 0, y, maxW, scaledH[i]); y += scaledH[i]; }
+  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], 0, y, drawW, scaledH[i]); y += scaledH[i]; }
   return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
 }
 
 // 【v1.1.0 新增】横拼绘制：高度取最大高度，宽度按比例缩放后累加，顶部对齐
+// 【v1.2.6 iOS修复】Canvas 尺寸限制在 4096px 以内，防止 iOS 崩溃
 async function stitchHorizontal(imgObjs) {
   const imgSrcs = imgObjs.map(getImgSrc);
   if (imgSrcs.some(s => !s)) throw new Error('部分图片尚未就绪');
   const imgs = await Promise.all(imgSrcs.map(src => new Promise((r, j) => { const img = new Image(); img.onload = () => r(img); img.onerror = () => j(new Error('图片加载失败')); img.src = src; })));
   const maxH = Math.max(...imgs.map(i => i.naturalHeight));
-  const scaledW = imgs.map(i => Math.round(i.naturalWidth * maxH / i.naturalHeight));
+  // 【v1.2.6】iOS Canvas 最大尺寸限制为 4096px
+  const scale = maxH > 4096 ? 4096 / maxH : 1;
+  const drawH = Math.round(maxH * scale);
+  const scaledW = imgs.map(i => Math.round(i.naturalWidth * drawH / i.naturalHeight));
   const totalW = scaledW.reduce((a, b) => a + b, 0);
-  const canvas = document.createElement('canvas'); canvas.width = totalW; canvas.height = maxH;
-  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, totalW, maxH);
+  const canvas = document.createElement('canvas'); canvas.width = Math.min(totalW, 4096); canvas.height = drawH;
+  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
   let x = 0;
-  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], x, 0, scaledW[i], maxH); x += scaledW[i]; }
+  for (let i = 0; i < imgs.length; i++) { ctx.drawImage(imgs[i], x, 0, scaledW[i], drawH); x += scaledW[i]; }
   return await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
 }
 
 // 【v1.1.0 新增】执行拼接并预览
+// 【v1.2.6 iOS修复】增加 try-catch，失败时提示重试
 async function doStitch(imgObjs, direction) {
   try {
     showToast('正在拼接...');
     const blob = direction === 'horizontal' ? await stitchHorizontal(imgObjs) : await stitchVertical(imgObjs);
+    if (!blob) { showToast('拼接失败，请重试'); return; }
     const blobURL = URL.createObjectURL(blob);
     showPreviewFromBlobURL(blobURL, blob, '拼接结果');
   } catch (err) {
     console.error('拼接预览出错:', err);
-    showToast('拼接出错: ' + (err.message || '未知错误'));
+    showToast('拼接失败，请重试');
   }
 }
 
