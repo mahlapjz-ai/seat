@@ -1144,11 +1144,14 @@ function addWatermarkBlob(imageSource, seatName, beijingTime) {
 
     decodePromise.then(async (img) => {
       try {
+        // 【v1.3.7 修复】保存原始尺寸到变量，避免 ImageBitmap close 后 width/height 归零
+        const imgW = img.naturalWidth || img.width;
+        const imgH = img.naturalHeight || img.height;
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth || img.width; canvas.height = img.naturalHeight || img.height;
+        canvas.width = imgW; canvas.height = imgH;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
-        // 【v1.3.7】createImageBitmap 产生的 ImageBitmap 需要显式关闭释放
+        // 【v1.3.7】createImageBitmap 产生的 ImageBitmap 绘制后立即关闭释放
         if (img.close) img.close();
         // 基准字号：短边×10%，限制在36~200px
         const shortSide = Math.min(canvas.width, canvas.height);
@@ -1217,9 +1220,9 @@ function addWatermarkBlob(imageSource, seatName, beijingTime) {
         const fullPromise = new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
         // 从同一个 Canvas 生成缩略图
         const thumbCanvas = document.createElement('canvas');
-        const scale = Math.min(200 / img.naturalWidth, 1);
-        thumbCanvas.width = Math.round(img.naturalWidth * scale);
-        thumbCanvas.height = Math.round(img.naturalHeight * scale);
+        const scale = Math.min(200 / imgW, 1);
+        thumbCanvas.width = Math.round(imgW * scale);
+        thumbCanvas.height = Math.round(imgH * scale);
         const tCtx = thumbCanvas.getContext('2d');
         tCtx.drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
         const thumbPromise = new Promise(r => thumbCanvas.toBlob(r, 'image/jpeg', 0.8));
