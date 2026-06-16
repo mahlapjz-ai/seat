@@ -141,7 +141,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .bar-btn{padding:12px 10px;font-size:14px;font-weight:600;border:none;border-radius:8px;cursor:pointer;flex:1;min-width:0;white-space:nowrap}
 .app-footer{text-align:center;padding:12px 0 16px;max-width:480px;margin:0 auto}
 .app-footer .disclaimer{font-size:10px;color:#999}
-.app-footer .contact{font-size:9px;color:#999;margin-top:2px}
+.app-footer .contact{font-size:9px;color:#999;margin-top:2px;transition:opacity .5s ease}
+.app-footer .contact.hidden{opacity:0;height:0;margin:0;overflow:hidden}
 .app-footer .version{font-size:11px;color:#aaa;margin-top:2px}
 .bar-btn:active{opacity:.8}
 #btn-download-separate{background:#1890ff;color:#fff;flex-shrink:0;min-width:auto}
@@ -369,8 +370,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.2.4 新增免责声明、调整底部样式、修复版本号消失
-const APP_VERSION = 'v1.2.4';
+// v1.2.5 联系小字仅版本更新后短暂显示2秒淡出
+const APP_VERSION = 'v1.2.5';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 
@@ -713,9 +714,19 @@ async function renderMain() {
     });
     html += '</div>';
   });
-  // 【v1.2.4】底部信息：免责声明 + 联系方式 + 版本号（版本号直接写入，防止renderMain后消失）
-  html += `<div class="app-footer"><div class="disclaimer">内部参考工具，功能尚不完善，数据可能丢失，不承担准确性与隐私责任</div><div class="contact">如有使用建议可联系老范尝试优化。</div><div class="version">${APP_VERSION}</div></div>`;
+  // 【v1.2.5】底部信息：免责声明常显 + 联系小字仅版本更新后短暂显示 + 版本号常显
+  const lastVer = localStorage.getItem('lastShownVersion');
+  const showContact = lastVer !== APP_VERSION;
+  html += `<div class="app-footer"><div class="disclaimer">内部参考工具，功能尚不完善，数据可能丢失，不承担准确性与隐私责任</div><div class="contact${showContact ? '' : ' hidden'}">如有使用建议可联系老范尝试优化。</div><div class="version">${APP_VERSION}</div></div>`;
   app.innerHTML = html;
+  // 【v1.2.5】联系小字：版本更新后显示2秒再淡出
+  if (showContact) {
+    localStorage.setItem('lastShownVersion', APP_VERSION);
+    setTimeout(() => {
+      const el = document.querySelector('.app-footer .contact');
+      if (el) el.classList.add('hidden');
+    }, 2000);
+  }
   // 【修复BUG】串行执行 renderTimeSlots，避免并发 DOM 操作冲突
   // 【修复Bug3】每次 await 前检查序列号，旧调用自动让路
   for (const sk of state.expandedSeats) {
