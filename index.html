@@ -725,7 +725,7 @@ async function renderMain() {
     setTimeout(() => {
       const el = document.querySelector('.app-footer .contact');
       if (el) el.classList.add('hidden');
-    }, 2000);
+    }, 5000);
   }
   // 【修复BUG】串行执行 renderTimeSlots，避免并发 DOM 操作冲突
   // 【修复Bug3】每次 await 前检查序列号，旧调用自动让路
