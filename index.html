@@ -368,8 +368,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.2.2 修复iOS拍照调不出相机、微信浏览器崩溃自动重启
-const APP_VERSION = 'v1.2.2';
+// v1.2.3 修复iOS上传按钮无法调起相册（同步触发fileInput.click）
+const APP_VERSION = 'v1.2.3';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 
@@ -3043,7 +3043,9 @@ document.addEventListener('click', async (e) => {
   // iOS PWA 中 await 后调用 click() 会被系统阻止，必须在用户交互同步栈中触发
   if (captureBtn) { const ck = captureBtn.dataset.cellKey; currentCaptureCellKey = ck; captureInput.value = ''; captureInput.click(); return; }
   const uploadBtn = target.closest('[data-action="upload"]');
-  if (uploadBtn) { const ck = uploadBtn.dataset.cellKey, cd = await getCellData(ck); if (cd && cd.images && cd.images.length >= MAX_IMAGES) { showToast('该时段图片已满'); return; } currentUploadCellKey = ck; uploadInput.value = ''; uploadInput.click(); return; }
+  // 【v1.2.3 iOS修复】先同步触发 click()，再在 change 回调中检查图片数量
+  // iOS 中 await 后调用 click() 会被系统阻止，必须在用户交互同步栈中触发
+  if (uploadBtn) { const ck = uploadBtn.dataset.cellKey; currentUploadCellKey = ck; uploadInput.value = ''; uploadInput.click(); return; }
   const delBtn = target.closest('[data-action="delete-img"]');
   // 【修改2】删除图片后，若该时段图片清零则自动取消勾选并更新UI
   if (delBtn) {
