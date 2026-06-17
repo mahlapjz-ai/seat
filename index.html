@@ -375,8 +375,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.3.7 拍照 createImageBitmap 加速、拼接预缩放优化
-const APP_VERSION = 'v1.3.7';
+// v1.3.8 原图存储压缩质量降至0.92（视觉无损，减小体积）
+const APP_VERSION = 'v1.3.8';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1475,7 +1475,8 @@ captureInput.addEventListener('change', async (e) => {
         const [watermarked, thumbnail, original] = await Promise.all([
           blobToDataURL(fullBlob),
           blobToDataURL(thumbBlob),
-          blobToDataURL(await compressImageBlob(await readImageAsDataURL(file), 0.95))
+          // 【v1.3.8】原图压缩质量 0.92（视觉无损，体积大幅降低），水印图仍 0.95
+          blobToDataURL(await compressImageBlob(await readImageAsDataURL(file), 0.92))
         ]);
         const cd = await getCellData(ck);
         if (cd && cd.images && cd.images.length > 0) {
@@ -1560,7 +1561,8 @@ uploadInput.addEventListener('change', async (e) => {
       try {
         // 【v1.2.1】JPEG 直接读，HEIC 走 Canvas 转换
         const rawOriginal = await readImageAsDataURL(file);
-        const original = await compressImage(rawOriginal, 0.95);
+        // 【v1.3.8】原图压缩质量 0.92（视觉无损，体积大幅降低）
+        const original = await compressImage(rawOriginal, 0.92);
         const thumbnail = await generateThumbnail(original);
         const cd = await getCellData(ck);
         if (cd && cd.images && cd.images.length > 0) {
