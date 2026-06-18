@@ -82,25 +82,29 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 
 .area-container{display:none;padding:4px 0 8px 16px}
 .area-container.show{display:block}
-.area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:12px 20px;margin:5px 4px;font-size:16px;font-weight:600;border:none;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s}
+.area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:12px 20px;margin:5px 4px;font-size:16px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s}
 .area-btn:active{transform:scale(.95)}
 .area-btn .arrow{margin-left:6px;font-size:12px;transition:transform .25s;display:inline-block}
 .area-btn .area-count{font-size:11px;font-weight:400;color:#999;margin-top:2px}
 .area-btn.expanded .arrow{transform:rotate(90deg)}
-.area-btn.expanded{background:#e6f7ff;box-shadow:0 2px 8px rgba(24,144,255,.2)}
+/* 【v1.3.15】选中高亮改为红色描边+无背景色，避免与蓝色提示混淆 */
+.area-btn.expanded{background:transparent;border-color:#ff4d4f;box-shadow:none}
 .area-btn.has-images{border:2px solid #52c41a;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
-.area-btn.has-images.expanded{border-color:#1890ff;background:#e6f7ff;color:#333}
+.area-btn.has-images.expanded{border-color:#ff4d4f;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
 
 .seat-container{display:none;padding:8px 0}
 .seat-container.show{display:block}
 .seat-flow{display:flex;flex-wrap:wrap;gap:6px;padding:0 2px}
 .seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:13px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,border-color .15s;position:relative}
 .seat-btn:active{background:#e6f7ff}
-.seat-btn.expanded{background:#e6f7ff;border-color:#1890ff}
+/* 【v1.3.15】选中高亮改为红色描边+无背景色 */
+.seat-btn.expanded{background:#fff;border:2px solid #ff4d4f}
 /* 【v1.3.10 重构】座位视觉提示：颜色基于全时段总数，图标分层显示 */
 .seat-btn.has-images-1{border-color:#69c0ff;background:linear-gradient(135deg,#e6f7ff,#bae7ff);color:#096dd9;font-weight:700}
 .seat-btn.has-images-2{border-color:#fa8c16;background:linear-gradient(135deg,#fff7e6,#ffe7ba);color:#d46b08;font-weight:700}
-.seat-btn.has-images-1.expanded,.seat-btn.has-images-2.expanded{border-color:#1890ff;background:#e6f7ff;color:#333;font-weight:500}
+/* 【v1.3.15】有图+选中：红色描边，保留原有背景色 */
+.seat-btn.has-images-1.expanded{border:2px solid #ff4d4f;background:linear-gradient(135deg,#e6f7ff,#bae7ff);color:#096dd9;font-weight:700}
+.seat-btn.has-images-2.expanded{border:2px solid #ff4d4f;background:linear-gradient(135deg,#fff7e6,#ffe7ba);color:#d46b08;font-weight:700}
 /* 【v1.3.10】闭眼图标：左上角，表示隐藏时段有图 */
 .seat-btn .icon-hidden{position:absolute;top:2px;left:4px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:1}
 .seat-btn .icon-hidden svg{width:12px;height:12px;fill:#999;filter:drop-shadow(0 1px 1px rgba(255,77,79,.5))}
@@ -380,8 +384,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.3.14 修复蓝色提示：移除 seatHasImages 兜底，严格基于可见时段
-const APP_VERSION = 'v1.3.14';
+// v1.3.15 选中按钮改为红色描边+无背景色，避免与蓝色提示混淆
+const APP_VERSION = 'v1.3.15';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
