@@ -385,8 +385,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.4.6 修复iPhone8拍照旋转：动态检测createImageBitmap是否已应用EXIF，未应用时手动旋转
-const APP_VERSION = 'v1.4.6';
+// v1.4.7 修复iPhone8拍照旋转：弃用createImageBitmap，改用new Image()+Blob URL统一解码
+const APP_VERSION = 'v1.4.7';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1351,48 +1351,53 @@ function applyExifOrientation(ctx, origW, origH, orientation) {
   }
 }
 
-// 【v1.4.2 重写】addWatermarkBlob 支持两种输入 + 可选 EXIF 方向参数：
-//   - Blob 对象：优先使用 createImageBitmap 解码，Canvas 绘制速度提升 2-3 倍
-//   - DataURL 字符串：回退到 new Image() 加载（兼容旧调用）
-//   - orientation 参数：1~8 的 EXIF 方向值，由调用方在 HEIC 转换前提前读取
-// 水印样式、导出质量（0.95）完全不变
+// 【v1.4.7 重写】addWatermarkBlob 支持两种输入 + EXIF 方向参数：
+//   - Blob 对象：使用 new Image() + Blob URL 解码（Safari ctx.drawImage 不应用 EXIF，行为一致）
+//   - DataURL 字符串：同样使用 new Image() 加载
+//   - orientation 参数：1~8 的 EXIF 方向值，由调用方提前读取
+// 不再使用 createImageBitmap，因其在不同 iOS 版本上 EXIF 处理不一致
 function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
   return new Promise((resolve, reject) => {
-    // 【v1.3.7】优先用 createImageBitmap 解码 Blob，比 Image 加载 DataURL 快 2-3 倍
     const isBlob = (imageSource instanceof Blob);
-    const decodePromise = isBlob
-      ? createImageBitmap(imageSource)
-      : new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = () => rej(new Error('图片加载失败')); img.src = imageSource; });
+    // 【v1.4.7 重写】统一使用 new Image() 解码
+    //   Safari 的 ctx.drawImage() 始终不应用 EXIF 旋转，行为跨版本一致
+    //   createImageBitmap 在 iPhone15 自动旋转、iPhone8 不旋转，无法可靠检测
+    let blobUrl = null;
+    const decodePromise = new Promise((res, rej) => {
+      const img = new Image();
+      img.onload = () => {
+        if (blobUrl) URL.revokeObjectURL(blobUrl);
+        res(img);
+      };
+      img.onerror = () => {
+        if (blobUrl) URL.revokeObjectURL(blobUrl);
+        rej(new Error('图片加载失败'));
+      };
+      if (isBlob) {
+        blobUrl = URL.createObjectURL(imageSource);
+        img.src = blobUrl;
+      } else {
+        img.src = imageSource;
+      }
+    });
 
     decodePromise.then(async (img) => {
       try {
-        // 【v1.3.7 修复】保存原始尺寸到变量，避免 ImageBitmap close 后 width/height 归零
         const origW = img.naturalWidth || img.width;
         const origH = img.naturalHeight || img.height;
-        // 【v1.4.6 修复】EXIF 方向动态纠正：
-        //   createImageBitmap 在新设备（iPhone15）上自动应用 EXIF，在旧设备（iPhone8）上不应用。
-        //   通过比较 EXIF 方向值和 ImageBitmap 实际尺寸，动态检测是否需要手动旋转。
+        // 【v1.4.7 重写】EXIF 方向纠正：new Image() + ctx.drawImage 不应用 EXIF，
+        //   始终输出原始像素方向，因此直接根据 EXIF 值手动旋转，无需检测
         let orient = 1;
         try {
-          const rawOrient = (orientation !== undefined && orientation !== null) ? orientation : 1;
-          if (rawOrient >= 5 && rawOrient <= 8) {
-            // 方向 5~8 需要 90° 旋转，旋转后宽高应互换
-            // 如果 bitmap 仍是横向（W > H），说明 createImageBitmap 未应用 EXIF，需手动旋转
-            // 如果 bitmap 已是纵向（H > W），说明 createImageBitmap 已应用 EXIF，跳过旋转
-            if (origW > origH) {
-              orient = rawOrient; // 未旋转，需手动纠正
-            } else {
-              orient = 1; // 已旋转，跳过
-            }
-          } else if (rawOrient >= 2 && rawOrient <= 4) {
-            // 方向 2~4（镜像/180°）不改变宽高比，无法通过尺寸检测
-            // createImageBitmap 通常能正确处理，保守跳过
-            orient = 1;
+          if (orientation !== undefined && orientation !== null &&
+              typeof orientation === 'number' && orientation >= 2 && orientation <= 8) {
+            orient = orientation;
           }
         } catch (e) {
-          console.warn('[EXIF] 方向检测异常，跳过旋转:', e);
+          console.warn('[EXIF] 方向值异常，跳过旋转:', e);
           orient = 1;
         }
+        // 方向 5~8 需要 90° 旋转，Canvas 宽高互换
         const needSwap = orient >= 5 && orient <= 8;
         const canvasW = needSwap ? origH : origW;
         const canvasH = needSwap ? origW : origH;
@@ -1403,8 +1408,6 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
           applyExifOrientation(ctx, origW, origH, orient);
         }
         ctx.drawImage(img, 0, 0);
-        // 【v1.3.7】createImageBitmap 产生的 ImageBitmap 绘制后立即关闭释放
-        if (img.close) img.close();
         // 基准字号：短边×10%，限制在36~200px
         const shortSide = Math.min(canvas.width, canvas.height);
         const fs = Math.max(36, Math.min(200, Math.round(shortSide * 0.10)));
@@ -1685,7 +1688,7 @@ captureInput.addEventListener('change', async (e) => {
     }
     let watermarkSource;
     if (isNativeImage) {
-      // 【v1.3.7】JPEG/PNG 等原生格式：直接传 Blob，createImageBitmap 解码最快
+      // 【v1.4.7】JPEG/PNG 等原生格式：直接传 Blob，addWatermarkBlob 内用 new Image() 解码
       watermarkSource = file;
     } else {
       // HEIC/未知格式：需先转 DataURL（Canvas 转 JPEG），EXIF 已丢失，需传入提前读取的方向
