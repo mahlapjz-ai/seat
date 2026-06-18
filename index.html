@@ -388,8 +388,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.5.5 优化预览加载体验：高清源未就绪时显示 loading 而非模糊缩略图
-const APP_VERSION = 'v1.5.5';
+// v1.5.6 修复 iOS 上传加水印照片旋转 90 度：复用拍照 EXIF 清除逻辑
+const APP_VERSION = 'v1.5.6';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1862,8 +1862,32 @@ uploadInput.addEventListener('change', async (e) => {
         const rawOriginal = await readImageAsDataURL(file);
         // 【v1.3.9 新功能1】上传加水印开关开启时，为上传图片添加水印
         if (state.uploadWatermark) {
-          // 【v1.4.2】传入提前读取的 EXIF 方向值
-          const { fullBlob, thumbBlob } = await addWatermarkBlob(rawOriginal, sName, bTime, uploadOrientation);
+          // 【v1.5.6】iOS 上传加水印复用拍照的 EXIF 清除逻辑，避免 iPhone 15 旋转 90 度
+          let uploadWatermarkSource = rawOriginal;
+          let uploadWatermarkOrientation = uploadOrientation;
+          if (isIOS) {
+            try {
+              const tempImg = await new Promise((res, rej) => {
+                const img = new Image();
+                img.onload = () => res(img);
+                img.onerror = () => rej(new Error('临时图片加载失败'));
+                img.src = URL.createObjectURL(file);
+              });
+              const tempCanvas = document.createElement('canvas');
+              tempCanvas.width = tempImg.width;
+              tempCanvas.height = tempImg.height;
+              const tempCtx = tempCanvas.getContext('2d');
+              tempCtx.drawImage(tempImg, 0, 0);
+              URL.revokeObjectURL(tempImg.src);
+              uploadWatermarkSource = await new Promise(r => tempCanvas.toBlob(r, 'image/jpeg', 0.95));
+              uploadWatermarkOrientation = 1;
+            } catch (iosErr) {
+              console.warn('[iOS EXIF清除-上传] 失败，回退到原始图片:', iosErr);
+              uploadWatermarkSource = rawOriginal;
+              uploadWatermarkOrientation = 1;
+            }
+          }
+          const { fullBlob, thumbBlob } = await addWatermarkBlob(uploadWatermarkSource, sName, bTime, uploadWatermarkOrientation);
           const thumbnail = await blobToDataURL(thumbBlob);
           const watermarked = await blobToDataURL(fullBlob);
           const cd = await getCellData(ck);
