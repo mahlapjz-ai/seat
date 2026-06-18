@@ -384,8 +384,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.3.17 彻修复时段筛选偶尔自动恢复全选：双重备份持久化+写入校验+SW更新保护
-const APP_VERSION = 'v1.3.17';
+// v1.4.0 精简图片存储：去除无水印原图，仅存高清图+缩略图；修改编号不再重新生成水印
+const APP_VERSION = 'v1.4.0';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -693,32 +693,51 @@ function loadShowLogoState() { try { state.showLogo = localStorage.getItem('seat
 function saveUploadWatermarkState() { try { localStorage.setItem('seat_upload_watermark', state.uploadWatermark ? '1' : '0'); } catch (e) {} }
 function loadUploadWatermarkState() { try { state.uploadWatermark = localStorage.getItem('seat_upload_watermark') === '1'; } catch (e) {} }
 
-/** 【v1.3.17 修复】保存时段筛选设置到 localStorage（双重备份 + 写入校验） */
+// 【v1.3.18 修复】筛选状态 localStorage 键名（隔离旧键名，避免被旧数据污染）
+const FILTER_KEY_MAIN = 'seat_filter_timeslots_v2_main';
+const FILTER_KEY_BACKUP = 'seat_filter_timeslots_v2_backup';
+
+/** 【v1.3.18 深度修复】保存时段筛选设置到 localStorage（双重备份 + 写入校验 + 版本标记） */
 function saveFilterState() {
   try {
-    const data = JSON.stringify({ slots: [...state.visibleTimeSlots], none: state._filterNone });
-    localStorage.setItem('seat_time_filter', data);
-    // 【v1.3.17】双重备份：写入备用键
-    localStorage.setItem('seat_time_filter_bak', data);
-    // 【v1.3.17】写入后立即校验
-    const verify = localStorage.getItem('seat_time_filter');
+    const data = JSON.stringify({ v: 2, slots: [...state.visibleTimeSlots], none: state._filterNone, ts: Date.now() });
+    localStorage.setItem(FILTER_KEY_MAIN, data);
+    localStorage.setItem(FILTER_KEY_BACKUP, data);
+    // 写入后立即校验主键
+    const verify = localStorage.getItem(FILTER_KEY_MAIN);
     if (verify !== data) {
       console.warn('[筛选持久化] 主键写入校验失败，尝试重写');
-      localStorage.setItem('seat_time_filter', data);
+      localStorage.setItem(FILTER_KEY_MAIN, data);
+      localStorage.setItem(FILTER_KEY_BACKUP, data);
     }
-    // 【v1.3.17】调试辅助
-    console.log('[筛选持久化] 保存成功', { slots: [...state.visibleTimeSlots], none: state._filterNone, raw: data });
+    console.log('[筛选持久化] 保存成功', { slots: [...state.visibleTimeSlots], none: state._filterNone });
   } catch (e) {
     console.error('[筛选持久化] 保存失败', e);
   }
 }
-/** 【v1.3.17 修复】加载时段筛选设置（主键→备用键→保留默认，不回退全选） */
+/** 【v1.3.18 深度修复】加载时段筛选设置（主键→备用键→旧键兼容→两键都空才默认全选） */
 function loadFilterState() {
   try {
-    // 先尝试主键
-    let raw = localStorage.getItem('seat_time_filter');
-    // 主键失败，尝试备用键
-    if (!raw) raw = localStorage.getItem('seat_time_filter_bak');
+    // 1. 先尝试主键
+    let raw = localStorage.getItem(FILTER_KEY_MAIN);
+    // 2. 主键失败，尝试备用键
+    if (!raw) raw = localStorage.getItem(FILTER_KEY_BACKUP);
+    // 3. 新键都为空，尝试读取旧键名（兼容 v1.3.17 及之前的数据）
+    if (!raw) {
+      const oldRaw = localStorage.getItem('seat_time_filter') || localStorage.getItem('seat_time_filter_bak');
+      if (oldRaw) {
+        // 迁移旧数据到新键名
+        try {
+          const oldObj = JSON.parse(oldRaw);
+          if (oldObj && Array.isArray(oldObj.slots)) {
+            raw = JSON.stringify({ v: 2, slots: oldObj.slots, none: !!oldObj.none, ts: Date.now() });
+            localStorage.setItem(FILTER_KEY_MAIN, raw);
+            localStorage.setItem(FILTER_KEY_BACKUP, raw);
+            console.log('[筛选持久化] 旧键数据已迁移到新键名');
+          }
+        } catch (migrateErr) { /* 迁移失败忽略 */ }
+      }
+    }
     if (raw) {
       const o = JSON.parse(raw);
       if (o && Array.isArray(o.slots)) {
@@ -728,11 +747,38 @@ function loadFilterState() {
         return;
       }
     }
-    // 【v1.3.17】读取失败或数据异常时，不回退全选，保留默认状态（空集+_filterNone=false=全显）
-    console.warn('[筛选持久化] 无有效存储，保留默认状态（全显）');
+    // 两键都为空或数据异常，才默认全选（首次使用场景）
+    console.warn('[筛选持久化] 无有效存储，默认全选');
   } catch (e) {
-    // 【v1.3.17】异常时也不回退全选，保留默认
-    console.error('[筛选持久化] 加载异常，保留默认状态', e);
+    console.error('[筛选持久化] 加载异常，默认全选', e);
+  }
+}
+/** 【v1.3.18 深度修复】从 localStorage 恢复筛选状态到内存（用于 visibilitychange 等场景） */
+function restoreFilterStateFromStorage() {
+  try {
+    let raw = localStorage.getItem(FILTER_KEY_MAIN) || localStorage.getItem(FILTER_KEY_BACKUP);
+    if (!raw) return false;
+    const o = JSON.parse(raw);
+    if (o && Array.isArray(o.slots)) {
+      const storedSlots = new Set(o.slots);
+      const storedNone = !!o.none;
+      // 仅当内存状态与存储不一致时才恢复
+      const memSlots = [...state.visibleTimeSlots].sort().join(',');
+      const diskSlots = [...storedSlots].sort().join(',');
+      if (memSlots !== diskSlots || state._filterNone !== storedNone) {
+        console.warn('[筛选持久化] 检测到内存状态与存储不一致，从存储恢复', {
+          内存: { slots: [...state.visibleTimeSlots], none: state._filterNone },
+          存储: { slots: [...storedSlots], none: storedNone }
+        });
+        state.visibleTimeSlots = storedSlots;
+        state._filterNone = storedNone;
+        return true; // 表示状态已恢复
+      }
+    }
+    return false;
+  } catch (e) {
+    console.error('[筛选持久化] 恢复异常', e);
+    return false;
   }
 }
 
@@ -841,10 +887,26 @@ function startFuncBtnObserver() {
 }
 
 // 【修复Bug3】页面从后台恢复时，校验并恢复"功能"按钮文字
+// 【v1.3.18 深度修复】同时从 localStorage 恢复筛选状态，防止内存状态被浏览器意外清空
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
+    // 【v1.3.18】从 localStorage 恢复筛选状态
+    const restored = restoreFilterStateFromStorage();
+    if (restored) {
+      // 状态被恢复，需要刷新 UI
+      try { renderFilterBody(); refreshExpandedSeats(); } catch(e) {}
+    }
     requestAnimationFrame(() => { ensureFuncBtnText(); startFuncBtnObserver(); });
   }
+});
+
+// 【v1.3.18 深度修复】页面关闭/刷新前强制保存筛选状态
+window.addEventListener('beforeunload', () => {
+  try { saveFilterState(); } catch(e) {}
+});
+// 【v1.3.18 深度修复】pagehide 作为 beforeunload 的补充（移动端更可靠）
+window.addEventListener('pagehide', () => {
+  try { saveFilterState(); } catch(e) {}
 });
 
 function renderSeatFlow(fid, aname) {
@@ -1522,8 +1584,8 @@ captureInput.addEventListener('change', async (e) => {
     const thumbBlobURL = URL.createObjectURL(thumbBlob);
     // 4. 构建图片数据：缩略图用 Blob URL 显示，预览用 fullBlobURL
     const newImg = {
-      data: '',              // Base64 水印图（后台异步填充）
-      original: '',          // Base64 原图（后台异步填充）
+      data: '',              // Base64 高清图（后台异步填充）
+      original: undefined,   // 【v1.4.0】不再存储无水印原图，节省空间
       thumbnail: '',         // Base64 缩略图（后台异步填充）
       type: 'capture',
       createdAt: Date.now(),
@@ -1554,17 +1616,15 @@ captureInput.addEventListener('change', async (e) => {
     // 7. 后台异步：将 Blob 转 Base64 存入 IndexedDB（不阻塞预览）
     const doStore = async () => {
       try {
-        const [watermarked, thumbnail, original] = await Promise.all([
+        // 【v1.4.0】拍照仅存储水印图+缩略图，不再存储无水印原图
+        const [watermarked, thumbnail] = await Promise.all([
           blobToDataURL(fullBlob),
-          blobToDataURL(thumbBlob),
-          // 【v1.3.8】原图压缩质量 0.92（视觉无损，体积大幅降低），水印图仍 0.95
-          blobToDataURL(await compressImageBlob(await readImageAsDataURL(file), 0.92))
+          blobToDataURL(thumbBlob)
         ]);
         const cd = await getCellData(ck);
         if (cd && cd.images && cd.images.length > 0) {
           const lastIdx = cd.images.length - 1;
           cd.images[lastIdx].data = watermarked;
-          cd.images[lastIdx].original = original;
           cd.images[lastIdx].thumbnail = thumbnail;
           await saveCellData(ck, cd.images);
           // 数据已持久化，刷新 DOM 缓存
@@ -1645,28 +1705,26 @@ uploadInput.addEventListener('change', async (e) => {
         const rawOriginal = await readImageAsDataURL(file);
         // 【v1.3.9 新功能1】上传加水印开关开启时，为上传图片添加水印
         if (state.uploadWatermark) {
-          // 添加与拍照相同的水印（三行文字 + LOGO），导出 JPEG 0.95
+          // 【v1.4.0】添加水印后仅存水印图+缩略图，不再存无水印原图
           const { fullBlob, thumbBlob } = await addWatermarkBlob(rawOriginal, sName, bTime);
-          // 原图压缩质量 0.92
-          const original = await compressImage(rawOriginal, 0.92);
           const thumbnail = await blobToDataURL(thumbBlob);
           const watermarked = await blobToDataURL(fullBlob);
           const cd = await getCellData(ck);
           if (cd && cd.images && cd.images.length > 0) {
             const lastIdx = cd.images.length - 1;
-            cd.images[lastIdx] = { data: watermarked, original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime };
+            cd.images[lastIdx] = { data: watermarked, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime };
             await saveCellData(ck, cd.images);
             invalidateTimeslotCache(sk);
             await renderTimeSlots(sk);
           }
         } else {
-          // 【v1.3.8】原图压缩质量 0.92（视觉无损，体积大幅降低）
+          // 【v1.4.0】上传不加水印：data 存压缩原图（JPEG 0.92），不再额外存 original
           const original = await compressImage(rawOriginal, 0.92);
           const thumbnail = await generateThumbnail(original);
           const cd = await getCellData(ck);
           if (cd && cd.images && cd.images.length > 0) {
             const lastIdx = cd.images.length - 1;
-            cd.images[lastIdx] = { data: original, original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime };
+            cd.images[lastIdx] = { data: original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime };
             await saveCellData(ck, cd.images);
             invalidateTimeslotCache(sk);
             await renderTimeSlots(sk);
@@ -1727,13 +1785,8 @@ function downloadBlob(blob, filename) {
 }
 
 async function getProcessedData(imgObj, fid, aname, sidx) {
-  let data = imgObj.data;
-  if (imgObj.original) {
-    const sName = getSeatNameSync(fid, aname, sidx);
-    const bTime = imgObj.beijingTime || getBeijingTime();
-    data = await addWatermark(imgObj.original, sName, bTime);
-  }
-  return data;
+  // 【v1.4.0】不再有 original 字段，直接返回 data
+  return imgObj.data;
 }
 
 // 【v1.3.0 统一下载逻辑】替换原 Web Share API 分享，统一为下载/打包下载
@@ -2297,14 +2350,10 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
             if (!blob && img.data && img.data.startsWith('data:') && img.data.indexOf(',') > 0 && img.data.split(',')[1].length > 10) {
               try { blob = dataURLtoBlob(img.data); } catch (e) { blob = null; }
             }
-            // 4. original 字段 → 重新生成水印
+            // 【v1.4.0】移除 original 字段回退逻辑，新数据不再有 original
+            // 兼容旧数据：如果 data 为空但有 original，用 original 作为 data
             if (!blob && img.original && img.original.startsWith('data:')) {
-              try {
-                const sName2 = getSeatNameSync(fid, aname, sidx);
-                const bTime = img.beijingTime || getBeijingTime();
-                const { fullBlob: regenBlob } = await addWatermarkBlob(img.original, sName2, bTime);
-                blob = regenBlob;
-              } catch (e) { blob = null; }
+              try { blob = dataURLtoBlob(img.original); } catch (e) { blob = null; }
             }
             if (!blob || blob.size === 0) continue; // 无有效数据，跳过
             // 【v1.3.11】文件夹名仅用英文字母、数字、下划线
@@ -2525,17 +2574,11 @@ async function pvLoadFullImage(idx) {
     else if (pvImages[idx].data) {
       data = pvImages[idx].data;
     }
-    // 优先级5：有 original 字段，重新生成水印
+    // 优先级5：【v1.4.0】兼容旧数据 original 字段，直接用作图片（不再重新生成水印）
     else if (pvImages[idx].original) {
-      const ck = cellKey;
-      if (ck) {
-        const parts = ck.split('-');
-        const sName = getSeatNameSync(parseInt(parts[0]), parts[1], parseInt(parts[2]));
-        const bTime = pvImages[idx].beijingTime || getBeijingTime();
-        data = await addWatermark(pvImages[idx].original, sName, bTime);
-        if (pvCache.size >= PV_CACHE_MAX) { const firstKey = pvCache.keys().next().value; pvCache.delete(firstKey); }
-        pvCache.set(cacheKey, data);
-      }
+      data = pvImages[idx].original;
+      if (pvCache.size >= PV_CACHE_MAX) { const firstKey = pvCache.keys().next().value; pvCache.delete(firstKey); }
+      pvCache.set(cacheKey, data);
     }
     // 优先级6：thumbnail
     else if (pvImages[idx].thumbnail && !pvImages[idx].thumbnail.startsWith('blob:')) {
@@ -2702,9 +2745,11 @@ async function showPreview(cellKeyStr, imgIdx) {
           slide.dataset.loaded = '1';
           slide.dataset.srcType = 'data';
         }
-        // 5. 有 original 字段（可重新生成水印）
+        // 5. 【v1.4.0】兼容旧数据 original 字段，直接用作图片
         if (!src && pvImages[i].original) {
-          slide.dataset.loaded = '0';
+          src = dataURLtoBlobURL(pvImages[i].original);
+          slide.dataset.loaded = '1';
+          slide.dataset.srcType = 'original-legacy';
         }
         // 6. thumbnail（Base64 → Blob URL 避免渐进渲染）
         if (!src && pvImages[i].thumbnail && !pvImages[i].thumbnail.startsWith('blob:')) {
@@ -3596,6 +3641,8 @@ function updateSeatButtonText(sk, newName) {
   document.querySelectorAll('.seat-btn').forEach(btn => { const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat)); if (k === sk) btn.textContent = newName; });
 }
 async function regenerateWatermarksForSeat(sk) {
+  // 【v1.4.0】修改座位编号后，仅更新 seatName 字段，不再重新生成水印
+  // 已存储的图片保持原样，新编号仅影响之后新拍照的水印文字
   const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
   const sName = getSeatNameSync(fid, aname, sidx);
   for (let t = 0; t < TIME_SLOTS.length; t++) {
@@ -3603,28 +3650,17 @@ async function regenerateWatermarksForSeat(sk) {
     if (!cd || !cd.images) continue;
     let changed = false;
     for (let i = 0; i < cd.images.length; i++) {
-      if (cd.images[i].original) {
-        const bTime = cd.images[i].beijingTime || getBeijingTime();
-        // 【性能优化】使用 addWatermarkBlob 一次绘制同时输出原图+缩略图
-        const { fullBlob, thumbBlob } = await addWatermarkBlob(cd.images[i].original, sName, bTime);
-        cd.images[i].data = await blobToDataURL(fullBlob);
-        cd.images[i].thumbnail = await blobToDataURL(thumbBlob);
+      // 仅更新 seatName，不重新生成水印图
+      if (cd.images[i].seatName !== sName) {
         cd.images[i].seatName = sName;
-        // 缓存 Blob 到内存，后续预览直接用 Blob URL
-        cd.images[i]._fullBlob = fullBlob;
-        cd.images[i]._thumbBlob = thumbBlob;
-        cd.images[i]._fullBlobURL = URL.createObjectURL(fullBlob);
-        cd.images[i]._thumbBlobURL = URL.createObjectURL(thumbBlob);
         changed = true;
       }
     }
     if (changed) {
       await saveCellData(ck, cd.images);
-      // 【性能优化-深度】更新内存 Blob 缓存
       cacheCellBlobs(ck, cd.images);
     }
   }
-  // 【修复问题2】数据变化，清除 DOM 缓存后重新渲染
   invalidateTimeslotCache(sk);
   await renderTimeSlots(sk);
 }
@@ -3846,18 +3882,18 @@ async function init() {
       if (!bar || bar.classList.contains('show')) return;
       bar.classList.add('show');
       bar.onclick = () => {
-        // 【v1.3.17 修复】SW 更新前强制保存筛选状态，防止刷新后丢失
+        // 【v1.3.18 深度修复】SW 更新前强制保存筛选状态（使用新键名双重备份），防止刷新后丢失
         try { saveFilterState(); } catch(e) {}
         if (worker && worker.postMessage) {
           worker.postMessage({ type: 'SKIP_WAITING' });
         }
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          // 【v1.3.17 修复】刷新前再次强制保存，确保最新状态
+          // 【v1.3.18 深度修复】刷新前再次强制保存，确保最新状态
           try { saveFilterState(); } catch(e) {}
           window.location.reload();
         });
         setTimeout(() => {
-          // 【v1.3.17 修复】超时刷新前也强制保存
+          // 【v1.3.18 深度修复】超时刷新前也强制保存
           try { saveFilterState(); } catch(e) {}
           window.location.reload();
         }, 1000);
