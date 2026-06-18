@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -43,13 +43,15 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 /* 【修改3】功能面板 */
 .func-panel-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:260}
 .func-panel-overlay.show{display:block}
-.func-panel{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:261;transform:translateY(100%);transition:transform .3s ease;max-width:480px;margin:0 auto;padding-bottom:constant(safe-area-inset-bottom);padding-bottom:env(safe-area-inset-bottom)}
+/* 【v1.3.9 修复2+3】菜单面板：固定最大高度70vh，内部可滚动，阻止背景滑动穿透 */
+.func-panel{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:261;transform:translateY(100%);transition:transform .3s ease;max-width:480px;margin:0 auto;max-height:70vh;display:flex;flex-direction:column;padding-bottom:constant(safe-area-inset-bottom);padding-bottom:env(safe-area-inset-bottom)}
 .func-panel.show{transform:translateY(0)}
-.func-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #f0f0f0}
+.func-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #f0f0f0;flex-shrink:0}
 .func-panel-title{font-size:17px;font-weight:700;color:#1a1a1a}
 .func-panel-close{width:36px;height:36px;border:none;background:#f5f5f5;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#999;min-width:44px;min-height:44px}
 .func-panel-close:active{background:#e8e8e8}
-.func-panel-body{padding:8px 20px 24px}
+/* 【v1.3.9 修复3】func-panel-body 可内部滚动，overflow-y:auto */
+.func-panel-body{padding:8px 20px 24px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
 /* 【v1.3.2 菜单优化4】菜单项高度缩小，更紧凑，保持 44px 最低触摸区域 */
 .func-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;min-height:44px;border-bottom:1px solid #f5f5f5;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .func-item:last-child{border-bottom:none}
@@ -375,8 +377,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.3.8 原图存储压缩质量降至0.92（视觉无损，减小体积）
-const APP_VERSION = 'v1.3.8';
+// v1.3.9 上传加水印开关、菜单滑动穿透修复、菜单内部可滚动
+const APP_VERSION = 'v1.3.9';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -501,6 +503,7 @@ const state = {
   autoShare: false, // 拍照后自动分享开关，默认关闭
   allowDeleteSeat: false, // 【修改1】允许删除座位开关，默认关闭
   showLogo: false, // 【v1.3.2 新功能3】深业运营 LOGO 水印开关，默认关闭
+  uploadWatermark: false, // 【v1.3.9 新功能1】上传图片加水印开关，默认关闭
 };
 
 /** 生成区域 key */
@@ -661,6 +664,9 @@ function loadAllowDeleteState() { try { state.allowDeleteSeat = localStorage.get
 // 【v1.3.2 新功能3】深业运营 LOGO 水印开关状态持久化
 function saveShowLogoState() { try { localStorage.setItem('seat_show_logo', state.showLogo ? '1' : '0'); } catch (e) {} }
 function loadShowLogoState() { try { state.showLogo = localStorage.getItem('seat_show_logo') === '1'; } catch (e) {} }
+// 【v1.3.9 新功能1】上传图片加水印开关状态持久化
+function saveUploadWatermarkState() { try { localStorage.setItem('seat_upload_watermark', state.uploadWatermark ? '1' : '0'); } catch (e) {} }
+function loadUploadWatermarkState() { try { state.uploadWatermark = localStorage.getItem('seat_upload_watermark') === '1'; } catch (e) {} }
 
 /** 保存时段筛选设置到 localStorage */
 function saveFilterState() { try { localStorage.setItem('seat_time_filter', JSON.stringify({ slots: [...state.visibleTimeSlots], none: state._filterNone })); } catch (e) {} }
@@ -1561,17 +1567,34 @@ uploadInput.addEventListener('change', async (e) => {
       try {
         // 【v1.2.1】JPEG 直接读，HEIC 走 Canvas 转换
         const rawOriginal = await readImageAsDataURL(file);
-        // 【v1.3.8】原图压缩质量 0.92（视觉无损，体积大幅降低）
-        const original = await compressImage(rawOriginal, 0.92);
-        const thumbnail = await generateThumbnail(original);
-        const cd = await getCellData(ck);
-        if (cd && cd.images && cd.images.length > 0) {
-          const lastIdx = cd.images.length - 1;
-          cd.images[lastIdx] = { data: original, original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime };
-          await saveCellData(ck, cd.images);
-          // 【修复问题2】数据变化，清除 DOM 缓存后重新渲染
-          invalidateTimeslotCache(sk);
-          await renderTimeSlots(sk);
+        // 【v1.3.9 新功能1】上传加水印开关开启时，为上传图片添加水印
+        if (state.uploadWatermark) {
+          // 添加与拍照相同的水印（三行文字 + LOGO），导出 JPEG 0.95
+          const { fullBlob, thumbBlob } = await addWatermarkBlob(rawOriginal, sName, bTime);
+          // 原图压缩质量 0.92
+          const original = await compressImage(rawOriginal, 0.92);
+          const thumbnail = await blobToDataURL(thumbBlob);
+          const watermarked = await blobToDataURL(fullBlob);
+          const cd = await getCellData(ck);
+          if (cd && cd.images && cd.images.length > 0) {
+            const lastIdx = cd.images.length - 1;
+            cd.images[lastIdx] = { data: watermarked, original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime };
+            await saveCellData(ck, cd.images);
+            invalidateTimeslotCache(sk);
+            await renderTimeSlots(sk);
+          }
+        } else {
+          // 【v1.3.8】原图压缩质量 0.92（视觉无损，体积大幅降低）
+          const original = await compressImage(rawOriginal, 0.92);
+          const thumbnail = await generateThumbnail(original);
+          const cd = await getCellData(ck);
+          if (cd && cd.images && cd.images.length > 0) {
+            const lastIdx = cd.images.length - 1;
+            cd.images[lastIdx] = { data: original, original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime };
+            await saveCellData(ck, cd.images);
+            invalidateTimeslotCache(sk);
+            await renderTimeSlots(sk);
+          }
         }
       } catch (err) {
         console.error('上传后台处理出错:', err);
@@ -3560,6 +3583,11 @@ function renderFuncPanelBody() {
       <div class="func-item-label">深业运营 LOGO<div class="func-item-desc">拍照水印添加 LOGO 图标</div></div>
       <div class="func-toggle ${state.showLogo ? 'on' : ''}" id="func-toggle-logo"></div>
     </div>
+    <!-- 【v1.3.9 新功能1】上传图片加水印开关 -->
+    <div class="func-item" data-func="toggle-upload-watermark">
+      <div class="func-item-label">上传图片加水印<div class="func-item-desc">上传图片时添加与拍照相同的水印</div></div>
+      <div class="func-toggle ${state.uploadWatermark ? 'on' : ''}" id="func-toggle-upload-wm"></div>
+    </div>
     <!-- 【v1.3.0 菜单改名+重置功能】新增重置应用按钮 -->
     <div class="func-item" data-func="reset-app" style="border-top:1px solid #e8e8e8;margin-top:8px;padding-top:16px">
       <div class="func-item-label" style="color:#ff4d4f;font-weight:600">重置应用<div class="func-item-desc" style="color:#ff7875">清除所有图片和设置，不可恢复</div></div>
@@ -3571,15 +3599,34 @@ function openFuncPanel() {
   renderFuncPanelBody();
   funcPanelOverlay.classList.add('show');
   funcPanel.classList.add('show');
+  // 【v1.3.9 修复2】菜单打开时阻止背景页面滚动
+  document.body.style.overflow = 'hidden';
 }
 
 function closeFuncPanel() {
   funcPanelOverlay.classList.remove('show');
   funcPanel.classList.remove('show');
+  // 【v1.3.9 修复2】菜单关闭时恢复背景页面滚动
+  document.body.style.overflow = '';
 }
 
 funcPanelOverlay.addEventListener('click', closeFuncPanel);
 funcPanelClose.addEventListener('click', closeFuncPanel);
+
+// 【v1.3.9 修复2】阻止菜单面板触摸事件冒泡到背景页面，防止滑动穿透
+funcPanel.addEventListener('touchmove', (e) => {
+  // 如果 func-panel-body 内部不可滚动（内容未超出），阻止默认行为
+  const body = funcPanelBody;
+  const atTop = body.scrollTop <= 0;
+  const atBottom = body.scrollTop + body.clientHeight >= body.scrollHeight - 1;
+  if ((atTop && e.touches[0].clientY > funcPanel._touchStartY) || (atBottom && e.touches[0].clientY < funcPanel._touchStartY)) {
+    // 在顶部继续下拉 或 在底部继续上拉 → 阻止（防止穿透到背景）
+    e.preventDefault();
+  }
+}, { passive: false });
+funcPanel.addEventListener('touchstart', (e) => {
+  funcPanel._touchStartY = e.touches[0].clientY;
+}, { passive: true });
 
 funcPanelBody.addEventListener('click', (e) => {
   const item = e.target.closest('.func-item');
@@ -3615,6 +3662,13 @@ funcPanelBody.addEventListener('click', (e) => {
     if (toggle) toggle.classList.toggle('on', state.showLogo);
     // LOGO 状态变更时重置缓存，下次拍照时重新加载
     _logoLoaded = false; _logoImg = null;
+  }
+  // 【v1.3.9 新功能1】上传图片加水印开关
+  else if (func === 'toggle-upload-watermark') {
+    state.uploadWatermark = !state.uploadWatermark;
+    saveUploadWatermarkState();
+    const toggle = document.getElementById('func-toggle-upload-wm');
+    if (toggle) toggle.classList.toggle('on', state.uploadWatermark);
   }
   // 【v1.3.0 菜单改名+重置功能】重置应用
   else if (func === 'reset-app') {
@@ -3676,6 +3730,7 @@ async function init() {
     loadAutoShareState();
     loadAllowDeleteState();
     loadShowLogoState(); // 【v1.3.2 新功能3】加载 LOGO 水印开关状态
+    loadUploadWatermarkState(); // 【v1.3.9 新功能1】加载上传加水印开关状态
     ensureFuncBtnText();
     startFuncBtnObserver();
     await renderMain();
