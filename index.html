@@ -97,13 +97,16 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:13px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,border-color .15s;position:relative}
 .seat-btn:active{background:#e6f7ff}
 .seat-btn.expanded{background:#e6f7ff;border-color:#1890ff}
-/* 【修改2】座位视觉提示分层：1个时段有图=浅蓝，2+时段=橙色 */
+/* 【v1.3.10 重构】座位视觉提示：颜色基于全时段总数，图标分层显示 */
 .seat-btn.has-images-1{border-color:#69c0ff;background:linear-gradient(135deg,#e6f7ff,#bae7ff);color:#096dd9;font-weight:700}
 .seat-btn.has-images-2{border-color:#fa8c16;background:linear-gradient(135deg,#fff7e6,#ffe7ba);color:#d46b08;font-weight:700}
 .seat-btn.has-images-1.expanded,.seat-btn.has-images-2.expanded{border-color:#1890ff;background:#e6f7ff;color:#333;font-weight:500}
-/* 【修改2】隐藏时段图片提示小圆点 */
-.seat-btn .hidden-dot{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:#ff4d4f;box-shadow:0 0 3px rgba(255,77,79,.5)}
-.seat-btn.expanded .hidden-dot{display:none}
+/* 【v1.3.10】闭眼图标：左上角，表示隐藏时段有图 */
+.seat-btn .icon-hidden{position:absolute;top:2px;left:4px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:1}
+.seat-btn .icon-hidden svg{width:12px;height:12px;fill:#999;filter:drop-shadow(0 1px 1px rgba(255,77,79,.5))}
+/* 【v1.3.10】筛选命中图标：右上角，表示可见时段有图（仅筛选非全选时显示） */
+.seat-btn .icon-filter-hit{position:absolute;top:2px;right:4px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:1}
+.seat-btn .icon-filter-hit svg{width:12px;height:12px;fill:#52c41a}
 .add-seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s}
 .add-seat-btn:active{background:#e6f7ff;border-color:#1890ff;color:#1890ff}
 
@@ -377,8 +380,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.3.9 上传加水印开关、菜单滑动穿透修复、菜单内部可滚动
-const APP_VERSION = 'v1.3.9';
+// v1.3.11 ZIP 文件名纯英文+固定时间戳，提升兼容性
+const APP_VERSION = 'v1.3.11';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -559,8 +562,10 @@ function getBeijingTime() {
   return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
 }
 
-// 【修改2】座位图片统计：{ visibleCount, hiddenHasImages } 分层提示
-// seatImageStats: Map<seatKey, { visibleCount: number, hiddenHasImages: boolean }>
+// 【v1.3.10 重构】座位图片统计：{ totalCount, visibleCount, hiddenHasImages, visibleHasImages }
+// totalCount: 全时段图片总数（忽略筛选），用于按钮颜色
+// visibleCount: 可见时段图片数，visibleHasImages: 可见时段是否有图（筛选命中提示）
+// hiddenHasImages: 隐藏时段是否有图（闭眼图标提示）
 const seatImageStats = new Map();
 
 // 【性能优化】只读取图片计数，不加载完整图片数据
@@ -609,6 +614,7 @@ async function buildSeatHasImages() {
 }
 
 /** 【性能优化】从内存缓存计算统计，不再读取 IndexedDB */
+// 【v1.3.10 重构】新增 totalCount（全时段总数）和 visibleHasImages（可见时段是否有图）
 function refreshSeatImageStatsFromCache() {
   seatImageStats.clear();
   imageCountCache.forEach((cnt, key) => {
@@ -616,10 +622,12 @@ function refreshSeatImageStatsFromCache() {
     const p = key.split('-');
     const sk = p.slice(0, 3).join('-');
     const tidx = parseInt(p[3]);
-    if (!seatImageStats.has(sk)) seatImageStats.set(sk, { visibleCount: 0, hiddenHasImages: false });
+    if (!seatImageStats.has(sk)) seatImageStats.set(sk, { totalCount: 0, visibleCount: 0, hiddenHasImages: false, visibleHasImages: false });
     const stat = seatImageStats.get(sk);
+    stat.totalCount += cnt; // 【v1.3.10】全时段总数，忽略筛选
     if (isTimeSlotVisible(tidx)) {
       stat.visibleCount++;
+      stat.visibleHasImages = true; // 【v1.3.10】可见时段有图
     } else {
       stat.hiddenHasImages = true;
     }
@@ -639,19 +647,23 @@ async function refreshSeatImageStats() {
   refreshSeatImageStatsFromCache();
 }
 
-/** 【修改2】刷新单个座位的图片统计（同步，仅读内存缓存） */
+/** 【v1.3.10 重构】刷新单个座位的图片统计（同步，仅读内存缓存） */
 function refreshSingleSeatStats(sk) {
   const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
-  let visibleCount = 0, hiddenHasImages = false;
-  // 【性能优化】从内存缓存读取计数，不加载图片数据
+  let totalCount = 0, visibleCount = 0, hiddenHasImages = false, visibleHasImages = false;
   for (let t = 0; t < TIME_SLOTS.length; t++) {
     const ck = cellKey(fid, aname, sidx, t);
     const cnt = imageCountCache.get(ck) || 0;
     if (cnt <= 0) continue;
-    if (isTimeSlotVisible(t)) visibleCount++;
-    else hiddenHasImages = true;
+    totalCount += cnt; // 【v1.3.10】全时段总数
+    if (isTimeSlotVisible(t)) {
+      visibleCount++;
+      visibleHasImages = true; // 【v1.3.10】可见时段有图
+    } else {
+      hiddenHasImages = true;
+    }
   }
-  seatImageStats.set(sk, { visibleCount, hiddenHasImages });
+  seatImageStats.set(sk, { totalCount, visibleCount, hiddenHasImages, visibleHasImages });
 }
 function saveUIState() { try { localStorage.setItem('seat_ui_state', JSON.stringify({ f: [...state.expandedFloors], a: [...state.expandedAreas], s: [...state.expandedSeats] })); } catch (e) {} }
 function loadUIState() { try { const o = JSON.parse(localStorage.getItem('seat_ui_state')); if (o.f) state.expandedFloors = new Set(o.f); if (o.a) state.expandedAreas = new Set(o.a); if (o.s) state.expandedSeats = new Set(o.s); } catch (e) {} }
@@ -786,18 +798,24 @@ document.addEventListener('visibilitychange', () => {
 
 function renderSeatFlow(fid, aname) {
   const count = getAreaSeatCount(fid, aname);
+  // 【v1.3.10】判断筛选是否非全选
+  const isFilterActive = !(state.visibleTimeSlots.size === 0 && !state._filterNone);
   let html = '<div class="seat-flow">';
   for (let i = 0; i < count; i++) {
     const sk = seatKey(fid, aname, i);
     if (state.deletedSeats.has(sk)) continue;
-    const sName = getSeatNameSync(fid, aname, i), sExp = state.expandedSeats.has(sk), hasImg = state.seatHasImages.has(sk);
-    // 【修改2】座位视觉分层 + 隐藏时段小圆点
+    const sName = getSeatNameSync(fid, aname, i), sExp = state.expandedSeats.has(sk);
+    // 【v1.3.10 重构】座位按钮颜色基于全时段总数（忽略筛选）
     const stat = seatImageStats.get(sk);
     let imgClass = '';
-    if (stat && stat.visibleCount > 0) imgClass = stat.visibleCount >= 2 ? 'has-images-2' : 'has-images-1';
-    else if (hasImg) imgClass = 'has-images-1';
-    const hiddenDot = (stat && stat.hiddenHasImages && !sExp) ? '<span class="hidden-dot"></span>' : '';
-    html += `<button class="seat-btn ${sExp ? 'expanded' : ''} ${imgClass}" data-action="toggle-seat" data-floor="${fid}" data-area="${aname}" data-seat="${i}">${sName}${hiddenDot}</button>`;
+    if (stat && stat.totalCount >= 2) imgClass = 'has-images-2';
+    else if (stat && stat.totalCount === 1) imgClass = 'has-images-1';
+    else if (state.seatHasImages.has(sk)) imgClass = 'has-images-1';
+    // 【v1.3.10】左上角闭眼图标：隐藏时段有图（展开时不显示）
+    const hiddenIcon = (stat && stat.hiddenHasImages && !sExp) ? '<span class="icon-hidden"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></span>' : '';
+    // 【v1.3.10】右上角筛选命中图标：筛选非全选 + 可见时段有图
+    const filterHitIcon = (isFilterActive && stat && stat.visibleHasImages) ? '<span class="icon-filter-hit"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></span>' : '';
+    html += `<button class="seat-btn ${sExp ? 'expanded' : ''} ${imgClass}" data-action="toggle-seat" data-floor="${fid}" data-area="${aname}" data-seat="${i}">${hiddenIcon}${filterHitIcon}${sName}</button>`;
     html += `<div class="timeslot-container ${sExp ? 'show' : ''}" id="timeslots-${sk}"></div>`;
   }
   html += `<button class="add-seat-btn" data-action="add-seat" data-floor="${fid}" data-area="${aname}">+</button></div>`;
@@ -959,32 +977,41 @@ function applyTimeslotFilter(container) {
   }
 }
 
-/** 【修改2】更新座位按钮视觉：分层提示 + 隐藏时段小圆点 */
-/** 【修改2】更新座位按钮视觉：分层提示 + 隐藏时段小圆点（同步） */
+/** 【v1.3.10 重构】更新座位按钮视觉：颜色基于全时段总数 + 闭眼图标 + 筛选命中图标 */
 function updateSeatVisual(sk) {
   // 先刷新该座位的统计（同步，仅读内存缓存）
   refreshSingleSeatStats(sk);
+  // 【v1.3.10】判断筛选是否非全选
+  const isFilterActive = !(state.visibleTimeSlots.size === 0 && !state._filterNone);
   document.querySelectorAll('.seat-btn').forEach(btn => {
     const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
     if (k !== sk) return;
     // 移除旧类
     btn.classList.remove('has-images', 'has-images-1', 'has-images-2');
-    // 移除旧小圆点
-    const oldDot = btn.querySelector('.hidden-dot');
-    if (oldDot) oldDot.remove();
-    // 添加分层类
+    // 移除旧图标
+    btn.querySelectorAll('.icon-hidden, .icon-filter-hit').forEach(el => el.remove());
+    // 【v1.3.10】颜色基于全时段总数
     const stat = seatImageStats.get(sk);
-    if (stat && stat.visibleCount > 0) {
-      btn.classList.add(stat.visibleCount >= 2 ? 'has-images-2' : 'has-images-1');
+    if (stat && stat.totalCount >= 2) {
+      btn.classList.add('has-images-2');
+    } else if (stat && stat.totalCount === 1) {
+      btn.classList.add('has-images-1');
     } else if (state.seatHasImages.has(sk)) {
-      // 可见时段无图但整体有图（全在隐藏时段），仍给浅色提示
       btn.classList.add('has-images-1');
     }
-    // 添加隐藏时段小圆点
+    // 【v1.3.10】左上角闭眼图标：隐藏时段有图
     if (stat && stat.hiddenHasImages) {
-      const dot = document.createElement('span');
-      dot.className = 'hidden-dot';
-      btn.appendChild(dot);
+      const icon = document.createElement('span');
+      icon.className = 'icon-hidden';
+      icon.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>';
+      btn.appendChild(icon);
+    }
+    // 【v1.3.10】右上角筛选命中图标：筛选非全选 + 可见时段有图
+    if (isFilterActive && stat && stat.visibleHasImages) {
+      const icon = document.createElement('span');
+      icon.className = 'icon-filter-hit';
+      icon.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>';
+      btn.appendChild(icon);
     }
   });
   // 同步更新区域按钮视觉
@@ -1687,8 +1714,9 @@ async function downloadSelectedImages() {
         try { blob = dataURLtoBlob(cellData.images[i].data); } catch (e) { blob = null; }
       }
       if (!blob || blob.size === 0) continue;
-      const safeTimeSlot = timeSlot.replace(/:/g, '-');
-      const safeName = sName.replace(/[^\w\u4e00-\u9fff.-]/g, '_');
+      const safeTimeSlot = timeSlot.replace(/:/g, '');
+      // 【v1.3.11】文件名仅用英文字母、数字、下划线，提升 ZIP 兼容性
+      const safeName = sName.replace(/[^\w]/g, '_');
       const filename = `${safeName}_${safeTimeSlot}_${i + 1}.jpg`;
       // 【v1.3.4 优化3】记录拍摄时间戳，用于 ZIP 文件修改时间
       const timestamp = cellData.images[i].createdAt || cellData.images[i].timestamp || null;
@@ -1706,16 +1734,9 @@ async function downloadSelectedImages() {
     showToast('正在打包...');
     try {
       const zip = new JSZip();
-      // 【v1.3.4 优化3】ZIP 文件修改时间使用真实拍摄时间，缺失时回退当前时间（秒数取偶数）
+      // 【v1.3.11】ZIP 文件时间戳统一为 2024-01-01 12:00:00（秒数取偶数），提升兼容性
+      const fileDate = new Date('2024-01-01T12:00:00');
       items.forEach(it => {
-        let fileDate;
-        if (it.timestamp) {
-          fileDate = new Date(it.timestamp);
-        } else {
-          fileDate = new Date();
-        }
-        // 确保 DOS 时间戳合规：秒数取偶数（DOS 时间精度为 2 秒）
-        fileDate.setSeconds(fileDate.getSeconds() & ~1);
         zip.file(it.filename, it.blob, { date: fileDate });
       });
       const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
@@ -2237,14 +2258,15 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
               } catch (e) { blob = null; }
             }
             if (!blob || blob.size === 0) continue; // 无有效数据，跳过
-            const folder = `${floorObj.name}_${aname}`;
-            // 文件名中冒号在 Android 文件系统非法，替换为短横线
-            const safeTimeSlot = TIME_SLOTS[tIdx].replace(/:/g, '-');
-            // 【v1.3.4 优化3】ZIP 文件修改时间使用真实拍摄时间
-            let fileDate = img.createdAt || img.timestamp ? new Date(img.createdAt || img.timestamp) : new Date();
-            fileDate.setSeconds(fileDate.getSeconds() & ~1); // DOS 时间戳合规：秒数取偶数
+            // 【v1.3.11】文件夹名仅用英文字母、数字、下划线
+            const folder = `${floorObj.name.replace(/[^\w]/g, '_')}_${aname.replace(/[^\w]/g, '_')}`;
+            // 【v1.3.11】文件名仅用英文字母、数字、下划线，冒号去掉
+            const safeTimeSlot = TIME_SLOTS[tIdx].replace(/:/g, '');
+            // 【v1.3.11】ZIP 文件时间戳统一为 2024-01-01 12:00:00（秒数取偶数）
+            const fileDate = new Date('2024-01-01T12:00:00');
             // 用路径字符串代替 zip.folder()，避免生成 STORED 目录条目导致 Android 解压失败
-            zip.file(`${folder}/${sName}_${safeTimeSlot}_${i + 1}.jpg`, blob, { date: fileDate });
+            const safeSName = sName.replace(/[^\w]/g, '_');
+            zip.file(`${folder}/${safeSName}_${safeTimeSlot}_${i + 1}.jpg`, blob, { date: fileDate });
             count++;
           }
         }
@@ -3471,26 +3493,37 @@ async function refreshExpandedSeats() {
     await refreshSeatImageStats();
     // 【性能优化】单次遍历所有座位按钮，批量更新视觉，避免 O(n²)
     const updatedAreas = new Set();
+    // 【v1.3.10】判断筛选是否非全选
+    const isFilterActive = !(state.visibleTimeSlots.size === 0 && !state._filterNone);
     document.querySelectorAll('.seat-btn').forEach(btn => {
       const sk = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
       refreshSingleSeatStats(sk);
       // 移除旧类
       btn.classList.remove('has-images', 'has-images-1', 'has-images-2');
-      // 移除旧小圆点
-      const oldDot = btn.querySelector('.hidden-dot');
-      if (oldDot) oldDot.remove();
-      // 添加分层类
+      // 移除旧图标
+      btn.querySelectorAll('.icon-hidden, .icon-filter-hit').forEach(el => el.remove());
+      // 【v1.3.10】颜色基于全时段总数
       const stat = seatImageStats.get(sk);
-      if (stat && stat.visibleCount > 0) {
-        btn.classList.add(stat.visibleCount >= 2 ? 'has-images-2' : 'has-images-1');
+      if (stat && stat.totalCount >= 2) {
+        btn.classList.add('has-images-2');
+      } else if (stat && stat.totalCount === 1) {
+        btn.classList.add('has-images-1');
       } else if (state.seatHasImages.has(sk)) {
         btn.classList.add('has-images-1');
       }
-      // 添加隐藏时段小圆点
+      // 【v1.3.10】左上角闭眼图标：隐藏时段有图
       if (stat && stat.hiddenHasImages) {
-        const dot = document.createElement('span');
-        dot.className = 'hidden-dot';
-        btn.appendChild(dot);
+        const icon = document.createElement('span');
+        icon.className = 'icon-hidden';
+        icon.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>';
+        btn.appendChild(icon);
+      }
+      // 【v1.3.10】右上角筛选命中图标：筛选非全选 + 可见时段有图
+      if (isFilterActive && stat && stat.visibleHasImages) {
+        const icon = document.createElement('span');
+        icon.className = 'icon-filter-hit';
+        icon.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>';
+        btn.appendChild(icon);
       }
       // 记录需要更新区域视觉的区域
       const parts = sk.split('-');
