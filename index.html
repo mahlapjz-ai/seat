@@ -385,8 +385,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.5.2 修复iPhone8拍照旋转：iOS临时Canvas清除EXIF再加水印，安卓不受影响
-const APP_VERSION = 'v1.5.2';
+// v1.5.3 修复预览闪烁：等待当前图片加载完成再显示弹窗+高清图预加载替换
+const APP_VERSION = 'v1.5.3';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -2738,10 +2738,26 @@ async function pvLoadFullImage(idx) {
     }
 
     if (data) {
-      // 【修复预览渐进渲染】Base64 data URL → Blob URL，一次性完整渲染
-      setSrcWithDecode(data.startsWith('data:') ? dataURLtoBlobURL(data) : data);
-      slide.dataset.loaded = '1';
-      slide.dataset.srcType = 'generated';
+      // 【v1.5.3 修复闪烁】Base64 data URL → Blob URL，预加载完成后再替换 src
+      const blobURL = data.startsWith('data:') ? dataURLtoBlobURL(data) : data;
+      // 先预加载图片，避免替换 src 时闪烁
+      const preloadImg = new Image();
+      preloadImg.onload = () => {
+        imgEl.onload = () => { delete imgEl.dataset.decoding; };
+        imgEl.onerror = () => { delete imgEl.dataset.decoding; };
+        imgEl.src = blobURL;
+        slide.dataset.loaded = '1';
+        slide.dataset.srcType = 'generated';
+      };
+      preloadImg.onerror = () => {
+        // 预加载失败，直接设置
+        imgEl.onload = () => { delete imgEl.dataset.decoding; };
+        imgEl.onerror = () => { delete imgEl.dataset.decoding; };
+        imgEl.src = blobURL;
+        slide.dataset.loaded = '1';
+        slide.dataset.srcType = 'generated';
+      };
+      preloadImg.src = blobURL;
     }
   } catch (err) { console.error('预览图片加载失败:', err); }
 }
@@ -2932,6 +2948,29 @@ async function showPreview(cellKeyStr, imgIdx) {
     pvSlideOffset = 0;
     pvGesture = 'idle';
     pvEdgeOverflow = 0;
+
+    // 【v1.5.3 修复闪烁】当前图片预加载完成后再显示弹窗
+    let currentImgLoaded = false;
+    const currentImgEl = previewScroller.children[imgIdx] ? previewScroller.children[imgIdx].querySelector('img') : null;
+    if (currentImgEl && currentImgEl.complete && currentImgEl.naturalWidth > 0) {
+      currentImgLoaded = true;
+    } else if (currentImgEl) {
+      currentImgEl.addEventListener('load', () => { currentImgLoaded = true; }, { once: true });
+      currentImgEl.addEventListener('error', () => { currentImgLoaded = true; }, { once: true });
+    } else {
+      currentImgLoaded = true;
+    }
+
+    // 【v1.5.3 修复闪烁】等待当前图片加载完成（最多 500ms），再显示弹窗
+    const waitForCurrentImg = new Promise(resolve => {
+      const check = () => { if (currentImgLoaded) resolve(); };
+      check();
+      if (!currentImgLoaded) {
+        const interval = setInterval(() => { if (currentImgLoaded) { clearInterval(interval); resolve(); } }, 20);
+        setTimeout(() => { clearInterval(interval); resolve(); }, 500);
+      }
+    });
+    await waitForCurrentImg;
 
     previewModal.classList.add('show');
     pvApplySlideOffset();
