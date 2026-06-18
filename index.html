@@ -385,8 +385,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.4.9 修复iOS拍照黑色区域：显式指定drawImage目标尺寸匹配Canvas
-const APP_VERSION = 'v1.4.9';
+// v1.5.0 修复iOS拍照变形：createImageBitmap+imageOrientation:none禁止自动旋转，手动旋转
+const APP_VERSION = 'v1.5.0';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1351,54 +1351,59 @@ function applyExifOrientation(ctx, origW, origH, orientation) {
   }
 }
 
-// 【v1.4.8 修复】addWatermarkBlob 支持两种输入 + EXIF 方向参数：
-//   - Blob 对象：使用 new Image() + Blob URL 解码
-//   - DataURL 字符串：使用 new Image() 加载
+// 【v1.5.0 重写】addWatermarkBlob 支持两种输入 + EXIF 方向参数：
+//   - Blob 对象：使用 createImageBitmap + { imageOrientation:'none' } 解码
+//     明确禁止浏览器自动应用 EXIF 旋转，手动旋转，行为跨设备一致
+//   - DataURL 字符串：使用 new Image() 加载（Canvas 转换已应用 EXIF，无需旋转）
 //   - orientation 参数：1~8 的 EXIF 方向值，由调用方提前读取
-// 关键原理：Safari 的 ctx.drawImage() 会自动应用 EXIF 旋转
-//   - img.naturalWidth/Height 是原始（未旋转）尺寸
-//   - ctx.drawImage() 绘制时自动旋转图片
-//   - 只需根据 EXIF 交换 Canvas 宽高，不需要手动旋转
-//   - DataURL 输入：Canvas 转换已应用 EXIF 并移除 EXIF，无需交换宽高
 function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
   return new Promise((resolve, reject) => {
     const isBlob = (imageSource instanceof Blob);
-    let blobUrl = null;
-    const decodePromise = new Promise((res, rej) => {
-      const img = new Image();
-      img.onload = () => { if (blobUrl) URL.revokeObjectURL(blobUrl); res(img); };
-      img.onerror = () => { if (blobUrl) URL.revokeObjectURL(blobUrl); rej(new Error('图片加载失败')); };
-      if (isBlob) { blobUrl = URL.createObjectURL(imageSource); img.src = blobUrl; }
-      else { img.src = imageSource; }
-    });
+    // 【v1.5.0 关键修复】Blob 用 createImageBitmap + imageOrientation:'none'
+    //   禁止浏览器自动应用 EXIF 旋转，确保 bitmap 始终是原始像素方向
+    //   然后手动根据 EXIF 值旋转，行为在 iPhone8/iPhone15/安卓上完全一致
+    let decodePromise;
+    if (isBlob) {
+      decodePromise = createImageBitmap(imageSource, { imageOrientation: 'none' })
+        .catch(() => createImageBitmap(imageSource)); // 降级：选项不支持时忽略
+    } else {
+      decodePromise = new Promise((res, rej) => {
+        const img = new Image();
+        img.onload = () => res(img);
+        img.onerror = () => rej(new Error('图片加载失败'));
+        img.src = imageSource;
+      });
+    }
 
     decodePromise.then(async (img) => {
       try {
+        // 保存原始尺寸（ImageBitmap close 后 width/height 归零，需提前保存）
         const origW = img.naturalWidth || img.width;
         const origH = img.naturalHeight || img.height;
-        // 【v1.4.8 修复】EXIF 方向纠正策略：
-        //   Blob 输入：Safari ctx.drawImage() 自动应用 EXIF 旋转，
-        //     但 naturalWidth/Height 是原始尺寸，需交换 Canvas 宽高以匹配旋转后的图片
-        //   DataURL 输入：Canvas 转换已应用 EXIF，naturalWidth/Height 是已旋转尺寸，无需交换
-        let needSwap = false;
+        // 【v1.5.0】手动 EXIF 旋转：bitmap 始终是原始像素方向，直接根据 EXIF 值旋转
+        let orient = 1;
         try {
-          if (isBlob && typeof orientation === 'number' && orientation >= 5 && orientation <= 8) {
-            needSwap = true;
+          if (typeof orientation === 'number' && orientation >= 2 && orientation <= 8) {
+            orient = orientation;
           }
         } catch (e) {
-          console.warn('[EXIF] 方向检测异常:', e);
-          needSwap = false;
+          console.warn('[EXIF] 方向值异常，跳过旋转:', e);
+          orient = 1;
         }
+        // 方向 5~8 需要 90° 旋转，Canvas 宽高互换
+        const needSwap = orient >= 5 && orient <= 8;
         const canvasW = needSwap ? origH : origW;
         const canvasH = needSwap ? origW : origH;
         const canvas = document.createElement('canvas');
         canvas.width = canvasW; canvas.height = canvasH;
         const ctx = canvas.getContext('2d');
-        // 【v1.4.9 修复】Safari ctx.drawImage() 自动应用 EXIF 旋转，
-        //   但默认按 naturalWidth×naturalHeight（原始尺寸）绘制，
-        //   旋转后的内容与 Canvas 尺寸不匹配导致黑色区域+裁剪。
-        //   修复：显式指定目标尺寸为 canvasW×canvasH，让旋转后的内容完整填充 Canvas。
-        ctx.drawImage(img, 0, 0, canvasW, canvasH);
+        if (orient > 1) {
+          applyExifOrientation(ctx, origW, origH, orient);
+        }
+        // bitmap 是原始像素方向，drawImage 按原始尺寸绘制，transform 负责旋转
+        ctx.drawImage(img, 0, 0);
+        // createImageBitmap 产生的 ImageBitmap 绘制后立即关闭释放
+        if (img.close) img.close();
         // 基准字号：短边×10%，限制在36~200px
         const shortSide = Math.min(canvas.width, canvas.height);
         const fs = Math.max(36, Math.min(200, Math.round(shortSide * 0.10)));
