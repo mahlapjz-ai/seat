@@ -385,8 +385,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.4.3 紧急修复iOS拍照EXIF容错：任何异常均跳过旋转，不阻断拍照流程
-const APP_VERSION = 'v1.4.3';
+// v1.4.4 紧急修复全平台拍照报错：缩略图生成引用了已删除的变量 imgW/imgH
+const APP_VERSION = 'v1.4.4';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1471,11 +1471,11 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         }
         // 一次 Canvas 绘制，同时导出原图 Blob 和缩略图 Blob
         const fullPromise = new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.95));
-        // 从同一个 Canvas 生成缩略图
+        // 【v1.4.4 紧急修复】缩略图基于当前 Canvas 尺寸（已旋转后的 canvasW/canvasH），而非已删除的 imgW/imgH
         const thumbCanvas = document.createElement('canvas');
-        const scale = Math.min(200 / imgW, 1);
-        thumbCanvas.width = Math.round(imgW * scale);
-        thumbCanvas.height = Math.round(imgH * scale);
+        const scale = Math.min(200 / canvasW, 1);
+        thumbCanvas.width = Math.round(canvasW * scale);
+        thumbCanvas.height = Math.round(canvasH * scale);
         const tCtx = thumbCanvas.getContext('2d');
         tCtx.drawImage(canvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
         const thumbPromise = new Promise(r => thumbCanvas.toBlob(r, 'image/jpeg', 0.8));
