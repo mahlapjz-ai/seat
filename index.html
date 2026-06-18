@@ -385,8 +385,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.5.0 修复iOS拍照变形：createImageBitmap+imageOrientation:none禁止自动旋转，手动旋转
-const APP_VERSION = 'v1.5.0';
+// v1.5.1 修复iPhone8拍照双重旋转：bitmap尺寸检测+imageOrientation:none双重保护
+const APP_VERSION = 'v1.5.1';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1351,19 +1351,17 @@ function applyExifOrientation(ctx, origW, origH, orientation) {
   }
 }
 
-// 【v1.5.0 重写】addWatermarkBlob 支持两种输入 + EXIF 方向参数：
-//   - Blob 对象：使用 createImageBitmap + { imageOrientation:'none' } 解码
-//     明确禁止浏览器自动应用 EXIF 旋转，手动旋转，行为跨设备一致
-//   - DataURL 字符串：使用 new Image() 加载（Canvas 转换已应用 EXIF，无需旋转）
+// 【v1.5.1 重写】addWatermarkBlob 支持两种输入 + EXIF 方向参数：
+//   - Blob 对象：createImageBitmap + imageOrientation:'none'（禁止自动旋转）
+//     若不支持则降级，并通过 bitmap 尺寸检测是否已被浏览器自动旋转
+//   - DataURL 字符串：new Image() 加载（Canvas 转换已应用 EXIF，无需旋转）
 //   - orientation 参数：1~8 的 EXIF 方向值，由调用方提前读取
 function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
   return new Promise((resolve, reject) => {
     const isBlob = (imageSource instanceof Blob);
-    // 【v1.5.0 关键修复】Blob 用 createImageBitmap + imageOrientation:'none'
-    //   禁止浏览器自动应用 EXIF 旋转，确保 bitmap 始终是原始像素方向
-    //   然后手动根据 EXIF 值旋转，行为在 iPhone8/iPhone15/安卓上完全一致
     let decodePromise;
     if (isBlob) {
+      // 【v1.5.1】先尝试 imageOrientation:'none' 禁止自动旋转
       decodePromise = createImageBitmap(imageSource, { imageOrientation: 'none' })
         .catch(() => createImageBitmap(imageSource)); // 降级：选项不支持时忽略
     } else {
@@ -1380,14 +1378,25 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         // 保存原始尺寸（ImageBitmap close 后 width/height 归零，需提前保存）
         const origW = img.naturalWidth || img.width;
         const origH = img.naturalHeight || img.height;
-        // 【v1.5.0】手动 EXIF 旋转：bitmap 始终是原始像素方向，直接根据 EXIF 值旋转
+        // 【v1.5.1 关键修复】EXIF 方向纠正 + bitmap 尺寸检测
+        //   imageOrientation:'none' 在旧 iOS 上不支持，降级后 createImageBitmap
+        //   可能自动旋转 bitmap。通过比较 EXIF 值和 bitmap 实际尺寸来检测：
+        //   - EXIF 5~8 需要 90° 旋转（宽高互换）
+        //   - 如果 bitmap 已经是纵向（H>W），说明浏览器已旋转，跳过手动旋转
+        //   - 如果 bitmap 仍是横向（W>H），说明浏览器未旋转，需手动旋转
         let orient = 1;
         try {
           if (typeof orientation === 'number' && orientation >= 2 && orientation <= 8) {
-            orient = orientation;
+            if (orientation >= 5 && orientation <= 8 && isBlob && origH > origW) {
+              // bitmap 已是纵向，浏览器已自动旋转，跳过
+              orient = 1;
+            } else {
+              // bitmap 仍是横向（或非 Blob 输入），需手动旋转
+              orient = orientation;
+            }
           }
         } catch (e) {
-          console.warn('[EXIF] 方向值异常，跳过旋转:', e);
+          console.warn('[EXIF] 方向检测异常，跳过旋转:', e);
           orient = 1;
         }
         // 方向 5~8 需要 90° 旋转，Canvas 宽高互换
