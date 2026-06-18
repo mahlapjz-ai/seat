@@ -385,8 +385,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.5.1 修复iPhone8拍照双重旋转：bitmap尺寸检测+imageOrientation:none双重保护
-const APP_VERSION = 'v1.5.1';
+// v1.5.2 修复iPhone8拍照旋转：iOS临时Canvas清除EXIF再加水印，安卓不受影响
+const APP_VERSION = 'v1.5.2';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1679,29 +1679,50 @@ captureInput.addEventListener('change', async (e) => {
     const bTime = getBeijingTime();
     const sk = cellToSeatKey(ck);
 
-    // 【v1.4.2 重写】EXIF 方向纠正：在 HEIC 转换前从原始 file 读取 Orientation
-    //   避免转换后 EXIF 丢失导致方向信息缺失
+    // 【v1.5.2 重写】iOS 拍照 EXIF 处理：先用临时 Canvas 清除 EXIF，再加水印
+    //   方案：iOS 上 new Image() 加载 Blob 时浏览器自动应用 EXIF 旋转，
+    //   通过临时 Canvas 绘制一次，得到视觉正确、无 EXIF 的图片，
+    //   再传给 addWatermarkBlob，不再需要 EXIF 方向参数。
+    //   安卓完全跳过此步骤，直接传原始 Blob。
     const fileType = (file.type || '').toLowerCase();
     const isNativeImage = fileType === 'image/jpeg' || fileType === 'image/png' || fileType === 'image/gif' || fileType === 'image/webp' || fileType === 'image/bmp';
-    // 【v1.4.3 紧急修复】EXIF 读取完全容错，任何异常均跳过旋转，不阻断拍照流程
+    // 安卓需要读取 EXIF 方向值
     let captureOrientation = 1;
-    try {
-      captureOrientation = await readExifOrientation(file);
-    } catch (exifErr) {
-      console.warn('[EXIF] 读取方向信息失败，跳过旋转纠正:', exifErr);
-      captureOrientation = 1;
-    }
+    try { captureOrientation = await readExifOrientation(file); } catch (e) { captureOrientation = 1; }
     let watermarkSource;
-    if (isNativeImage) {
-      // 【v1.4.7】JPEG/PNG 等原生格式：直接传 Blob，addWatermarkBlob 内用 new Image() 解码
-      watermarkSource = file;
+    let watermarkOrientation = 1; // 传给 addWatermarkBlob 的方向值
+    if (isIOS) {
+      // 【v1.5.2 关键修复】iOS：临时 Canvas 清除 EXIF
+      try {
+        const tempImg = await new Promise((res, rej) => {
+          const img = new Image();
+          img.onload = () => res(img);
+          img.onerror = () => rej(new Error('临时图片加载失败'));
+          img.src = URL.createObjectURL(file);
+        });
+        // 浏览器已自动应用 EXIF 旋转，img.width/height 是视觉正确尺寸
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = tempImg.width;
+        tempCanvas.height = tempImg.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(tempImg, 0, 0);
+        URL.revokeObjectURL(tempImg.src);
+        // 从临时 Canvas 导出无 EXIF 的 Blob
+        watermarkSource = await new Promise(r => tempCanvas.toBlob(r, 'image/jpeg', 0.95));
+        // 此时图片已视觉正确且无 EXIF，不需要方向纠正
+        watermarkOrientation = 1;
+      } catch (iosErr) {
+        console.warn('[iOS EXIF清除] 失败，回退到原始图片:', iosErr);
+        watermarkSource = file;
+        watermarkOrientation = 1;
+      }
     } else {
-      // HEIC/未知格式：需先转 DataURL（Canvas 转 JPEG），EXIF 已丢失，需传入提前读取的方向
-      watermarkSource = await readImageAsDataURL(file);
+      // 安卓：直接传原始 Blob，EXIF 方向值由 addWatermarkBlob 处理
+      watermarkSource = isNativeImage ? file : await readImageAsDataURL(file);
+      watermarkOrientation = isNativeImage ? captureOrientation : 1;
     }
     // 2. 同步绘制水印 + 导出 fullBlob 和 thumbBlob（一次 Canvas 绘制）
-    // 【v1.4.2】传入提前读取的 EXIF 方向值
-    const { fullBlob, thumbBlob } = await addWatermarkBlob(watermarkSource, sName, bTime, captureOrientation);
+    const { fullBlob, thumbBlob } = await addWatermarkBlob(watermarkSource, sName, bTime, watermarkOrientation);
     // 3. 生成 Blob URL 用于即时显示和预览
     const fullBlobURL = URL.createObjectURL(fullBlob);
     const thumbBlobURL = URL.createObjectURL(thumbBlob);
