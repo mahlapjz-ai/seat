@@ -203,7 +203,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .pv-slide img{max-width:100vw;max-height:100vh;object-fit:contain;border-radius:4px;transform-origin:center center;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:none;will-change:transform;transition:opacity .15s ease-out}
 .pv-slide img[data-decoding]{opacity:0}
 #preview-indicator{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:301}
-#preview-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.4);font-size:12px;pointer-events:none}
+#preview-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.4);font-size:12px;pointer-events:none;white-space:nowrap;padding:0 16px}
 
 .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:250;align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
@@ -385,8 +385,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.5.3 修复预览闪烁：等待当前图片加载完成再显示弹窗+高清图预加载替换
-const APP_VERSION = 'v1.5.3';
+// v1.5.4 修复预览底部提示文字不必要的换行
+const APP_VERSION = 'v1.5.4';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
