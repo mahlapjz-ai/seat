@@ -385,8 +385,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.4.8 修复iPhone8拍照旋转：new Image()+Blob URL解码，仅交换Canvas宽高不手动旋转
-const APP_VERSION = 'v1.4.8';
+// v1.4.9 修复iOS拍照黑色区域：显式指定drawImage目标尺寸匹配Canvas
+const APP_VERSION = 'v1.4.9';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1394,8 +1394,11 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         const canvas = document.createElement('canvas');
         canvas.width = canvasW; canvas.height = canvasH;
         const ctx = canvas.getContext('2d');
-        // 不手动旋转 — 浏览器通过 ctx.drawImage() 自动处理 EXIF 方向
-        ctx.drawImage(img, 0, 0);
+        // 【v1.4.9 修复】Safari ctx.drawImage() 自动应用 EXIF 旋转，
+        //   但默认按 naturalWidth×naturalHeight（原始尺寸）绘制，
+        //   旋转后的内容与 Canvas 尺寸不匹配导致黑色区域+裁剪。
+        //   修复：显式指定目标尺寸为 canvasW×canvasH，让旋转后的内容完整填充 Canvas。
+        ctx.drawImage(img, 0, 0, canvasW, canvasH);
         // 基准字号：短边×10%，限制在36~200px
         const shortSide = Math.min(canvas.width, canvas.height);
         const fs = Math.max(36, Math.min(200, Math.round(shortSide * 0.10)));
