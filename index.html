@@ -385,8 +385,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.4.4 紧急修复全平台拍照报错：缩略图生成引用了已删除的变量 imgW/imgH
-const APP_VERSION = 'v1.4.4';
+// v1.4.5 修复iOS拍照双重旋转：createImageBitmap已自动纠正EXIF，不再手动旋转
+const APP_VERSION = 'v1.4.5';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1369,40 +1369,16 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         // 【v1.3.7 修复】保存原始尺寸到变量，避免 ImageBitmap close 后 width/height 归零
         const origW = img.naturalWidth || img.width;
         const origH = img.naturalHeight || img.height;
-        // 【v1.4.3 紧急修复】EXIF 方向纠正完全容错
-        let orient = 1; // 默认不旋转
-        try {
-          orient = orientation;
-          if (orient === undefined || orient === null) {
-            orient = isBlob ? (await readExifOrientation(imageSource)) : 1;
-          }
-          // 校验方向值有效性
-          if (typeof orient !== 'number' || orient < 1 || orient > 8 || !Number.isInteger(orient)) {
-            console.warn('[EXIF] 方向值异常，跳过旋转纠正:', orient);
-            orient = 1;
-          }
-        } catch (exifErr) {
-          console.warn('[EXIF] 方向纠正失败，跳过旋转:', exifErr);
-          orient = 1;
-        }
-        // 方向 5~8 需要 90° 旋转，Canvas 宽高互换
-        const needSwap = orient >= 5 && orient <= 8;
-        const canvasW = needSwap ? origH : origW;
-        const canvasH = needSwap ? origW : origH;
+        // 【v1.4.5 修复】EXIF 方向纠正：createImageBitmap 已自动应用 EXIF 方向，
+        //   不需要再手动旋转，否则双重旋转导致图片方向错误
+        //   DataURL 场景（convertToJPEGDataURL 经过 Canvas）也已自动纠正
+        //   因此无论哪种输入，均不再手动旋转
+        const orient = 1;
+        const canvasW = origW;
+        const canvasH = origH;
         const canvas = document.createElement('canvas');
         canvas.width = canvasW; canvas.height = canvasH;
-        let ctx = canvas.getContext('2d');
-        // 【v1.4.3 紧急修复】旋转变换也容错，失败则回退到不旋转
-        if (orient > 1) {
-          try {
-            applyExifOrientation(ctx, origW, origH, orient);
-          } catch (rotateErr) {
-            console.warn('[EXIF] 旋转变换失败，使用原始方向:', rotateErr);
-            // 回退：重置 Canvas 为原始尺寸，不旋转
-            canvas.width = origW; canvas.height = origH;
-            ctx = canvas.getContext('2d');
-          }
-        }
+        const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         // 【v1.3.7】createImageBitmap 产生的 ImageBitmap 绘制后立即关闭释放
         if (img.close) img.close();
