@@ -385,8 +385,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.4.5 修复iOS拍照双重旋转：createImageBitmap已自动纠正EXIF，不再手动旋转
-const APP_VERSION = 'v1.4.5';
+// v1.4.6 修复iPhone8拍照旋转：动态检测createImageBitmap是否已应用EXIF，未应用时手动旋转
+const APP_VERSION = 'v1.4.6';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1369,16 +1369,39 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         // 【v1.3.7 修复】保存原始尺寸到变量，避免 ImageBitmap close 后 width/height 归零
         const origW = img.naturalWidth || img.width;
         const origH = img.naturalHeight || img.height;
-        // 【v1.4.5 修复】EXIF 方向纠正：createImageBitmap 已自动应用 EXIF 方向，
-        //   不需要再手动旋转，否则双重旋转导致图片方向错误
-        //   DataURL 场景（convertToJPEGDataURL 经过 Canvas）也已自动纠正
-        //   因此无论哪种输入，均不再手动旋转
-        const orient = 1;
-        const canvasW = origW;
-        const canvasH = origH;
+        // 【v1.4.6 修复】EXIF 方向动态纠正：
+        //   createImageBitmap 在新设备（iPhone15）上自动应用 EXIF，在旧设备（iPhone8）上不应用。
+        //   通过比较 EXIF 方向值和 ImageBitmap 实际尺寸，动态检测是否需要手动旋转。
+        let orient = 1;
+        try {
+          const rawOrient = (orientation !== undefined && orientation !== null) ? orientation : 1;
+          if (rawOrient >= 5 && rawOrient <= 8) {
+            // 方向 5~8 需要 90° 旋转，旋转后宽高应互换
+            // 如果 bitmap 仍是横向（W > H），说明 createImageBitmap 未应用 EXIF，需手动旋转
+            // 如果 bitmap 已是纵向（H > W），说明 createImageBitmap 已应用 EXIF，跳过旋转
+            if (origW > origH) {
+              orient = rawOrient; // 未旋转，需手动纠正
+            } else {
+              orient = 1; // 已旋转，跳过
+            }
+          } else if (rawOrient >= 2 && rawOrient <= 4) {
+            // 方向 2~4（镜像/180°）不改变宽高比，无法通过尺寸检测
+            // createImageBitmap 通常能正确处理，保守跳过
+            orient = 1;
+          }
+        } catch (e) {
+          console.warn('[EXIF] 方向检测异常，跳过旋转:', e);
+          orient = 1;
+        }
+        const needSwap = orient >= 5 && orient <= 8;
+        const canvasW = needSwap ? origH : origW;
+        const canvasH = needSwap ? origW : origH;
         const canvas = document.createElement('canvas');
         canvas.width = canvasW; canvas.height = canvasH;
         const ctx = canvas.getContext('2d');
+        if (orient > 1) {
+          applyExifOrientation(ctx, origW, origH, orient);
+        }
         ctx.drawImage(img, 0, 0);
         // 【v1.3.7】createImageBitmap 产生的 ImageBitmap 绘制后立即关闭释放
         if (img.close) img.close();
