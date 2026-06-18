@@ -202,6 +202,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .pv-slide{flex:0 0 100%;width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
 .pv-slide img{max-width:100vw;max-height:100vh;object-fit:contain;border-radius:4px;transform-origin:center center;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:none;will-change:transform;transition:opacity .15s ease-out}
 .pv-slide img[data-decoding]{opacity:0}
+/* 【v1.5.5】预览 loading spinner：高清源未就绪时显示 */
+.pv-slide .pv-loading{position:absolute;width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:rgba(255,255,255,.6);border-radius:50%;animation:pv-spin .8s linear infinite;pointer-events:none}
+@keyframes pv-spin{to{transform:rotate(360deg)}}
 #preview-indicator{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:301}
 #preview-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.4);font-size:12px;pointer-events:none;white-space:nowrap;padding:0 16px}
 
@@ -385,8 +388,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.5.4 修复预览底部提示文字不必要的换行
-const APP_VERSION = 'v1.5.4';
+// v1.5.5 优化预览加载体验：高清源未就绪时显示 loading 而非模糊缩略图
+const APP_VERSION = 'v1.5.5';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1774,6 +1777,8 @@ captureInput.addEventListener('change', async (e) => {
           // 数据已持久化，刷新 DOM 缓存
           invalidateTimeslotCache(sk);
           await renderTimeSlots(sk);
+          // 【v1.5.5】通知预览组件高清源已就绪
+          notifyPreviewDataReady(ck);
         }
         // 【v1.3.0】拍照后自动下载（替换原 Web Share API 分享）
         if (state.autoShare) {
@@ -1868,6 +1873,8 @@ uploadInput.addEventListener('change', async (e) => {
             await saveCellData(ck, cd.images);
             invalidateTimeslotCache(sk);
             await renderTimeSlots(sk);
+            // 【v1.5.5】通知预览组件高清源已就绪
+            notifyPreviewDataReady(ck);
           }
         } else {
           // 【v1.4.0】上传不加水印：data 存压缩原图（JPEG 0.92），不再额外存 original
@@ -1880,6 +1887,8 @@ uploadInput.addEventListener('change', async (e) => {
             await saveCellData(ck, cd.images);
             invalidateTimeslotCache(sk);
             await renderTimeSlots(sk);
+            // 【v1.5.5】通知预览组件高清源已就绪
+            notifyPreviewDataReady(ck);
           }
         }
       } catch (err) {
@@ -2545,6 +2554,23 @@ const pvCache = new Map();
 const PV_CACHE_MAX = 20; // 【性能优化】预览缓存最大条目数，防止内存无限增长
 const pvStates = []; // 每张图片独立的变换状态 { scale, tx, ty }
 
+// 【v1.5.5】高清源就绪通知：后台存储完成后，若预览弹窗正在显示且对应图片处于 loading 状态，触发重新加载
+function notifyPreviewDataReady(cellKey) {
+  if (!previewModal.classList.contains('show')) return;
+  for (let i = 0; i < pvImages.length; i++) {
+    if (pvImages[i]._cellKey !== cellKey) continue;
+    const slide = previewScroller.children[i];
+    if (slide && slide.dataset.loaded === '0') {
+      // 更新 pvImages 中的数据引用（从 IndexedDB 重新读取最新数据）
+      getCellData(cellKey).then(cd => {
+        if (!cd || !cd.images || !cd.images[i]) return;
+        pvImages[i] = { ...cd.images[i], _cellKey: cellKey };
+        pvLoadFullImage(i);
+      });
+    }
+  }
+}
+
 // 手势状态
 let pvGesture = 'idle'; // 'idle' | 'pinch' | 'pan' | 'swipe-down' | 'slide'
 let pvStartX = 0, pvStartY = 0;
@@ -2691,17 +2717,21 @@ async function pvLoadFullImage(idx) {
   const imgEl = slide ? slide.querySelector('img') : null;
   if (!imgEl) return;
   try {
-    // 【修复渐进渲染】统一辅助：设 src 前先隐藏，onload 后淡入
-    const setSrcWithDecode = (src) => {
+    // 【v1.5.5】加载完成后移除 loading spinner 并淡入图片
+    const finishLoad = (src) => {
+      // 移除 loading spinner
+      const spinner = slide.querySelector('.pv-loading');
+      if (spinner) spinner.remove();
+      // 设置 src 并淡入
       imgEl.dataset.decoding = '1';
       imgEl.onload = () => { delete imgEl.dataset.decoding; };
       imgEl.onerror = () => { delete imgEl.dataset.decoding; };
       imgEl.src = src;
+      slide.dataset.loaded = '1';
     };
     // 优先级1：_fullBlobURL（拍照后同步生成，0ms）
     if (pvImages[idx]._fullBlobURL) {
-      setSrcWithDecode(pvImages[idx]._fullBlobURL);
-      slide.dataset.loaded = '1';
+      finishLoad(pvImages[idx]._fullBlobURL);
       slide.dataset.srcType = 'blob-url';
       return;
     }
@@ -2709,8 +2739,7 @@ async function pvLoadFullImage(idx) {
     const cellKey = pvImages[idx]._cellKey;
     const memBlob = getMemoryBlobURL(cellKey, idx);
     if (memBlob && memBlob.fullBlobURL) {
-      setSrcWithDecode(memBlob.fullBlobURL);
-      slide.dataset.loaded = '1';
+      finishLoad(memBlob.fullBlobURL);
       slide.dataset.srcType = 'memory-blob';
       return;
     }
@@ -2732,7 +2761,7 @@ async function pvLoadFullImage(idx) {
       if (pvCache.size >= PV_CACHE_MAX) { const firstKey = pvCache.keys().next().value; pvCache.delete(firstKey); }
       pvCache.set(cacheKey, data);
     }
-    // 优先级6：thumbnail
+    // 优先级6：thumbnail（高清源未就绪时的兜底）
     else if (pvImages[idx].thumbnail && !pvImages[idx].thumbnail.startsWith('blob:')) {
       data = pvImages[idx].thumbnail;
     }
@@ -2743,18 +2772,11 @@ async function pvLoadFullImage(idx) {
       // 先预加载图片，避免替换 src 时闪烁
       const preloadImg = new Image();
       preloadImg.onload = () => {
-        imgEl.onload = () => { delete imgEl.dataset.decoding; };
-        imgEl.onerror = () => { delete imgEl.dataset.decoding; };
-        imgEl.src = blobURL;
-        slide.dataset.loaded = '1';
+        finishLoad(blobURL);
         slide.dataset.srcType = 'generated';
       };
       preloadImg.onerror = () => {
-        // 预加载失败，直接设置
-        imgEl.onload = () => { delete imgEl.dataset.decoding; };
-        imgEl.onerror = () => { delete imgEl.dataset.decoding; };
-        imgEl.src = blobURL;
-        slide.dataset.loaded = '1';
+        finishLoad(blobURL);
         slide.dataset.srcType = 'generated';
       };
       preloadImg.src = blobURL;
@@ -2884,8 +2906,9 @@ async function showPreview(cellKeyStr, imgIdx) {
 
       if (Math.abs(i - imgIdx) <= 1) {
         // 当前图及相邻：立即加载
-        // 优先级：_fullBlobURL > 内存 Blob 缓存 > pvCache > data > thumbnail
+        // 优先级：_fullBlobURL > 内存 Blob 缓存 > pvCache > data > original > (thumbnail→loading)
         let src = null;
+        let isThumbnailOnly = false; // 【v1.5.5】标记是否仅有缩略图
         // 1. 优先用 _fullBlobURL（拍照后同步生成，立即可用）
         if (pvImages[i]._fullBlobURL) {
           src = pvImages[i]._fullBlobURL;
@@ -2919,11 +2942,10 @@ async function showPreview(cellKeyStr, imgIdx) {
           slide.dataset.loaded = '1';
           slide.dataset.srcType = 'original-legacy';
         }
-        // 6. thumbnail（Base64 → Blob URL 避免渐进渲染）
+        // 6. 【v1.5.5】仅有 thumbnail 时不显示模糊缩略图，改为 loading 等待高清源
         if (!src && pvImages[i].thumbnail && !pvImages[i].thumbnail.startsWith('blob:')) {
-          src = dataURLtoBlobURL(pvImages[i].thumbnail);
-          slide.dataset.loaded = '1';
-          slide.dataset.srcType = 'thumbnail';
+          isThumbnailOnly = true;
+          slide.dataset.loaded = '0';
         }
         // 7. 完全无法显示
         if (!src && !slide.dataset.loaded) {
@@ -2936,6 +2958,11 @@ async function showPreview(cellKeyStr, imgIdx) {
           imgEl.onload = () => { delete imgEl.dataset.decoding; };
           imgEl.onerror = () => { delete imgEl.dataset.decoding; };
           imgEl.src = src;
+        } else if (isThumbnailOnly) {
+          // 【v1.5.5】高清源未就绪，显示 loading spinner
+          const spinner = document.createElement('div');
+          spinner.className = 'pv-loading';
+          slide.appendChild(spinner);
         }
       } else {
         // 远处图片：延迟加载
