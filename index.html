@@ -384,8 +384,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.3.15 选中按钮改为红色描边+无背景色，避免与蓝色提示混淆
-const APP_VERSION = 'v1.3.15';
+// v1.3.17 彻修复时段筛选偶尔自动恢复全选：双重备份持久化+写入校验+SW更新保护
+const APP_VERSION = 'v1.3.17';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -693,10 +693,48 @@ function loadShowLogoState() { try { state.showLogo = localStorage.getItem('seat
 function saveUploadWatermarkState() { try { localStorage.setItem('seat_upload_watermark', state.uploadWatermark ? '1' : '0'); } catch (e) {} }
 function loadUploadWatermarkState() { try { state.uploadWatermark = localStorage.getItem('seat_upload_watermark') === '1'; } catch (e) {} }
 
-/** 保存时段筛选设置到 localStorage */
-function saveFilterState() { try { localStorage.setItem('seat_time_filter', JSON.stringify({ slots: [...state.visibleTimeSlots], none: state._filterNone })); } catch (e) {} }
-/** 加载时段筛选设置 */
-function loadFilterState() { try { const o = JSON.parse(localStorage.getItem('seat_time_filter')); if (o && Array.isArray(o.slots)) { state.visibleTimeSlots = new Set(o.slots); state._filterNone = !!o.none; } } catch (e) {} }
+/** 【v1.3.17 修复】保存时段筛选设置到 localStorage（双重备份 + 写入校验） */
+function saveFilterState() {
+  try {
+    const data = JSON.stringify({ slots: [...state.visibleTimeSlots], none: state._filterNone });
+    localStorage.setItem('seat_time_filter', data);
+    // 【v1.3.17】双重备份：写入备用键
+    localStorage.setItem('seat_time_filter_bak', data);
+    // 【v1.3.17】写入后立即校验
+    const verify = localStorage.getItem('seat_time_filter');
+    if (verify !== data) {
+      console.warn('[筛选持久化] 主键写入校验失败，尝试重写');
+      localStorage.setItem('seat_time_filter', data);
+    }
+    // 【v1.3.17】调试辅助
+    console.log('[筛选持久化] 保存成功', { slots: [...state.visibleTimeSlots], none: state._filterNone, raw: data });
+  } catch (e) {
+    console.error('[筛选持久化] 保存失败', e);
+  }
+}
+/** 【v1.3.17 修复】加载时段筛选设置（主键→备用键→保留默认，不回退全选） */
+function loadFilterState() {
+  try {
+    // 先尝试主键
+    let raw = localStorage.getItem('seat_time_filter');
+    // 主键失败，尝试备用键
+    if (!raw) raw = localStorage.getItem('seat_time_filter_bak');
+    if (raw) {
+      const o = JSON.parse(raw);
+      if (o && Array.isArray(o.slots)) {
+        state.visibleTimeSlots = new Set(o.slots);
+        state._filterNone = !!o.none;
+        console.log('[筛选持久化] 加载成功', { slots: [...state.visibleTimeSlots], none: state._filterNone });
+        return;
+      }
+    }
+    // 【v1.3.17】读取失败或数据异常时，不回退全选，保留默认状态（空集+_filterNone=false=全显）
+    console.warn('[筛选持久化] 无有效存储，保留默认状态（全显）');
+  } catch (e) {
+    // 【v1.3.17】异常时也不回退全选，保留默认
+    console.error('[筛选持久化] 加载异常，保留默认状态', e);
+  }
+}
 
 /** 判断某时段索引是否在当前北京时间已过（严格大于时段时间为已过） */
 function isTimeSlotPassed(tIdx) {
@@ -3513,15 +3551,14 @@ async function refreshExpandedSeats() {
       btn.classList.remove('has-images', 'has-images-1', 'has-images-2');
       // 移除旧图标
       btn.querySelectorAll('.icon-hidden, .icon-filter-hit').forEach(el => el.remove());
-      // 【v1.3.10】颜色基于全时段总数
+      // 【v1.3.16 修复】颜色基于可见时段统计，与 renderSeatFlow/updateSeatVisual 一致
       const stat = seatImageStats.get(sk);
-      if (stat && stat.totalCount >= 2) {
+      if (stat && stat.visibleTotalCount >= 2 && stat.visibleHasSlotWithMulti) {
         btn.classList.add('has-images-2');
-      } else if (stat && stat.totalCount === 1) {
-        btn.classList.add('has-images-1');
-      } else if (state.seatHasImages.has(sk)) {
+      } else if (stat && stat.visibleTotalCount >= 1) {
         btn.classList.add('has-images-1');
       }
+      // 【v1.3.14 修复】移除 seatHasImages 兜底，隐藏时段有图不再触发蓝色
       // 【v1.3.10】左上角闭眼图标：隐藏时段有图
       if (stat && stat.hiddenHasImages) {
         const icon = document.createElement('span');
@@ -3809,13 +3846,21 @@ async function init() {
       if (!bar || bar.classList.contains('show')) return;
       bar.classList.add('show');
       bar.onclick = () => {
+        // 【v1.3.17 修复】SW 更新前强制保存筛选状态，防止刷新后丢失
+        try { saveFilterState(); } catch(e) {}
         if (worker && worker.postMessage) {
           worker.postMessage({ type: 'SKIP_WAITING' });
         }
         navigator.serviceWorker.addEventListener('controllerchange', () => {
+          // 【v1.3.17 修复】刷新前再次强制保存，确保最新状态
+          try { saveFilterState(); } catch(e) {}
           window.location.reload();
         });
-        setTimeout(() => window.location.reload(), 1000);
+        setTimeout(() => {
+          // 【v1.3.17 修复】超时刷新前也强制保存
+          try { saveFilterState(); } catch(e) {}
+          window.location.reload();
+        }, 1000);
       };
     } catch(e) {}
   }
