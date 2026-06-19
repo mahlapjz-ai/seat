@@ -279,7 +279,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 /* ============================================================
    【v1.6.0】主题系统 — 通过 body 类名激活，不污染默认样式
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Exo+2:wght@300;400;600;700&display=swap');
 
 /* --- 主题选择器（菜单内） --- */
 .theme-select{width:100%;padding:8px 10px;font-size:13px;border:2px solid #d9d9d9;border-radius:6px;background:#fff;color:#333;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
@@ -351,6 +351,75 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 /* 主题选择器 — 赛博朋克风格 */
 .theme-pixel-cyberpunk .theme-select{border-color:#cc00ff !important;background:#0d0d1a !important;color:#00ffff !important;box-shadow:0 0 6px rgba(204,0,255,.2) !important;font-family:'Courier New','PingFang SC',monospace !important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%2300ffff' stroke-width='1.5'/%3E%3C/svg%3E") !important}
 .theme-pixel-cyberpunk .theme-select option{background:#0d0d1a;color:#00ffff}
+
+/* ============================================================
+   【v1.6.1】2046 主题 — body.theme-2046
+   未来实验室/空间站界面：冷静、高级、克制、全息感
+   ============================================================ */
+
+/* 全局底色 — 深空蓝黑 + 微弱星点纹理 */
+.theme-2046{background:#060a14 !important;color:#c8d6e5 !important}
+.theme-2046 #app{background:#060a14 !important;background-image:radial-gradient(circle at 20% 30%,rgba(100,200,255,.03) 0,transparent 50%),radial-gradient(circle at 80% 70%,rgba(0,255,200,.02) 0,transparent 50%)}
+
+/* 5. 页面标题 — 全息冰白 */
+.theme-2046 .page-header{background:rgba(6,10,20,.85) !important;border-bottom:1px solid rgba(100,200,255,.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.theme-2046 .page-title{font-family:'Exo 2','PingFang SC',sans-serif !important;font-size:22px !important;font-weight:300 !important;color:#e8f4ff !important;letter-spacing:4px !important;text-shadow:0 0 20px rgba(100,200,255,.6),0 0 40px rgba(100,200,255,.2) !important}
+.theme-2046 .page-title small{font-family:'Exo 2',sans-serif !important;font-size:11px !important;font-weight:300 !important;color:rgba(100,200,255,.5) !important;letter-spacing:2px !important;text-shadow:none !important}
+.theme-2046 .header-btn{font-family:'Exo 2',sans-serif !important;font-size:13px !important;font-weight:400 !important;border:1px solid rgba(100,200,255,.3) !important;border-radius:2px !important;background:rgba(100,200,255,.08) !important;color:#a8d8ff !important;box-shadow:0 0 12px rgba(100,200,255,.1),inset 0 0 8px rgba(100,200,255,.05) !important;transition:all .2s ease !important;letter-spacing:2px !important}
+.theme-2046 .header-btn:active{background:rgba(100,200,255,.2) !important;box-shadow:0 0 20px rgba(100,200,255,.3),inset 0 0 12px rgba(100,200,255,.1) !important;transform:translateY(1px) !important}
+.theme-2046 .btn-cleanup{border-color:rgba(255,180,100,.3) !important;background:rgba(255,180,100,.08) !important;color:#ffd8a8 !important;box-shadow:0 0 12px rgba(255,180,100,.1) !important}
+.theme-2046 .btn-batch-dl{border-color:rgba(100,200,255,.3) !important;background:rgba(100,200,255,.08) !important;color:#a8d8ff !important}
+
+/* 1. 楼层卡片 — 冷光面板 */
+.theme-2046 .floor-btn{font-family:'Exo 2','PingFang SC',sans-serif !important;font-size:17px !important;font-weight:300 !important;border:1px solid rgba(100,200,255,.2) !important;border-radius:2px !important;background:rgba(20,30,50,.6) !important;color:#c8d6e5 !important;box-shadow:0 0 16px rgba(100,200,255,.06),inset 0 1px 0 rgba(100,200,255,.08) !important;transition:all .25s ease !important;letter-spacing:2px !important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.theme-2046 .floor-btn:active{background:rgba(100,200,255,.12) !important;border-color:rgba(100,200,255,.5) !important;box-shadow:0 0 24px rgba(100,200,255,.15),inset 0 1px 0 rgba(100,200,255,.15) !important;transform:translateY(1px) !important}
+.theme-2046 .floor-btn .arrow{color:rgba(100,200,255,.4) !important}
+.theme-2046 .floor-btn .floor-count{color:rgba(100,200,255,.4) !important}
+.theme-2046 .floor-1{border-left:3px solid rgba(100,200,255,.5) !important}
+.theme-2046 .floor-2{border-left:3px solid rgba(0,255,200,.5) !important}
+.theme-2046 .floor-3{border-left:3px solid rgba(180,150,255,.5) !important}
+.theme-2046 .floor-4{border-left:3px solid rgba(255,200,100,.5) !important}
+.theme-2046 .floor-5{border-left:3px solid rgba(255,120,180,.5) !important}
+
+/* 2. 区域按钮 — 全息标签 */
+.theme-2046 .area-btn{font-family:'Exo 2','PingFang SC',sans-serif !important;font-size:15px !important;font-weight:400 !important;border:1px solid rgba(100,200,255,.2) !important;border-radius:2px !important;background:rgba(20,30,50,.4) !important;color:#a8d8ff !important;box-shadow:0 0 10px rgba(100,200,255,.05) !important;transition:all .25s ease !important;letter-spacing:1px !important;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.theme-2046 .area-btn:active{background:rgba(100,200,255,.12) !important;border-color:rgba(100,200,255,.4) !important;box-shadow:0 0 18px rgba(100,200,255,.12) !important;transform:translateY(1px) !important}
+.theme-2046 .area-btn .area-count{color:rgba(100,200,255,.35) !important}
+.theme-2046 .area-btn.expanded{background:rgba(100,200,255,.06) !important;border-color:rgba(255,120,120,.4) !important;box-shadow:0 0 14px rgba(255,120,120,.08) !important}
+.theme-2046 .area-btn.has-images{border-color:rgba(0,255,200,.35) !important;background:rgba(0,255,200,.06) !important;color:#7eead0 !important;box-shadow:0 0 12px rgba(0,255,200,.08) !important}
+.theme-2046 .area-btn.has-images.expanded{border-color:rgba(255,120,120,.4) !important;background:rgba(0,255,200,.06) !important;color:#7eead0 !important;box-shadow:0 0 14px rgba(255,120,120,.08) !important}
+
+/* 3. 座位按钮 — 晶格单元 */
+.theme-2046 .seat-btn{font-family:'Exo 2','PingFang SC',sans-serif !important;font-weight:400 !important;border:1px solid rgba(100,200,255,.15) !important;border-radius:2px !important;background:rgba(15,22,38,.5) !important;color:#8eb5d9 !important;box-shadow:inset 0 0 6px rgba(100,200,255,.03) !important;transition:all .2s ease !important;letter-spacing:.5px !important}
+.theme-2046 .seat-btn:active{background:rgba(100,200,255,.1) !important;border-color:rgba(100,200,255,.35) !important;box-shadow:0 0 12px rgba(100,200,255,.1),inset 0 0 8px rgba(100,200,255,.05) !important;transform:translateY(1px) !important}
+.theme-2046 .seat-btn.expanded{background:rgba(255,120,120,.06) !important;border:1px solid rgba(255,120,120,.4) !important;box-shadow:0 0 10px rgba(255,120,120,.08) !important}
+/* 指示器颜色保持，加微弱光晕融入主题 */
+.theme-2046 .seat-btn.has-images-1{border-color:rgba(100,180,255,.4) !important;background:rgba(100,180,255,.08) !important;color:#a8c8ff !important;box-shadow:0 0 8px rgba(100,180,255,.1) !important}
+.theme-2046 .seat-btn.has-images-2{border-color:rgba(255,180,100,.4) !important;background:rgba(255,180,100,.08) !important;color:#ffd8a8 !important;box-shadow:0 0 8px rgba(255,180,100,.1) !important}
+.theme-2046 .seat-btn.has-images-1.expanded{border:1px solid rgba(255,120,120,.4) !important;background:rgba(100,180,255,.08) !important;color:#a8c8ff !important;box-shadow:0 0 10px rgba(255,120,120,.08) !important}
+.theme-2046 .seat-btn.has-images-2.expanded{border:1px solid rgba(255,120,120,.4) !important;background:rgba(255,180,100,.08) !important;color:#ffd8a8 !important;box-shadow:0 0 10px rgba(255,120,120,.08) !important}
+.theme-2046 .add-seat-btn{border:1px dashed rgba(100,200,255,.2) !important;border-radius:2px !important;background:rgba(15,22,38,.3) !important;color:rgba(100,200,255,.3) !important;transition:all .2s ease !important}
+.theme-2046 .add-seat-btn:active{border-color:rgba(100,200,255,.5) !important;color:rgba(100,200,255,.6) !important;background:rgba(100,200,255,.08) !important;box-shadow:0 0 10px rgba(100,200,255,.1) !important}
+
+/* 4. 菜单面板 — 磨砂玻璃全息面板 */
+.theme-2046 .func-panel-overlay{background:rgba(6,10,20,.6) !important;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.theme-2046 .func-panel{border-radius:2px 2px 0 0 !important;background:rgba(10,18,35,.75) !important;border-top:1px solid rgba(100,200,255,.2) !important;box-shadow:0 -4px 40px rgba(100,200,255,.08) !important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.theme-2046 .func-panel-header{border-bottom:1px solid rgba(100,200,255,.1) !important}
+.theme-2046 .func-panel-title{font-family:'Exo 2',sans-serif !important;font-size:16px !important;font-weight:300 !important;color:#e8f4ff !important;letter-spacing:3px !important;text-shadow:0 0 12px rgba(100,200,255,.3) !important}
+.theme-2046 .func-panel-close{background:rgba(100,200,255,.08) !important;color:#a8d8ff !important;border:1px solid rgba(100,200,255,.2) !important;border-radius:2px !important;font-family:'Exo 2',sans-serif !important;box-shadow:0 0 8px rgba(100,200,255,.05) !important}
+.theme-2046 .func-panel-close:active{background:rgba(100,200,255,.2) !important;box-shadow:0 0 12px rgba(100,200,255,.15) !important}
+.theme-2046 .func-item{border-bottom:1px solid rgba(100,200,255,.06) !important}
+.theme-2046 .func-item:active{background:rgba(100,200,255,.06) !important;border-radius:2px !important}
+.theme-2046 .func-item-label{font-family:'Exo 2','PingFang SC',sans-serif !important;font-size:15px !important;color:#c8d6e5 !important;font-weight:300 !important;letter-spacing:1px !important}
+.theme-2046 .func-item-label .func-item-desc{font-family:'Exo 2','PingFang SC',sans-serif !important;font-size:12px !important;color:rgba(100,200,255,.35) !important;font-weight:300 !important}
+/* 开关 — 全息拨片 */
+.theme-2046 .func-toggle{border-radius:2px !important;background:rgba(100,200,255,.08) !important;border:1px solid rgba(100,200,255,.15) !important;transition:all .25s ease !important}
+.theme-2046 .func-toggle.on{background:rgba(100,200,255,.25) !important;border-color:rgba(100,200,255,.5) !important;box-shadow:0 0 10px rgba(100,200,255,.2) !important}
+.theme-2046 .func-toggle::after{border-radius:2px !important;background:#e8f4ff !important;border:none !important;box-shadow:0 0 6px rgba(100,200,255,.3) !important;transition:all .25s ease !important}
+.theme-2046 .func-toggle.on::after{background:#fff !important;box-shadow:0 0 10px rgba(100,200,255,.5) !important}
+/* 主题选择器 — 全息风格 */
+.theme-2046 .theme-select{border-color:rgba(100,200,255,.2) !important;background:rgba(10,18,35,.6) !important;color:#a8d8ff !important;box-shadow:0 0 8px rgba(100,200,255,.05) !important;font-family:'Exo 2','PingFang SC',sans-serif !important;border-radius:2px !important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%2364c8ff' stroke-width='1'/%3E%3C/svg%3E") !important}
+.theme-2046 .theme-select option{background:#0a1223;color:#a8d8ff}
 </style>
 </head>
 <body>
@@ -467,8 +536,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.6.0 新增主题选择系统（像素风赛博朋克主题+菜单选择器+状态持久化）
-const APP_VERSION = 'v1.6.0';
+// v1.6.1 新增"2046"未来科技主题（磨砂玻璃全息面板+Exo 2 字体）
+const APP_VERSION = 'v1.6.1';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -778,10 +847,18 @@ function saveUploadWatermarkState() { try { localStorage.setItem('seat_upload_wa
 function loadUploadWatermarkState() { try { state.uploadWatermark = localStorage.getItem('seat_upload_watermark') === '1'; } catch (e) {} }
 // 【v1.6.0】主题选择持久化
 function saveThemeState() { try { localStorage.setItem('app_theme', state.theme); } catch (e) {} }
-function loadThemeState() { try { const t = localStorage.getItem('app_theme'); state.theme = (t === 'pixel-cyberpunk') ? 'pixel-cyberpunk' : 'default'; } catch (e) { state.theme = 'default'; } }
-/** 【v1.6.0】应用主题：根据 state.theme 设置 body 类名 */
+function loadThemeState() {
+  try {
+    const t = localStorage.getItem('app_theme');
+    // 【v1.6.1】支持 2046 主题
+    state.theme = (t === 'pixel-cyberpunk' || t === '2046') ? t : 'default';
+  } catch (e) { state.theme = 'default'; }
+}
+/** 【v1.6.0】应用主题：根据 state.theme 设置 body 类名（互斥，同时只激活一个主题） */
 function applyTheme() {
-  document.body.classList.toggle('theme-pixel-cyberpunk', state.theme === 'pixel-cyberpunk');
+  document.body.classList.remove('theme-pixel-cyberpunk', 'theme-2046');
+  if (state.theme === 'pixel-cyberpunk') document.body.classList.add('theme-pixel-cyberpunk');
+  else if (state.theme === '2046') document.body.classList.add('theme-2046');
 }
 
 // 【v1.3.18 修复】筛选状态 localStorage 键名（隔离旧键名，避免被旧数据污染）
@@ -4014,6 +4091,7 @@ function renderFuncPanelBody() {
       <select class="theme-select" id="theme-select">
         <option value="default" ${state.theme === 'default' ? 'selected' : ''}>默认</option>
         <option value="pixel-cyberpunk" ${state.theme === 'pixel-cyberpunk' ? 'selected' : ''}>像素风赛博朋克</option>
+        <option value="2046" ${state.theme === '2046' ? 'selected' : ''}>2046</option>
       </select>
     </div>
     <div class="func-item" data-func="open-filter">
