@@ -16,22 +16,19 @@
 <title>座位图片管理</title>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
 <style>
-/* 【v1.5.8】16-bit 像素风格字体 */
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:15px;color:#333;background:#f0f2f5;-webkit-tap-highlight-color:transparent}
 /* 【v1.2.0 iOS兼容】所有可点击元素统一 cursor:pointer，iOS 不做悬停效果 */
 button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-slot-item,.floor-btn,.area-btn{cursor:pointer;-webkit-user-select:none;user-select:none}
 #app{max-width:480px;margin:0 auto;padding:0 10px 140px;min-height:calc(100vh - 50px)}
 
-/* 【v1.5.8 像素风】page-header 深色终端风格 */
-.page-header{display:flex;align-items:center;justify-content:center;padding:14px 12px 12px;gap:8px;flex-wrap:wrap;max-width:480px;margin:0 auto;background:#2b2d42;border-bottom:4px solid #000;position:relative;z-index:10}
-.page-title{font-family:'Press Start 2P',monospace;font-size:13px;font-weight:400;color:#ffd166;letter-spacing:1px;text-shadow:2px 2px 0 #000;line-height:1.8}
-.page-title small{font-family:'Press Start 2P',monospace !important;font-size:7px !important;font-weight:400 !important;color:#8d99ae !important;letter-spacing:0 !important;text-shadow:none !important}
-.header-btn{font-family:'Press Start 2P',monospace;padding:10px 18px;font-size:9px;font-weight:400;border:3px solid #000;border-radius:0;color:#fff;cursor:pointer;white-space:nowrap;box-shadow:4px 4px 0 #000;letter-spacing:1px;transition:none}
-.header-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #000}
-.btn-cleanup{background:#06d6a0;color:#000}
-.btn-batch-dl{background:#ef476f}
+/* 【修复文字消失】page-header 从 app 中移出，作为独立固定元素 */
+.page-header{display:flex;align-items:center;justify-content:center;padding:14px 10px 10px;gap:8px;flex-wrap:wrap;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:10}
+.page-title{font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:1px}
+.header-btn{padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap}
+.header-btn:active{opacity:.7}
+.btn-cleanup{background:#ff4d4f}
+.btn-batch-dl{background:#722ed1}
 
 /* 【修改1】删除座位按钮受开关控制 */
 .btn-delete-seat{padding:4px 12px;font-size:12px;font-weight:600;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;cursor:pointer;margin-left:auto;display:none}
@@ -46,59 +43,57 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .page-header{transition:margin-top .3s ease}
 .update-bar.show+.page-header{margin-top:44px}
 
-/* 【v1.5.8 像素风】功能面板 — RPG 对话框 */
-.func-panel-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:260}
+/* 【修改3】功能面板 */
+.func-panel-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:260}
 .func-panel-overlay.show{display:block}
 /* 【v1.3.9 修复2+3】菜单面板：固定最大高度70vh，内部可滚动，阻止背景滑动穿透 */
-.func-panel{position:fixed;left:0;right:0;bottom:0;background:#2b2d42;border-top:4px solid #ffd166;z-index:261;transform:translateY(100%);transition:transform .3s ease;max-width:480px;margin:0 auto;max-height:70vh;display:flex;flex-direction:column;padding-bottom:constant(safe-area-inset-bottom);padding-bottom:env(safe-area-inset-bottom);border-radius:0}
+.func-panel{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:261;transform:translateY(100%);transition:transform .3s ease;max-width:480px;margin:0 auto;max-height:70vh;display:flex;flex-direction:column;padding-bottom:constant(safe-area-inset-bottom);padding-bottom:env(safe-area-inset-bottom)}
 .func-panel.show{transform:translateY(0)}
-.func-panel-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:3px solid #3d405b;flex-shrink:0}
-.func-panel-title{font-family:'Press Start 2P',monospace;font-size:12px;font-weight:400;color:#ffd166;text-shadow:2px 2px 0 #000}
-.func-panel-close{width:36px;height:36px;border:2px solid #000;background:#3d405b;border-radius:0;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#ffd166;min-width:44px;min-height:44px;font-family:'Press Start 2P',monospace}
-.func-panel-close:active{background:#4a4e69}
+.func-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #f0f0f0;flex-shrink:0}
+.func-panel-title{font-size:17px;font-weight:700;color:#1a1a1a}
+.func-panel-close{width:36px;height:36px;border:none;background:#f5f5f5;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#999;min-width:44px;min-height:44px}
+.func-panel-close:active{background:#e8e8e8}
 /* 【v1.3.9 修复3】func-panel-body 可内部滚动，overflow-y:auto */
-.func-panel-body{padding:8px 20px 28px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
+.func-panel-body{padding:8px 20px 24px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
 /* 【v1.3.2 菜单优化4】菜单项高度缩小，更紧凑，保持 44px 最低触摸区域 */
-.func-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;min-height:48px;border-bottom:2px solid #3d405b;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.func-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;min-height:44px;border-bottom:1px solid #f5f5f5;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .func-item:last-child{border-bottom:none}
-.func-item:active{background:#3d405b;border-radius:0}
-.func-item-label{font-family:'Press Start 2P',monospace;font-size:10px;color:#edf2f4;font-weight:400;line-height:1.8}
-.func-item-label .func-item-desc{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;font-size:12px;color:#8d99ae;font-weight:400;margin-top:4px}
-/* 【v1.5.8 像素风】开关 — 像素拨片 */
-.func-toggle{width:50px;height:28px;border-radius:0;background:#3d405b;border:2px solid #000;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
-.func-toggle.on{background:#06d6a0}
-.func-toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:0;background:#edf2f4;border:2px solid #000;box-shadow:none;transition:transform .2s}
-.func-toggle.on::after{transform:translateX(22px)}
+.func-item:active{background:#fafafa;border-radius:8px}
+.func-item-label{font-size:15px;color:#333;font-weight:500}
+.func-item-label .func-item-desc{font-size:12px;color:#999;font-weight:400;margin-top:2px}
+/* 开关样式 */
+.func-toggle{width:48px;height:28px;border-radius:14px;background:#bfbfbf;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.func-toggle.on{background:#52c41a}
+.func-toggle::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .2s}
+.func-toggle.on::after{transform:translateX(20px)}
 
 /* 【修改4】预览保存按钮淡出 */
 #preview-save-btn{position:absolute;bottom:calc(50px + constant(safe-area-inset-bottom));bottom:calc(50px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);padding:10px 28px;font-size:14px;font-weight:600;border:none;border-radius:8px;background:rgba(24,144,255,.9);color:#fff;cursor:pointer;z-index:301;box-shadow:0 2px 12px rgba(24,144,255,.4);transition:opacity .5s ease}
 #preview-save-btn:active{opacity:.8}
 #preview-save-btn.faded{opacity:.1}
 
-/* 【v1.5.8 像素风】楼层卡片 — 像素游戏菜单项 */
-.floor-btn{font-family:'Press Start 2P',monospace;display:block;width:100%;padding:16px;margin:10px 0;font-size:12px;font-weight:400;border:3px solid #000;border-radius:0;color:#fff;cursor:pointer;text-align:left;box-shadow:5px 5px 0 #000;transition:none;text-shadow:2px 2px 0 rgba(0,0,0,.4)}
-.floor-btn:active{transform:translate(2px,2px);box-shadow:3px 3px 0 #000}
-.floor-btn .arrow{float:right;font-size:12px;transition:transform .25s;display:inline-block}
+.floor-btn{display:block;width:100%;padding:16px 20px;margin:8px 0;font-size:18px;font-weight:600;border:none;border-radius:10px;color:#fff;cursor:pointer;text-align:left;transition:transform .1s}
+.floor-btn:active{transform:scale(.97)}
+.floor-btn .arrow{float:right;font-size:14px;transition:transform .25s;display:inline-block}
 .floor-btn.expanded .arrow{transform:rotate(90deg)}
-.floor-btn .floor-count{float:right;font-size:8px;font-weight:400;margin-right:8px;opacity:.75}
-.floor-1{background:#6c5ce7}
-.floor-2{background:#e17055}
-.floor-3{background:#00b894}
-.floor-4{background:#fdcb6e;color:#2b2d42;text-shadow:none}
-.floor-5{background:#74b9ff;color:#2b2d42;text-shadow:none}
+.floor-btn .floor-count{float:right;font-size:13px;font-weight:400;margin-right:8px;opacity:.85}
+.floor-1{background:linear-gradient(135deg,#667eea,#764ba2)}
+.floor-2{background:linear-gradient(135deg,#f093fb,#f5576c)}
+.floor-3{background:linear-gradient(135deg,#4facfe,#00f2fe)}
+.floor-4{background:linear-gradient(135deg,#43e97b,#38f9d7)}
+.floor-5{background:linear-gradient(135deg,#fa709a,#fee140)}
 
 .area-container{display:none;padding:4px 0 8px 16px}
 .area-container.show{display:block}
-/* 【v1.5.8 像素风】区域按钮 — 像素道具栏 */
-.area-btn{font-family:'Press Start 2P',monospace;display:inline-flex;flex-direction:column;align-items:center;padding:10px 14px;margin:5px 4px;font-size:10px;font-weight:400;border:3px solid #000;border-radius:0;background:#edf2f4;color:#2b2d42;cursor:pointer;box-shadow:3px 3px 0 #000;transition:none}
-.area-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #000}
-.area-btn .arrow{margin-left:4px;font-size:10px;transition:transform .25s;display:inline-block}
-.area-btn .area-count{font-size:7px;font-weight:400;color:#8d99ae;margin-top:4px}
+.area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:12px 20px;margin:5px 4px;font-size:16px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s}
+.area-btn:active{transform:scale(.95)}
+.area-btn .arrow{margin-left:6px;font-size:12px;transition:transform .25s;display:inline-block}
+.area-btn .area-count{font-size:11px;font-weight:400;color:#999;margin-top:2px}
 .area-btn.expanded .arrow{transform:rotate(90deg)}
 /* 【v1.3.15】选中高亮改为红色描边+无背景色，避免与蓝色提示混淆 */
-.area-btn.expanded{background:transparent;border-color:#ef476f;box-shadow:3px 3px 0 #ef476f}
-.area-btn.has-images{border-color:#06d6a0;background:#06d6a0;color:#000;box-shadow:3px 3px 0 #000}
-.area-btn.has-images.expanded{border-color:#ef476f;background:#06d6a0;color:#000;box-shadow:3px 3px 0 #ef476f}
+.area-btn.expanded{background:transparent;border-color:#ff4d4f;box-shadow:none}
+.area-btn.has-images{border:2px solid #52c41a;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
+.area-btn.has-images.expanded{border-color:#ff4d4f;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
 
 .seat-container{display:none;padding:8px 0}
 .seat-container.show{display:block}
@@ -396,8 +391,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.5.8 16-bit 像素风格 UI 重设计（标题/楼层/区域/菜单）
-const APP_VERSION = 'v1.5.8';
+// v1.5.7 恢复 SW 更新提示功能：更新 CACHE_NAME 触发检测 + 提示条滑入动画 + 不遮挡标题栏
+const APP_VERSION = 'v1.5.7';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
