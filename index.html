@@ -243,6 +243,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .cleanup-btns button:active{opacity:.8}
 .cleanup-cancel{background:#f0f0f0;color:#333}
 .cleanup-exec{background:#ff4d4f;color:#fff}
+/* 【v1.5.11 新增】清理进度 spinner */
+.cleanup-spinner{width:36px;height:36px;margin:0 auto;border:3px solid #e8e8e8;border-top-color:#1890ff;border-radius:50%;animation:cleanup-spin .8s linear infinite}
+@keyframes cleanup-spin{to{transform:rotate(360deg)}}
 
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:14px 28px;border-radius:8px;font-size:15px;z-index:300;pointer-events:none;animation:toast-fade 2s forwards}
 @keyframes toast-fade{0%{opacity:1}70%{opacity:1}100%{opacity:0}}
@@ -275,151 +278,6 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .filter-slot-cb.checked::after{content:'✓';color:#fff;font-size:14px;font-weight:700}
 .filter-slot-label{font-size:15px;color:#333;font-weight:500}
 .filter-slot-label.passed{color:#999}
-
-/* ============================================================
-   【v1.6.0】主题系统 — 通过 body 类名激活，不污染默认样式
-   ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Exo+2:wght@300;400;600;700&display=swap');
-
-/* --- 主题选择器（菜单内） --- */
-.theme-select{width:100%;padding:8px 10px;font-size:13px;border:2px solid #d9d9d9;border-radius:6px;background:#fff;color:#333;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
-
-/* ============================================================
-   像素风赛博朋克主题 — body.theme-pixel-cyberpunk
-   ============================================================ */
-
-/* 全局底色 + 像素网格纹理 */
-.theme-pixel-cyberpunk{background:#0a0a0f !important;color:#e0e0e0 !important}
-.theme-pixel-cyberpunk #app{background:#0a0a0f !important;background-image:repeating-linear-gradient(0deg,transparent,transparent 1px,rgba(0,255,255,.012) 1px,rgba(0,255,255,.012) 2px);background-size:4px 4px}
-
-/* 5. 页面标题 — 霓虹终端 */
-.theme-pixel-cyberpunk .page-header{background:#0a0a0f !important;border-bottom:4px solid #00ffff}
-.theme-pixel-cyberpunk .page-title{font-family:'Press Start 2P','Courier New',monospace !important;font-size:13px !important;font-weight:400 !important;color:#00ffff !important;letter-spacing:1px !important;text-shadow:0 0 10px #00ffff,2px 2px 0 #000 !important;line-height:1.8 !important}
-.theme-pixel-cyberpunk .page-title small{font-family:'Press Start 2P','Courier New',monospace !important;font-size:7px !important;color:#cc00ff !important;text-shadow:0 0 6px #cc00ff !important}
-.theme-pixel-cyberpunk .header-btn{font-family:'Press Start 2P','Courier New',monospace !important;font-size:9px !important;font-weight:400 !important;border:3px solid #00ffff !important;border-radius:0 !important;background:transparent !important;color:#00ffff !important;box-shadow:4px 4px 0 #000,0 0 8px rgba(0,255,255,.3) !important;transition:none !important}
-.theme-pixel-cyberpunk .header-btn:active{transform:translate(2px,2px) !important;box-shadow:2px 2px 0 #000,0 0 12px #cc00ff !important;border-color:#cc00ff !important}
-.theme-pixel-cyberpunk .btn-cleanup{border-color:#cc00ff !important;color:#cc00ff !important;box-shadow:4px 4px 0 #000,0 0 8px rgba(204,0,255,.3) !important}
-.theme-pixel-cyberpunk .btn-batch-dl{border-color:#00ffff !important;color:#00ffff !important}
-
-/* 1. 楼层卡片 — 霓虹青像素块 */
-.theme-pixel-cyberpunk .floor-btn{font-family:'Press Start 2P','Courier New',monospace !important;font-size:12px !important;font-weight:400 !important;border:4px solid #00ffff !important;border-radius:0 !important;background:#1a1a2e !important;color:#00ffff !important;box-shadow:4px 4px 0 #000,0 0 12px rgba(0,255,255,.25) !important;transition:none !important;text-shadow:0 0 8px rgba(0,255,255,.5) !important;background-image:repeating-linear-gradient(0deg,transparent,transparent 1px,rgba(0,255,255,.04) 1px,rgba(0,255,255,.04) 2px) !important;background-size:4px 4px !important}
-.theme-pixel-cyberpunk .floor-btn:active{transform:translate(2px,2px) !important;box-shadow:2px 2px 0 #000,0 0 18px #cc00ff !important;border-color:#cc00ff !important}
-.theme-pixel-cyberpunk .floor-btn .arrow{color:#00ffff !important}
-.theme-pixel-cyberpunk .floor-btn .floor-count{color:rgba(0,255,255,.7) !important}
-.theme-pixel-cyberpunk .floor-1{border-color:#00ffff !important;background:#1a1a2e !important;color:#00ffff !important}
-.theme-pixel-cyberpunk .floor-2{border-color:#cc00ff !important;background:#1a1a2e !important;color:#cc00ff !important;box-shadow:4px 4px 0 #000,0 0 12px rgba(204,0,255,.25) !important;text-shadow:0 0 8px rgba(204,0,255,.5) !important}
-.theme-pixel-cyberpunk .floor-3{border-color:#ff00aa !important;background:#1a1a2e !important;color:#ff00aa !important;box-shadow:4px 4px 0 #000,0 0 12px rgba(255,0,170,.25) !important;text-shadow:0 0 8px rgba(255,0,170,.5) !important}
-.theme-pixel-cyberpunk .floor-4{border-color:#4ade80 !important;background:#1a1a2e !important;color:#4ade80 !important;box-shadow:4px 4px 0 #000,0 0 12px rgba(74,222,128,.25) !important;text-shadow:0 0 8px rgba(74,222,128,.5) !important}
-.theme-pixel-cyberpunk .floor-5{border-color:#fbbf24 !important;background:#1a1a2e !important;color:#fbbf24 !important;box-shadow:4px 4px 0 #000,0 0 12px rgba(251,191,36,.25) !important;text-shadow:0 0 8px rgba(251,191,36,.5) !important}
-
-/* 2. 区域按钮 — 霓虹紫像素道具栏 */
-.theme-pixel-cyberpunk .area-btn{font-family:'Courier New','PingFang SC',monospace !important;font-size:14px !important;font-weight:700 !important;border:3px solid #cc00ff !important;border-radius:0 !important;background:#1a1a2e !important;color:#cc00ff !important;box-shadow:3px 3px 0 #000,0 0 8px rgba(204,0,255,.2) !important;transition:none !important;text-shadow:0 0 4px rgba(204,0,255,.3) !important;background-image:repeating-linear-gradient(0deg,transparent,transparent 1px,rgba(204,0,255,.03) 1px,rgba(204,0,255,.03) 2px) !important;background-size:4px 4px !important}
-.theme-pixel-cyberpunk .area-btn:active{transform:translate(2px,2px) !important;box-shadow:1px 1px 0 #000,0 0 12px #ff00aa !important;border-color:#ff00aa !important}
-.theme-pixel-cyberpunk .area-btn .area-count{color:rgba(204,0,255,.6) !important}
-.theme-pixel-cyberpunk .area-btn.expanded{background:transparent !important;border-color:#ff00aa !important;box-shadow:3px 3px 0 #000,0 0 10px rgba(255,0,170,.3) !important;background-image:none !important}
-.theme-pixel-cyberpunk .area-btn.has-images{border-color:#4ade80 !important;background:#0d1f1a !important;color:#4ade80 !important;box-shadow:3px 3px 0 #000,0 0 8px rgba(74,222,128,.25) !important;text-shadow:0 0 4px rgba(74,222,128,.3) !important}
-.theme-pixel-cyberpunk .area-btn.has-images.expanded{border-color:#ff00aa !important;background:#0d1f1a !important;color:#4ade80 !important;box-shadow:3px 3px 0 #000,0 0 10px rgba(255,0,170,.3) !important}
-
-/* 3. 座位按钮 — 亮粉像素格子 */
-.theme-pixel-cyberpunk .seat-btn{font-family:'Courier New','PingFang SC',monospace !important;font-weight:700 !important;border:2px solid #ff00aa !important;border-radius:0 !important;background:#0d1f1f !important;color:#ff00aa !important;box-shadow:2px 2px 0 #000,0 0 6px rgba(255,0,170,.15) !important;transition:none !important;text-shadow:0 0 3px rgba(255,0,170,.2) !important;background-image:repeating-linear-gradient(0deg,transparent,transparent 1px,rgba(255,0,170,.02) 1px,rgba(255,0,170,.02) 2px) !important;background-size:4px 4px !important}
-.theme-pixel-cyberpunk .seat-btn:active{background:#0d1f1f !important;transform:translate(1px,1px) !important;box-shadow:1px 1px 0 #000,0 0 10px #00ffff !important;border-color:#00ffff !important}
-.theme-pixel-cyberpunk .seat-btn.expanded{background:#0d1f1f !important;border:2px solid #ef4444 !important;box-shadow:2px 2px 0 #000,0 0 8px rgba(239,68,68,.3) !important;background-image:none !important}
-/* 指示器颜色保持，加像素描边和微弱发光 */
-.theme-pixel-cyberpunk .seat-btn.has-images-1{border-color:#60a5fa !important;background:#0d1520 !important;color:#60a5fa !important;box-shadow:2px 2px 0 #000,0 0 6px rgba(96,165,250,.2) !important;text-shadow:0 0 4px rgba(96,165,250,.3) !important}
-.theme-pixel-cyberpunk .seat-btn.has-images-2{border-color:#fb923c !important;background:#1a150d !important;color:#fb923c !important;box-shadow:2px 2px 0 #000,0 0 6px rgba(251,146,60,.2) !important;text-shadow:0 0 4px rgba(251,146,60,.3) !important}
-.theme-pixel-cyberpunk .seat-btn.has-images-1.expanded{border:2px solid #ef4444 !important;background:#0d1520 !important;color:#60a5fa !important}
-.theme-pixel-cyberpunk .seat-btn.has-images-2.expanded{border:2px solid #ef4444 !important;background:#1a150d !important;color:#fb923c !important}
-.theme-pixel-cyberpunk .add-seat-btn{border:3px dashed #6b7280 !important;border-radius:0 !important;background:#0a0a0f !important;color:#6b7280 !important;transition:none !important}
-.theme-pixel-cyberpunk .add-seat-btn:active{border-color:#00ffff !important;color:#00ffff !important;box-shadow:0 0 8px rgba(0,255,255,.3) !important}
-
-/* 4. 菜单面板 — 赛博朋克对话框 */
-.theme-pixel-cyberpunk .func-panel-overlay{background:rgba(0,0,0,.75) !important}
-.theme-pixel-cyberpunk .func-panel{border-radius:0 !important;background:#0d0d1a !important;border-top:4px solid #cc00ff !important;box-shadow:0 0 20px rgba(204,0,255,.2) !important}
-.theme-pixel-cyberpunk .func-panel-header{border-bottom:3px solid #1a1a3e !important}
-.theme-pixel-cyberpunk .func-panel-title{font-family:'Press Start 2P','Courier New',monospace !important;font-size:12px !important;font-weight:400 !important;color:#00ffff !important;text-shadow:0 0 10px #00ffff !important}
-.theme-pixel-cyberpunk .func-panel-close{background:#1a1a3e !important;color:#00ffff !important;border:2px solid #00ffff !important;border-radius:0 !important;font-family:'Press Start 2P',monospace !important;box-shadow:0 0 6px rgba(0,255,255,.2) !important}
-.theme-pixel-cyberpunk .func-panel-close:active{background:#2a2a4e !important}
-.theme-pixel-cyberpunk .func-item{border-bottom:2px solid #1a1a3e !important}
-.theme-pixel-cyberpunk .func-item:active{background:#1a1a3e !important;border-radius:0 !important}
-.theme-pixel-cyberpunk .func-item-label{font-family:'Press Start 2P','Courier New',monospace !important;font-size:10px !important;color:#00ffff !important;font-weight:400 !important;line-height:1.8 !important}
-.theme-pixel-cyberpunk .func-item-label .func-item-desc{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif !important;font-size:12px !important;color:#6b7280 !important}
-/* 开关 — 像素拨片 */
-.theme-pixel-cyberpunk .func-toggle{border-radius:0 !important;background:#1a1a3e !important;border:2px solid #2d2d4e !important}
-.theme-pixel-cyberpunk .func-toggle.on{background:#cc00ff !important;border-color:#cc00ff !important;box-shadow:0 0 8px rgba(204,0,255,.4) !important}
-.theme-pixel-cyberpunk .func-toggle::after{border-radius:0 !important;background:#e0e0e0 !important;border:2px solid #2d2d4e !important;box-shadow:none !important}
-.theme-pixel-cyberpunk .func-toggle.on::after{background:#fff !important;border-color:#cc00ff !important}
-/* 主题选择器 — 赛博朋克风格 */
-.theme-pixel-cyberpunk .theme-select{border-color:#cc00ff !important;background:#0d0d1a !important;color:#00ffff !important;box-shadow:0 0 6px rgba(204,0,255,.2) !important;font-family:'Courier New','PingFang SC',monospace !important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%2300ffff' stroke-width='1.5'/%3E%3C/svg%3E") !important}
-.theme-pixel-cyberpunk .theme-select option{background:#0d0d1a;color:#00ffff}
-
-/* ============================================================
-   【v1.6.1】2046 主题 — body.theme-2046
-   未来实验室/空间站界面：冷静、高级、克制、全息感
-   ============================================================ */
-
-/* 全局底色 — 深空蓝黑 + 光晕渐变 */
-.theme-2046{background:#060b14 !important;color:#c8d6e5 !important}
-.theme-2046 #app{background:#060b14 !important;background-image:radial-gradient(ellipse at 25% 20%,rgba(80,160,255,.04) 0,transparent 60%),radial-gradient(ellipse at 75% 80%,rgba(0,200,180,.03) 0,transparent 60%)}
-
-/* 5. 页面标题 — 全息冰白 */
-.theme-2046 .page-header{background:rgba(6,11,20,.9) !important;border-bottom:1px solid rgba(100,200,255,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.theme-2046 .page-title{font-family:'Exo 2','PingFang SC',sans-serif !important;font-size:22px !important;font-weight:300 !important;color:#e8f4ff !important;letter-spacing:4px !important;text-shadow:0 0 20px rgba(100,200,255,.8),0 0 40px rgba(100,200,255,.2) !important}
-.theme-2046 .page-title small{font-family:'Exo 2',sans-serif !important;font-size:11px !important;font-weight:300 !important;color:rgba(100,200,255,.45) !important;letter-spacing:2px !important;text-shadow:none !important}
-.theme-2046 .header-btn{font-family:'Exo 2',sans-serif !important;font-size:13px !important;font-weight:400 !important;border:1px solid rgba(100,200,255,.3) !important;border-radius:6px !important;background:rgba(100,200,255,.06) !important;color:#a8d8ff !important;box-shadow:0 0 12px rgba(100,200,255,.08) !important;transition:all .25s ease !important;letter-spacing:2px !important}
-.theme-2046 .header-btn:active{background:rgba(100,200,255,.18) !important;border-color:#00ccff !important;box-shadow:0 0 20px rgba(100,200,255,.25) !important;transform:translateY(-2px) !important}
-.theme-2046 .btn-cleanup{border-color:rgba(255,180,100,.3) !important;background:rgba(255,180,100,.06) !important;color:#ffd8a8 !important;box-shadow:0 0 10px rgba(255,180,100,.08) !important}
-.theme-2046 .btn-batch-dl{border-color:rgba(100,200,255,.3) !important;background:rgba(100,200,255,.06) !important;color:#a8d8ff !important}
-
-/* 1. 楼层卡片 — 磨砂玻璃冷光面板 */
-.theme-2046 .floor-btn{font-family:'Exo 2','PingFang SC',sans-serif !important;font-size:17px !important;font-weight:300 !important;border:1px solid rgba(100,200,255,.5) !important;border-radius:8px !important;background:rgba(20,35,60,.4) !important;color:#dce8f5 !important;box-shadow:0 0 15px rgba(100,180,255,.3) !important;transition:all .25s ease !important;letter-spacing:2px !important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.theme-2046 .floor-btn:active{background:rgba(100,200,255,.1) !important;border-color:#00ccff !important;box-shadow:0 0 25px rgba(100,180,255,.5) !important;transform:translateY(-2px) !important}
-.theme-2046 .floor-btn .arrow{color:rgba(100,200,255,.4) !important}
-.theme-2046 .floor-btn .floor-count{color:rgba(100,200,255,.4) !important}
-.theme-2046 .floor-1{border-left:3px solid rgba(100,200,255,.6) !important}
-.theme-2046 .floor-2{border-left:3px solid rgba(0,255,200,.6) !important}
-.theme-2046 .floor-3{border-left:3px solid rgba(180,150,255,.6) !important}
-.theme-2046 .floor-4{border-left:3px solid rgba(255,200,100,.6) !important}
-.theme-2046 .floor-5{border-left:3px solid rgba(255,120,180,.6) !important}
-
-/* 2. 区域按钮 — 全息网格标签 */
-.theme-2046 .area-btn{font-family:'Exo 2','PingFang SC',sans-serif !important;font-size:15px !important;font-weight:400 !important;border:1px solid #7b8cff !important;border-radius:6px !important;background:rgba(20,40,80,.6) !important;color:#b8c8ff !important;box-shadow:0 0 10px rgba(123,140,255,.1) !important;transition:all .25s ease !important;letter-spacing:1px !important;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);background-image:linear-gradient(rgba(100,200,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(100,200,255,.03) 1px,transparent 1px);background-size:8px 8px}
-.theme-2046 .area-btn:active{background:rgba(100,200,255,.12) !important;border-color:#4facfe !important;box-shadow:0 0 18px rgba(79,172,254,.2) !important;transform:translateY(-1px) !important;background-image:linear-gradient(rgba(100,200,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(100,200,255,.05) 1px,transparent 1px);background-size:8px 8px}
-.theme-2046 .area-btn .area-count{color:rgba(123,140,255,.4) !important}
-.theme-2046 .area-btn.expanded{background:rgba(100,200,255,.06) !important;border-color:rgba(255,120,120,.4) !important;box-shadow:0 0 14px rgba(255,120,120,.1) !important;background-image:none !important}
-.theme-2046 .area-btn.has-images{border-color:rgba(0,255,200,.4) !important;background:rgba(0,255,200,.06) !important;color:#7eead0 !important;box-shadow:0 0 12px rgba(0,255,200,.1) !important}
-.theme-2046 .area-btn.has-images.expanded{border-color:rgba(255,120,120,.4) !important;background:rgba(0,255,200,.06) !important;color:#7eead0 !important;box-shadow:0 0 14px rgba(255,120,120,.1) !important}
-
-/* 3. 座位按钮 — 晶格单元 */
-.theme-2046 .seat-btn{font-family:'Exo 2','PingFang SC',sans-serif !important;font-weight:400 !important;border:1px solid #5b9bd5 !important;border-radius:6px !important;background:rgba(10,30,50,.7) !important;color:#d0e0f0 !important;box-shadow:inset 0 0 6px rgba(91,155,213,.05) !important;transition:all .2s ease !important;letter-spacing:.5px !important}
-.theme-2046 .seat-btn:active{background:rgba(91,155,213,.12) !important;border-color:#4facfe !important;box-shadow:0 0 12px rgba(79,172,254,.15) !important;transform:translateY(-1px) !important}
-.theme-2046 .seat-btn.expanded{background:rgba(255,120,120,.06) !important;border:1px solid rgba(255,120,120,.4) !important;box-shadow:0 0 10px rgba(255,120,120,.1) !important}
-/* 指示器颜色保持，加微弱光晕融入主题 */
-.theme-2046 .seat-btn.has-images-1{border-color:rgba(100,180,255,.5) !important;background:rgba(100,180,255,.1) !important;color:#a8c8ff !important;box-shadow:0 0 8px rgba(100,180,255,.15) !important}
-.theme-2046 .seat-btn.has-images-2{border-color:rgba(255,180,100,.5) !important;background:rgba(255,180,100,.1) !important;color:#ffd8a8 !important;box-shadow:0 0 8px rgba(255,180,100,.15) !important}
-.theme-2046 .seat-btn.has-images-1.expanded{border:1px solid rgba(255,120,120,.4) !important;background:rgba(100,180,255,.1) !important;color:#a8c8ff !important;box-shadow:0 0 10px rgba(255,120,120,.1) !important}
-.theme-2046 .seat-btn.has-images-2.expanded{border:1px solid rgba(255,120,120,.4) !important;background:rgba(255,180,100,.1) !important;color:#ffd8a8 !important;box-shadow:0 0 10px rgba(255,120,120,.1) !important}
-.theme-2046 .add-seat-btn{border:1px dashed rgba(100,200,255,.2) !important;border-radius:6px !important;background:rgba(15,22,38,.3) !important;color:rgba(100,200,255,.3) !important;transition:all .2s ease !important}
-.theme-2046 .add-seat-btn:active{border-color:rgba(100,200,255,.5) !important;color:rgba(100,200,255,.6) !important;background:rgba(100,200,255,.08) !important;box-shadow:0 0 10px rgba(100,200,255,.1) !important}
-
-/* 4. 菜单面板 — 磨砂玻璃全息面板 */
-.theme-2046 .func-panel-overlay{background:rgba(6,11,20,.6) !important;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-.theme-2046 .func-panel{border-radius:16px 16px 0 0 !important;background:rgba(10,18,35,.75) !important;border-top:1px solid rgba(100,200,255,.2) !important;box-shadow:0 -4px 40px rgba(100,200,255,.08) !important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
-.theme-2046 .func-panel-header{border-bottom:1px solid rgba(100,200,255,.08) !important}
-.theme-2046 .func-panel-title{font-family:'Exo 2',sans-serif !important;font-size:16px !important;font-weight:300 !important;color:#e8f4ff !important;letter-spacing:3px !important;text-shadow:0 0 12px rgba(100,200,255,.3) !important}
-.theme-2046 .func-panel-close{background:rgba(100,200,255,.06) !important;color:#a8d8ff !important;border:1px solid rgba(100,200,255,.15) !important;border-radius:6px !important;font-family:'Exo 2',sans-serif !important;box-shadow:0 0 6px rgba(100,200,255,.04) !important}
-.theme-2046 .func-panel-close:active{background:rgba(100,200,255,.15) !important;box-shadow:0 0 12px rgba(100,200,255,.12) !important}
-.theme-2046 .func-item{border-bottom:1px solid rgba(100,200,255,.06) !important}
-.theme-2046 .func-item:active{background:rgba(100,200,255,.06) !important;border-radius:6px !important}
-.theme-2046 .func-item-label{font-family:'Exo 2','PingFang SC',sans-serif !important;font-size:15px !important;color:#c8d6e5 !important;font-weight:300 !important;letter-spacing:1px !important}
-.theme-2046 .func-item-label .func-item-desc{font-family:'Exo 2','PingFang SC',sans-serif !important;font-size:12px !important;color:rgba(100,200,255,.35) !important;font-weight:300 !important}
-/* 开关 — 全息拨片 */
-.theme-2046 .func-toggle{border-radius:6px !important;background:rgba(100,200,255,.06) !important;border:1px solid rgba(100,200,255,.15) !important;transition:all .25s ease !important}
-.theme-2046 .func-toggle.on{background:rgba(100,200,255,.2) !important;border-color:rgba(100,200,255,.5) !important;box-shadow:0 0 10px rgba(100,200,255,.2) !important}
-.theme-2046 .func-toggle::after{border-radius:6px !important;background:#e8f4ff !important;border:none !important;box-shadow:0 0 6px rgba(100,200,255,.3) !important;transition:all .25s ease !important}
-.theme-2046 .func-toggle.on::after{background:#fff !important;box-shadow:0 0 10px rgba(100,200,255,.5) !important}
-/* 主题选择器 — 全息风格 */
-.theme-2046 .theme-select{border-color:rgba(100,200,255,.2) !important;background:rgba(10,18,35,.6) !important;color:#a8d8ff !important;box-shadow:0 0 8px rgba(100,200,255,.05) !important;font-family:'Exo 2','PingFang SC',sans-serif !important;border-radius:6px !important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%2364c8ff' stroke-width='1'/%3E%3C/svg%3E") !important}
-.theme-2046 .theme-select option{background:#0a1223;color:#a8d8ff}
 </style>
 </head>
 <body>
@@ -448,17 +306,19 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
     <div class="modal-btns"><button class="modal-cancel" id="batch-cancel">取消</button><button class="modal-confirm" id="batch-exec">打包下载(ZIP)</button></div>
   </div>
 </div>
+<!-- 【v1.5.10 修改】批量清理弹窗改为清除全部图片确认弹窗 -->
 <div class="modal-overlay" id="cleanup-modal">
   <div class="modal-box">
-    <h3>批量清理图片</h3>
-    <p style="font-size:13px;color:#666;margin-bottom:14px;text-align:center">删除所选日期<strong>之前</strong>添加的所有图片（默认今天）</p>
-    <div class="picker-row">
-      <div class="picker-highlight"></div>
-      <div class="picker-col" id="picker-year"><div class="picker-col-label">年</div><div class="picker-pad"></div></div>
-      <div class="picker-col" id="picker-month"><div class="picker-col-label">月</div><div class="picker-pad"></div></div>
-      <div class="picker-col" id="picker-day"><div class="picker-col-label">日</div><div class="picker-pad"></div></div>
-    </div>
-    <div class="cleanup-btns"><button class="cleanup-cancel" id="cleanup-cancel-btn">取消</button><button class="cleanup-exec" id="cleanup-exec-btn">执行清理</button></div>
+    <h3>清除全部图片</h3>
+    <p style="font-size:14px;color:#666;margin-bottom:14px;text-align:center">将清除全部图片数据，不可恢复</p>
+    <div class="cleanup-btns"><button class="cleanup-cancel" id="cleanup-cancel-btn">取消</button><button class="cleanup-exec" id="cleanup-exec-btn">确认清除</button></div>
+  </div>
+</div>
+<!-- 【v1.5.11 新增】清理进度 loading 弹窗 -->
+<div class="modal-overlay" id="cleanup-loading-modal" style="z-index:210">
+  <div class="modal-box" style="text-align:center">
+    <div class="cleanup-spinner"></div>
+    <p id="cleanup-loading-text" style="font-size:15px;color:#333;margin-top:16px">正在清理图片...</p>
   </div>
 </div>
 <!-- 【v1.1.1 改造】拼接选择改为底部滑出面板 -->
@@ -536,8 +396,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.6.1 新增"2046"未来科技主题（磨砂玻璃全息面板+Exo 2 字体）
-const APP_VERSION = 'v1.6.1';
+// v1.5.11 修复清除全部图片大数据量崩溃：分批异步删除 + 进度提示
+const APP_VERSION = 'v1.5.11';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -663,7 +523,6 @@ const state = {
   allowDeleteSeat: false, // 【修改1】允许删除座位开关，默认关闭
   showLogo: false, // 【v1.3.2 新功能3】深业运营 LOGO 水印开关，默认关闭
   uploadWatermark: false, // 【v1.3.9 新功能1】上传图片加水印开关，默认关闭
-  theme: 'default', // 【v1.6.0】主题选择，默认"default"，可选"pixel-cyberpunk"
 };
 
 /** 生成区域 key */
@@ -845,21 +704,6 @@ function loadShowLogoState() { try { state.showLogo = localStorage.getItem('seat
 // 【v1.3.9 新功能1】上传图片加水印开关状态持久化
 function saveUploadWatermarkState() { try { localStorage.setItem('seat_upload_watermark', state.uploadWatermark ? '1' : '0'); } catch (e) {} }
 function loadUploadWatermarkState() { try { state.uploadWatermark = localStorage.getItem('seat_upload_watermark') === '1'; } catch (e) {} }
-// 【v1.6.0】主题选择持久化
-function saveThemeState() { try { localStorage.setItem('app_theme', state.theme); } catch (e) {} }
-function loadThemeState() {
-  try {
-    const t = localStorage.getItem('app_theme');
-    // 【v1.6.1】支持 2046 主题
-    state.theme = (t === 'pixel-cyberpunk' || t === '2046') ? t : 'default';
-  } catch (e) { state.theme = 'default'; }
-}
-/** 【v1.6.0】应用主题：根据 state.theme 设置 body 类名（互斥，同时只激活一个主题） */
-function applyTheme() {
-  document.body.classList.remove('theme-pixel-cyberpunk', 'theme-2046');
-  if (state.theme === 'pixel-cyberpunk') document.body.classList.add('theme-pixel-cyberpunk');
-  else if (state.theme === '2046') document.body.classList.add('theme-2046');
-}
 
 // 【v1.3.18 修复】筛选状态 localStorage 键名（隔离旧键名，避免被旧数据污染）
 const FILTER_KEY_MAIN = 'seat_filter_timeslots_v2_main';
@@ -3681,63 +3525,115 @@ previewSaveBtn.addEventListener('click', (e) => {
 });
 
 // ============================================================
-// 十、批量清理
+// 十、清除全部图片（v1.5.11 修改：分批异步删除 + 进度提示 + 异常保护）
 // ============================================================
 const cleanupModal = document.getElementById('cleanup-modal');
-const pickerYear = document.getElementById('picker-year');
-const pickerMonth = document.getElementById('picker-month');
-const pickerDay = document.getElementById('picker-day');
-let cleanupYear = 2026, cleanupMonth = 6, cleanupDay = 10;
+const cleanupLoadingModal = document.getElementById('cleanup-loading-modal');
+const cleanupLoadingText = document.getElementById('cleanup-loading-text');
 
-function fillPickerCol(colEl, items, selectedVal) {
-  const label = colEl.querySelector('.picker-col-label'), pad = colEl.querySelector('.picker-pad');
-  colEl.innerHTML = ''; colEl.appendChild(label); colEl.appendChild(pad);
-  items.forEach(val => { const div = document.createElement('div'); div.className = 'picker-item' + (val === selectedVal ? ' active' : ''); div.textContent = val; div.dataset.val = val; colEl.appendChild(div); });
-  const padB = document.createElement('div'); padB.className = 'picker-pad'; colEl.appendChild(padB);
-  requestAnimationFrame(() => { const a = colEl.querySelector('.picker-item.active'); if (a) a.scrollIntoView({ block: 'center', behavior: 'auto' }); });
-}
-function readPickerCol(colEl) { const items = colEl.querySelectorAll('.picker-item'), st = colEl.scrollTop, ch = colEl.clientHeight, center = st + ch / 2; let closest = null, minDist = Infinity; items.forEach(item => { const mid = item.offsetTop + item.offsetHeight / 2, dist = Math.abs(mid - center); if (dist < minDist) { minDist = dist; closest = item; } }); return closest ? parseInt(closest.dataset.val) : null; }
-function highlightPickerCol(colEl) { const val = readPickerCol(colEl); colEl.querySelectorAll('.picker-item').forEach(item => item.classList.toggle('active', parseInt(item.dataset.val) === val)); return val; }
-function getDaysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
-function updateDayPicker() { const y = readPickerCol(pickerYear) || cleanupYear, m = readPickerCol(pickerMonth) || cleanupMonth; const maxDay = getDaysInMonth(y, m), days = []; for (let dd = 1; dd <= maxDay; dd++) days.push(dd); fillPickerCol(pickerDay, days, Math.min(readPickerCol(pickerDay) || cleanupDay, maxDay)); }
-function initCleanupDate() { const d = new Date(); cleanupYear = d.getFullYear(); cleanupMonth = d.getMonth() + 1; cleanupDay = d.getDate(); const years = []; for (let y = d.getFullYear() + 1; y >= d.getFullYear() - 5; y--) years.push(y); fillPickerCol(pickerYear, years, cleanupYear); const months = []; for (let m = 1; m <= 12; m++) months.push(m); fillPickerCol(pickerMonth, months, cleanupMonth); const maxDay = getDaysInMonth(cleanupYear, cleanupMonth), days = []; for (let dd = 1; dd <= maxDay; dd++) days.push(dd); fillPickerCol(pickerDay, days, cleanupDay); }
-let pickerScrollTimer = null;
-[pickerYear, pickerMonth, pickerDay].forEach(col => {
-  col.addEventListener('scroll', () => { highlightPickerCol(col); if (col === pickerYear || col === pickerMonth) { clearTimeout(pickerScrollTimer); pickerScrollTimer = setTimeout(updateDayPicker, 200); } }, { passive: true });
-  col.addEventListener('click', (e) => { const item = e.target.closest('.picker-item'); if (item) { item.scrollIntoView({ block: 'center', behavior: 'smooth' }); if (col === pickerYear || col === pickerMonth) setTimeout(updateDayPicker, 300); } });
-});
+// 取消按钮：关闭弹窗
 document.getElementById('cleanup-cancel-btn').addEventListener('click', () => cleanupModal.classList.remove('show'));
+
+// 确认清除按钮：分批异步清空所有图片数据
 document.getElementById('cleanup-exec-btn').addEventListener('click', async () => {
-  cleanupYear = readPickerCol(pickerYear) || cleanupYear; cleanupMonth = readPickerCol(pickerMonth) || cleanupMonth; cleanupDay = readPickerCol(pickerDay) || cleanupDay;
-  const dateVal = `${cleanupYear}-${String(cleanupMonth).padStart(2, '0')}-${String(cleanupDay).padStart(2, '0')}`;
-  const threshold = new Date(dateVal + 'T00:00:00+08:00').getTime();
-  if (isNaN(threshold)) { showToast('日期无效'); return; }
-  cleanupModal.classList.remove('show'); showToast('正在清理...');
+  cleanupModal.classList.remove('show');
+  // 显示不可关闭的 loading 弹窗
+  cleanupLoadingText.textContent = '正在清理图片...';
+  cleanupLoadingModal.classList.add('show');
+
+  let totalDeleted = 0;
+  let hasError = false;
+
   try {
-    const all = await dbGetAll('cells');
-    let total = 0;
-    for (const rec of all) {
-      if (!rec.images) continue;
-      // 过滤掉指定日期之前的图片
-      const filtered = rec.images.filter(img => (img.createdAt || 0) >= threshold);
-      if (filtered.length < rec.images.length) {
-        total += rec.images.length - filtered.length;
-        if (filtered.length > 0) await saveCellData(rec.key, filtered);
-        else await dbDelete('cells', rec.key);
-        // 【修复BUG】清理后更新内存缓存
-        imageCountCache.set(rec.key, filtered.length);
-        clearCellBlobCache(rec.key);
-        const sk = rec.key.split('-').slice(0, 3).join('-');
-        invalidateTimeslotCache(sk);
+    if (dbIsFallback) {
+      // 内存回退模式：直接清空
+      const all = dbFallback['cells'] ? Object.values(dbFallback['cells']) : [];
+      for (const rec of all) { if (rec.images) totalDeleted += rec.images.length; }
+      dbFallback['cells'] = {};
+    } else {
+      // IndexedDB 模式：使用游标分批删除，避免主线程阻塞
+      const BATCH_SIZE = 50; // 每批处理条数
+      // 先用游标统计总数
+      const db = await openDB();
+      let totalCount = 0;
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('cells', 'readonly');
+        const store = tx.objectStore('cells');
+        const countReq = store.count();
+        countReq.onsuccess = () => { totalCount = countReq.result; resolve(); };
+        countReq.onerror = () => { totalCount = 0; resolve(); }; // 统计失败不阻塞
+      });
+
+      let processed = 0;
+      let done = false;
+
+      while (!done) {
+        // 每批用独立事务，避免长事务超时
+        const batchKeys = [];
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction('cells', 'readonly');
+          const store = tx.objectStore('cells');
+          const req = store.openCursor();
+          req.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor && batchKeys.length < BATCH_SIZE) {
+              batchKeys.push(cursor.primaryKey);
+              cursor.continue();
+            } else {
+              resolve();
+            }
+          };
+          req.onerror = () => resolve(); // 游标出错不阻塞
+        });
+
+        if (batchKeys.length === 0) { done = true; break; }
+
+        // 删除本批记录
+        for (const key of batchKeys) {
+          try {
+            // 先读取记录以统计图片数
+            const rec = await dbGet('cells', key);
+            if (rec && rec.images) totalDeleted += rec.images.length;
+            await dbDelete('cells', key);
+            // 清除内存缓存
+            imageCountCache.set(key, 0);
+            clearCellBlobCache(key);
+            const sk = key.split('-').slice(0, 3).join('-');
+            invalidateTimeslotCache(sk);
+          } catch (batchErr) {
+            console.error('清理单条记录出错:', key, batchErr);
+            hasError = true;
+          }
+        }
+
+        processed += batchKeys.length;
+        // 更新进度提示
+        if (totalCount > 0) {
+          const pct = Math.min(Math.round(processed / totalCount * 100), 99);
+          cleanupLoadingText.textContent = `正在清理图片... ${pct}%`;
+        }
+
+        // 让出主线程，避免阻塞 UI
+        await new Promise(r => setTimeout(r, 0));
       }
     }
+
+    // 清理完毕：刷新界面
     await buildSeatHasImages();
-    invalidateAllTimeslotCache(); // 【修复BUG】清理后清除所有 DOM 缓存
+    invalidateAllTimeslotCache();
     await renderMain();
-    showToast(`已清理 ${total} 张图片`);
   } catch (err) {
-    console.error('清理出错:', err);
-    showToast('清理出错');
+    console.error('清除出错:', err);
+    hasError = true;
+  } finally {
+    // 关闭 loading 弹窗
+    cleanupLoadingModal.classList.remove('show');
+    // 显示结果提示
+    if (hasError) {
+      showToast(`已清除 ${totalDeleted} 张图片（部分失败）`);
+    } else {
+      showToast(`已清除 ${totalDeleted} 张图片`);
+    }
   }
 });
 
@@ -3877,7 +3773,7 @@ document.addEventListener('click', async (e) => {
   const nameEl = target.closest('[data-action="edit-seat-name"]');
   if (nameEl) { const sk = nameEl.dataset.seatKey, curName = nameEl.textContent; const input = document.createElement('input'); input.type = 'text'; input.value = curName; input.className = 'seat-name-edit-input'; const doSave = async () => { const newName = input.value.trim() || curName; if (newName === curName) { const sp = document.createElement('span'); sp.className = 'seat-name-text'; sp.dataset.action = 'edit-seat-name'; sp.dataset.seatKey = sk; sp.textContent = newName; if (input.parentNode) input.replaceWith(sp); return; } state.seatNames[sk] = newName; await saveSeatName(sk, newName); const sp = document.createElement('span'); sp.className = 'seat-name-text'; sp.dataset.action = 'edit-seat-name'; sp.dataset.seatKey = sk; sp.textContent = newName; if (input.parentNode) input.replaceWith(sp); updateSeatButtonText(sk, newName); await regenerateWatermarksForSeat(sk); }; input.addEventListener('blur', doSave); input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') input.blur(); }); nameEl.replaceWith(input); input.focus(); input.select(); return; }
   const cleanupBtn = target.closest('[data-action="open-cleanup"]');
-  if (cleanupBtn) { initCleanupDate(); cleanupModal.classList.add('show'); return; }
+  if (cleanupBtn) { cleanupModal.classList.add('show'); return; }
   const batchDlBtn = target.closest('[data-action="open-batch-dl"]');
   if (batchDlBtn) { initBatchModal(); batchModal.classList.add('show'); return; }
   const filterBtn = target.closest('[data-action="open-filter"]');
@@ -4085,15 +3981,6 @@ const funcPanelClose = document.getElementById('func-panel-close');
 
 function renderFuncPanelBody() {
   funcPanelBody.innerHTML = `
-    <!-- 【v1.6.0】主题选择器 — 菜单顶部 -->
-    <div class="func-item" data-func="select-theme" style="flex-wrap:wrap">
-      <div class="func-item-label" style="width:100%;margin-bottom:8px">主题<div class="func-item-desc">切换界面视觉风格</div></div>
-      <select class="theme-select" id="theme-select">
-        <option value="default" ${state.theme === 'default' ? 'selected' : ''}>默认</option>
-        <option value="pixel-cyberpunk" ${state.theme === 'pixel-cyberpunk' ? 'selected' : ''}>像素风赛博朋克</option>
-        <option value="2046" ${state.theme === '2046' ? 'selected' : ''}>2046</option>
-      </select>
-    </div>
     <div class="func-item" data-func="open-filter">
       <div class="func-item-label">时段筛选<div class="func-item-desc">选择显示的时段范围</div></div>
       <span style="color:#bfbfbf;font-size:18px">›</span>
@@ -4102,8 +3989,9 @@ function renderFuncPanelBody() {
       <div class="func-item-label">批量下载<div class="func-item-desc">下载选中时段的图片</div></div>
       <span style="color:#bfbfbf;font-size:18px">›</span>
     </div>
+    <!-- 【v1.5.10 修改】批量清理改为清除全部图片 -->
     <div class="func-item" data-func="open-cleanup">
-      <div class="func-item-label">批量清理<div class="func-item-desc">按日期清理图片数据</div></div>
+      <div class="func-item-label">清除全部图片<div class="func-item-desc">清除所有图片数据，不可恢复</div></div>
       <span style="color:#bfbfbf;font-size:18px">›</span>
     </div>
     <div class="func-item" data-func="toggle-auto-share">
@@ -4170,7 +4058,7 @@ funcPanelBody.addEventListener('click', (e) => {
   const func = item.dataset.func;
   if (func === 'open-filter') { closeFuncPanel(); setTimeout(() => openFilterSheet(), 300); }
   else if (func === 'open-batch-dl') { closeFuncPanel(); setTimeout(() => { initBatchModal(); batchModal.classList.add('show'); }, 300); }
-  else if (func === 'open-cleanup') { closeFuncPanel(); setTimeout(() => { initCleanupDate(); cleanupModal.classList.add('show'); }, 300); }
+  else if (func === 'open-cleanup') { closeFuncPanel(); setTimeout(() => { cleanupModal.classList.add('show'); }, 300); }
   else if (func === 'toggle-auto-share') {
     state.autoShare = !state.autoShare;
     saveAutoShareState();
@@ -4206,8 +4094,6 @@ funcPanelBody.addEventListener('click', (e) => {
     const toggle = document.getElementById('func-toggle-upload-wm');
     if (toggle) toggle.classList.toggle('on', state.uploadWatermark);
   }
-  // 【v1.6.0】主题选择器不通过 click 处理，由 change 事件单独处理
-  else if (func === 'select-theme') { /* 由下方 change 事件处理 */ }
   // 【v1.3.0 菜单改名+重置功能】重置应用
   else if (func === 'reset-app') {
     if (!confirm('此操作将清除所有图片和设置，不可恢复。确认重置？')) return;
@@ -4230,9 +4116,6 @@ funcPanelBody.addEventListener('click', (e) => {
         }
         // 清空 localStorage 中所有设置
         try { localStorage.clear(); } catch (e) {}
-        // 【v1.6.0】重置主题为默认
-        state.theme = 'default';
-        applyTheme();
         // 刷新页面，回到初始状态
         location.reload();
       } catch (err) {
@@ -4240,14 +4123,6 @@ funcPanelBody.addEventListener('click', (e) => {
         showToast('重置出错，请手动清除浏览器数据');
       }
     })();
-  }
-});
-// 【v1.6.0】主题选择器 change 事件
-funcPanelBody.addEventListener('change', (e) => {
-  if (e.target.id === 'theme-select') {
-    state.theme = e.target.value;
-    saveThemeState();
-    applyTheme();
   }
 });
 
@@ -4280,8 +4155,6 @@ async function init() {
     loadAllowDeleteState();
     loadShowLogoState(); // 【v1.3.2 新功能3】加载 LOGO 水印开关状态
     loadUploadWatermarkState(); // 【v1.3.9 新功能1】加载上传加水印开关状态
-    loadThemeState(); // 【v1.6.0】加载主题选择状态
-    applyTheme(); // 【v1.6.0】应用主题类名
     ensureFuncBtnText();
     startFuncBtnObserver();
     await renderMain();
