@@ -278,6 +278,74 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .filter-slot-cb.checked::after{content:'✓';color:#fff;font-size:14px;font-weight:700}
 .filter-slot-label{font-size:15px;color:#333;font-weight:500}
 .filter-slot-label.passed{color:#999}
+
+/* ============================================================
+   【v1.6.0 新增】千与千寻主题（.theme-spirited-away 作用域）
+   ============================================================ */
+.theme-spirited-away{background:linear-gradient(170deg,#f5e6c8 0%,#e8dcc8 30%,#d4e8c2 65%,#c5dde8 100%);color:#4A3728}
+/* 叠加水彩云纹纹理 */
+.theme-spirited-away::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 40% at 20% 15%,rgba(255,255,255,.35) 0%,transparent 70%),radial-gradient(ellipse 60% 30% at 75% 25%,rgba(255,255,255,.25) 0%,transparent 65%),radial-gradient(ellipse 90% 35% at 50% 80%,rgba(197,221,232,.3) 0%,transparent 60%)}
+.theme-spirited-away #app,.theme-spirited-away .page-header,.theme-spirited-away .func-panel,.theme-spirited-away .filter-sheet,.theme-spirited-away #bottom-bar,.theme-spirited-away .modal-box,.theme-spirited-away .concat-sheet{position:relative;z-index:1}
+/* 页面标题 */
+.theme-spirited-away .page-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#8B4513;text-shadow:0 1px 2px rgba(139,69,19,.12)}
+.theme-spirited-away .page-title small{color:#a08060!important}
+/* 菜单按钮 */
+.theme-spirited-away .header-btn{background:#8B7355;border-color:#8B7355}
+.theme-spirited-away .header-btn:active{opacity:.8}
+/* 楼层卡片 */
+.theme-spirited-away .floor-btn{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728;border:1.5px solid #8B7355;border-radius:10px;box-shadow:0 2px 8px rgba(139,115,85,.15);transition:transform .15s,border-color .2s,box-shadow .2s}
+.theme-spirited-away .floor-1{background:linear-gradient(135deg,rgba(255,248,235,.92),rgba(245,230,200,.92))}
+.theme-spirited-away .floor-2{background:linear-gradient(135deg,rgba(240,248,235,.92),rgba(220,238,210,.92))}
+.theme-spirited-away .floor-3{background:linear-gradient(135deg,rgba(235,245,255,.92),rgba(210,230,248,.92))}
+.theme-spirited-away .floor-4{background:linear-gradient(135deg,rgba(240,250,235,.92),rgba(215,245,215,.92))}
+.theme-spirited-away .floor-5{background:linear-gradient(135deg,rgba(255,245,230,.92),rgba(250,230,200,.92))}
+.theme-spirited-away .floor-btn:hover{border-color:#c87830;box-shadow:0 3px 12px rgba(200,120,48,.2);transform:scale(1.01)}
+.theme-spirited-away .floor-btn:active{transform:scale(.98)}
+/* 区域按钮 */
+.theme-spirited-away .area-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(255,250,240,.9);border:1.5px solid #a89070;color:#4A3728;box-shadow:0 1px 4px rgba(139,115,85,.1)}
+.theme-spirited-away .area-btn:hover{background:rgba(255,240,210,.9);border-color:#8B7355}
+.theme-spirited-away .area-btn:active{transform:scale(.95)}
+.theme-spirited-away .area-btn .area-count{color:#8B7355}
+.theme-spirited-away .area-btn.expanded{border-color:#c87830;background:rgba(255,245,225,.9)}
+.theme-spirited-away .area-btn.has-images{border-color:#6a9a4a;background:linear-gradient(135deg,rgba(230,245,220,.9),rgba(200,230,180,.9));color:#3a6a1a}
+.theme-spirited-away .area-btn.has-images.expanded{border-color:#c87830;background:linear-gradient(135deg,rgba(230,245,220,.9),rgba(200,230,180,.9));color:#3a6a1a}
+/* 座位编号按钮 */
+.theme-spirited-away .seat-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(255,252,245,.95);border:1px solid #c4b8a4;color:#4A3728;font-size:12px}
+.theme-spirited-away .seat-btn:hover{background:rgba(255,245,225,.95)}
+.theme-spirited-away .seat-btn:active{background:rgba(255,235,200,.95)}
+.theme-spirited-away .seat-btn.expanded{border:2px solid #c87830;background:rgba(255,252,245,.95)}
+/* 座位提示颜色保留但加暖色调 */
+.theme-spirited-away .seat-btn.has-images-1{border-color:#5a9ec8;background:linear-gradient(135deg,rgba(210,235,250,.9),rgba(180,218,245,.9));color:#1a6a9a;font-weight:700;box-shadow:0 0 6px rgba(90,158,200,.2)}
+.theme-spirited-away .seat-btn.has-images-2{border-color:#d09030;background:linear-gradient(135deg,rgba(255,240,210,.9),rgba(255,225,175,.9));color:#a06010;font-weight:700;box-shadow:0 0 6px rgba(208,144,48,.2)}
+.theme-spirited-away .seat-btn.has-images-1.expanded{border:2px solid #c87830;background:linear-gradient(135deg,rgba(210,235,250,.9),rgba(180,218,245,.9));color:#1a6a9a}
+.theme-spirited-away .seat-btn.has-images-2.expanded{border:2px solid #c87830;background:linear-gradient(135deg,rgba(255,240,210,.9),rgba(255,225,175,.9));color:#a06010}
+/* 时段卡片 */
+.theme-spirited-away .timeslot-card{background:rgba(255,252,245,.92);border:1px solid rgba(139,115,85,.15);box-shadow:0 1px 4px rgba(139,115,85,.08)}
+/* 菜单面板 */
+.theme-spirited-away .func-panel{background:rgba(255,250,240,.97);border-radius:16px 16px 0 0}
+.theme-spirited-away .func-panel-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
+.theme-spirited-away .func-item{border-bottom:1px dashed #d4c4a8}
+.theme-spirited-away .func-item:active{background:rgba(255,240,210,.5);border-radius:8px}
+.theme-spirited-away .func-item-label{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
+.theme-spirited-away .func-item-label .func-item-desc{color:#8B7355}
+/* 筛选面板 */
+.theme-spirited-away .filter-sheet{background:rgba(255,250,240,.97)}
+.theme-spirited-away .filter-sheet-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
+.theme-spirited-away .filter-slot-item{border-bottom:1px dashed #d4c4a8}
+.theme-spirited-away .filter-slot-label{color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif}
+/* 底部栏 */
+.theme-spirited-away #bottom-bar{background:rgba(255,250,240,.97);box-shadow:0 -2px 8px rgba(139,115,85,.12)}
+/* 弹窗 */
+.theme-spirited-away .modal-box{background:rgba(255,250,240,.97)}
+.theme-spirited-away .modal-box h3{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
+/* 主题选择列表 */
+.theme-list{padding:0 0 4px;margin:0;list-style:none}
+.theme-list-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin:2px 0;border-radius:8px;cursor:pointer;font-size:14px;color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif;transition:background .15s}
+.theme-list-item:active{background:rgba(255,240,210,.5)}
+.theme-list-item.active{background:rgba(139,115,85,.1);font-weight:600}
+.theme-list-item .theme-check{width:20px;height:20px;border-radius:50%;border:2px solid #bbb;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.theme-list-item.active .theme-check{background:#8B7355;border-color:#8B7355}
+.theme-list-item.active .theme-check::after{content:'✓';color:#fff;font-size:12px;font-weight:700}
 </style>
 </head>
 <body>
@@ -396,8 +464,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.5.12 水印第一行新增星期几，背景圆角
-const APP_VERSION = 'v1.5.12';
+// v1.6.0 新增千与千寻主题 + 修复时段筛选偶发重置
+const APP_VERSION = 'v1.6.0';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -523,6 +591,7 @@ const state = {
   allowDeleteSeat: false, // 【修改1】允许删除座位开关，默认关闭
   showLogo: false, // 【v1.3.2 新功能3】深业运营 LOGO 水印开关，默认关闭
   uploadWatermark: false, // 【v1.3.9 新功能1】上传图片加水印开关，默认关闭
+  currentTheme: 'default', // 【v1.6.0】当前主题，默认为 'default'
 };
 
 /** 生成区域 key */
@@ -704,6 +773,13 @@ function loadShowLogoState() { try { state.showLogo = localStorage.getItem('seat
 // 【v1.3.9 新功能1】上传图片加水印开关状态持久化
 function saveUploadWatermarkState() { try { localStorage.setItem('seat_upload_watermark', state.uploadWatermark ? '1' : '0'); } catch (e) {} }
 function loadUploadWatermarkState() { try { state.uploadWatermark = localStorage.getItem('seat_upload_watermark') === '1'; } catch (e) {} }
+// 【v1.6.0】主题状态持久化
+function saveThemeState() { try { localStorage.setItem('app_theme', state.currentTheme); } catch (e) {} }
+function loadThemeState() { try { const t = localStorage.getItem('app_theme'); if (t) { state.currentTheme = t; applyTheme(t); } } catch (e) {} }
+function applyTheme(theme) {
+  document.body.classList.remove('theme-spirited-away');
+  if (theme === 'spirited-away') document.body.classList.add('theme-spirited-away');
+}
 
 // 【v1.3.18 修复】筛选状态 localStorage 键名（隔离旧键名，避免被旧数据污染）
 const FILTER_KEY_MAIN = 'seat_filter_timeslots_v2_main';
@@ -919,6 +995,21 @@ window.addEventListener('beforeunload', () => {
 // 【v1.3.18 深度修复】pagehide 作为 beforeunload 的补充（移动端更可靠）
 window.addEventListener('pagehide', () => {
   try { saveFilterState(); } catch(e) {}
+});
+// 【v1.6.0 修复】页面从后台恢复时，从 localStorage 重新读取筛选状态，防止偶发重置
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    try {
+      const raw = localStorage.getItem(FILTER_KEY_MAIN) || localStorage.getItem(FILTER_KEY_BACKUP);
+      if (raw) {
+        const o = JSON.parse(raw);
+        if (o && Array.isArray(o.slots)) {
+          state.visibleTimeSlots = new Set(o.slots);
+          state._filterNone = !!o.none;
+        }
+      }
+    } catch (e) { console.warn('[筛选恢复] visibilitychange 恢复失败', e); }
+  }
 });
 
 function renderSeatFlow(fid, aname) {
@@ -1436,7 +1527,11 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         const pad = Math.round(fs_time * 0.3);   // 左右内边距
         const vpad = Math.round(fs_time * 0.2);  // 上下内边距
         const r = 8; // 固定圆角
-        const fontFam = '-apple-system, sans-serif';
+        // 【v1.6.0】千与千寻主题水印：衬线字体 + 奶油色背景 + 深棕文字
+        const isSpiritedAway = document.body.classList.contains('theme-spirited-away');
+        const fontFam = isSpiritedAway ? "Georgia, 'KaiTi', 'STKaiti', serif" : '-apple-system, sans-serif';
+        const wmBgColor = isSpiritedAway ? 'rgba(255,248,240,0.7)' : 'rgba(0,0,0,0.55)';
+        const wmTextColor = isSpiritedAway ? '#4A3728' : '#ffffff';
         // 拆分北京时间
         const datePart = beijingTime.split(' ')[0];
         const timePart = beijingTime.split(' ')[1] || beijingTime;
@@ -1459,7 +1554,7 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         // 【v1.3.4 Bug2修复】文字水印位置固定：距下边缘 24px，不受 LOGO 影响
         const bgY = canvas.height - totalH - vpad * 2 - 24;
         // 半透明圆角背景
-        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        ctx.fillStyle = wmBgColor;
         ctx.beginPath();
         ctx.moveTo(bgX + r, bgY); ctx.lineTo(bgX + bgW - r, bgY);
         ctx.quadraticCurveTo(bgX + bgW, bgY, bgX + bgW, bgY + r);
@@ -1470,8 +1565,8 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         ctx.lineTo(bgX, bgY + r);
         ctx.quadraticCurveTo(bgX, bgY, bgX + r, bgY);
         ctx.closePath(); ctx.fill();
-        // 绘制三行白色文本：年月日+星期几（细体）、时分秒（粗体）、座位编号（常规）
-        ctx.textBaseline = 'top'; ctx.fillStyle = '#ffffff';
+        // 绘制三行文本：年月日+星期几（细体）、时分秒（粗体）、座位编号（常规）
+        ctx.textBaseline = 'top'; ctx.fillStyle = wmTextColor;
         const textX = bgX + pad;
         let curY = bgY + vpad;
         ctx.font = `300 ${fs_date}px ${fontFam}`;
@@ -4008,6 +4103,15 @@ function renderFuncPanelBody() {
       <div class="func-item-label">清除全部图片<div class="func-item-desc">清除所有图片数据，不可恢复</div></div>
       <span style="color:#bfbfbf;font-size:18px">›</span>
     </div>
+    <!-- 【v1.6.0 新增】主题选择 -->
+    <div class="func-item" data-func="toggle-theme">
+      <div class="func-item-label">主题<div class="func-item-desc">切换界面风格</div></div>
+      <span style="color:#bfbfbf;font-size:18px" id="theme-arrow">›</span>
+    </div>
+    <div class="theme-list" id="theme-list" style="display:none">
+      <div class="theme-list-item${(!state.currentTheme || state.currentTheme === 'default') ? ' active' : ''}" data-theme="default"><span>默认</span><span class="theme-check"></span></div>
+      <div class="theme-list-item${state.currentTheme === 'spirited-away' ? ' active' : ''}" data-theme="spirited-away"><span>千与千寻</span><span class="theme-check"></span></div>
+    </div>
     <div class="func-item" data-func="toggle-auto-share">
       <div class="func-item-label">拍照后下载<div class="func-item-desc">拍照完成后提示下载图片</div></div>
       <div class="func-toggle ${state.autoShare ? 'on' : ''}" id="func-toggle-share"></div>
@@ -4067,12 +4171,35 @@ funcPanel.addEventListener('touchstart', (e) => {
 }, { passive: true });
 
 funcPanelBody.addEventListener('click', (e) => {
+  // 【v1.6.0】主题列表项点击（独立处理，不在 func-item 分支内）
+  const themeItem = e.target.closest('.theme-list-item');
+  if (themeItem) {
+    const theme = themeItem.dataset.theme;
+    state.currentTheme = theme;
+    applyTheme(theme);
+    saveThemeState();
+    // 更新列表高亮
+    funcPanelBody.querySelectorAll('.theme-list-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.theme === theme);
+    });
+    return; // 不关闭菜单，方便继续操作
+  }
   const item = e.target.closest('.func-item');
   if (!item) return;
   const func = item.dataset.func;
   if (func === 'open-filter') { closeFuncPanel(); setTimeout(() => openFilterSheet(), 300); }
   else if (func === 'open-batch-dl') { closeFuncPanel(); setTimeout(() => { initBatchModal(); batchModal.classList.add('show'); }, 300); }
   else if (func === 'open-cleanup') { closeFuncPanel(); setTimeout(() => { cleanupModal.classList.add('show'); }, 300); }
+  // 【v1.6.0】主题选择：展开/收起主题列表，不关闭菜单
+  else if (func === 'toggle-theme') {
+    const list = document.getElementById('theme-list');
+    const arrow = document.getElementById('theme-arrow');
+    if (list) {
+      const isShown = list.style.display !== 'none';
+      list.style.display = isShown ? 'none' : 'block';
+      if (arrow) arrow.textContent = isShown ? '›' : '⌄';
+    }
+  }
   else if (func === 'toggle-auto-share') {
     state.autoShare = !state.autoShare;
     saveAutoShareState();
@@ -4169,6 +4296,7 @@ async function init() {
     loadAllowDeleteState();
     loadShowLogoState(); // 【v1.3.2 新功能3】加载 LOGO 水印开关状态
     loadUploadWatermarkState(); // 【v1.3.9 新功能1】加载上传加水印开关状态
+    loadThemeState(); // 【v1.6.0】加载主题状态
     ensureFuncBtnText();
     startFuncBtnObserver();
     await renderMain();
