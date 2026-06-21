@@ -299,8 +299,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .theme-normal{background:linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 40%,#f2f0e4 75%,#f8f4ec 100%);color:#4A3728}
 /* 水彩纸纹 + 淡云纹理（#app::before，不遮挡固定元素） */
 .theme-normal #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(200,185,165,.03) 2px,rgba(200,185,165,.03) 4px),radial-gradient(ellipse 65% 30% at 20% 10%,rgba(255,255,255,.45) 0%,transparent 70%),radial-gradient(ellipse 50% 25% at 80% 18%,rgba(255,255,255,.35) 0%,transparent 60%),radial-gradient(ellipse 80% 28% at 50% 82%,rgba(232,242,228,.3) 0%,transparent 55%)}
-/* 交互元素提升层级 */
-.theme-normal #app,.theme-normal .page-header,.theme-normal #bottom-bar,.theme-normal .modal-box,.theme-normal .toast{position:relative;z-index:1}
+/* 交互元素提升层级（modal-box 已有 fixed 定位，不覆盖其 position） */
+.theme-normal #app,.theme-normal .page-header,.theme-normal #bottom-bar,.theme-normal .toast{position:relative;z-index:1}
 /* 页面标题：衬线体 + 暗红墨水感 */
 .theme-normal .page-header{background:linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 100%)}
 .theme-normal .page-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#5B3A1A;letter-spacing:1.5px;text-shadow:0 1px 2px rgba(91,58,26,.08)}
@@ -397,6 +397,117 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .theme-normal .toast{background:rgba(74,55,40,.82)}
 /* 更新提示条 */
 .theme-normal .update-bar{background:linear-gradient(135deg,#6a9a4a,#8B7355)}
+
+/* ============================================================
+   【v1.8.0 新增】"一般"主题 - 2046废土赛博朋克未来科技风格
+   关键词：锈铁 / 霓虹 / 沙尘 / 暗沉 / 磨损 / 残破科技 / 末日光线
+   色彩：铁灰 + 沙黄 + 霓虹青 #00ffff + 暗红 #cc3333 + 暗橙 #e8820c
+   ============================================================ */
+/* 全局底色：铁灰到沙黄渐变 + 裂痕纹理 */
+.theme-yiban{background:linear-gradient(170deg,#3c3c46 0%,#4a4540 30%,#5a5040 60%,#6a6050 100%);color:#c8c8c8}
+/* 锈蚀金属纹理 + 扫描线（#app::before） */
+.theme-yiban #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,255,.015) 3px,rgba(0,255,255,.015) 4px),repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(100,90,70,.06) 80px,rgba(100,90,70,.06) 81px),radial-gradient(ellipse 60% 40% at 30% 20%,rgba(0,255,255,.04) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 75% 70%,rgba(204,51,51,.03) 0%,transparent 55%)}
+/* 交互元素提升层级 */
+.theme-yiban #app,.theme-yiban .page-header,.theme-yiban #bottom-bar,.theme-yiban .toast{position:relative;z-index:1}
+/* 页面标题：霓虹青发光 */
+.theme-yiban .page-header{background:linear-gradient(170deg,#3c3c46 0%,#4a4540 100%)}
+.theme-yiban .page-title{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#00ffff;text-shadow:0 0 15px rgba(0,255,255,.5),0 0 5px rgba(0,255,255,.4);letter-spacing:2px;font-weight:700}
+.theme-yiban .page-title small{color:#e8820c!important;text-shadow:none}
+/* 菜单按钮：废土金属感 */
+.theme-yiban .header-btn{background:linear-gradient(135deg,#4a4540,#3c3c46);border:1px solid rgba(0,255,255,.4);border-radius:4px;box-shadow:0 0 6px rgba(0,255,255,.2);color:#00ffff}
+.theme-yiban .header-btn:active{box-shadow:0 0 12px rgba(0,255,255,.5);transform:scale(.97)}
+/* 楼层卡片：锈蚀金属板 + 霓虹边框 */
+.theme-yiban .floor-btn{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#00ffff;border:2px solid rgba(0,255,255,.5);border-radius:4px;box-shadow:0 0 8px rgba(0,255,255,.2),inset 0 0 20px rgba(0,0,0,.3);text-shadow:0 0 6px rgba(0,255,255,.3);transition:transform .12s,border-color .2s,box-shadow .2s}
+.theme-yiban .floor-1{background:linear-gradient(135deg,rgba(60,60,70,.88),rgba(70,65,55,.88))}
+.theme-yiban .floor-2{background:linear-gradient(135deg,rgba(55,60,68,.88),rgba(65,60,50,.88))}
+.theme-yiban .floor-3{background:linear-gradient(135deg,rgba(58,55,65,.88),rgba(68,62,52,.88))}
+.theme-yiban .floor-4{background:linear-gradient(135deg,rgba(62,58,60,.88),rgba(72,65,55,.88))}
+.theme-yiban .floor-5{background:linear-gradient(135deg,rgba(56,58,68,.88),rgba(66,62,52,.88))}
+.theme-yiban .floor-btn:hover{border-color:#00ffff;box-shadow:0 0 16px rgba(0,255,255,.4),inset 0 0 20px rgba(0,0,0,.3);transform:scale(1.01)}
+.theme-yiban .floor-btn:active{transform:scale(.98)}
+/* 区域按钮：铁灰 + 沙尘 + 霓虹橙边框 */
+.theme-yiban .area-btn{font-family:'Segoe UI','Helvetica Neue',sans-serif;background:rgba(55,55,62,.88);border:1px solid rgba(232,130,12,.5);color:#e0d0b8;box-shadow:0 0 4px rgba(232,130,12,.15),inset 0 1px 3px rgba(0,0,0,.3);transition:background .12s,border-color .12s,box-shadow .12s}
+.theme-yiban .area-btn:hover{border-color:#00ffff;box-shadow:0 0 8px rgba(0,255,255,.25),inset 0 1px 3px rgba(0,0,0,.3)}
+.theme-yiban .area-btn:active{transform:scale(.95)}
+.theme-yiban .area-btn .area-count{color:#e8820c}
+.theme-yiban .area-btn.expanded{border-color:#00ffff;background:rgba(60,60,68,.92);box-shadow:0 0 10px rgba(0,255,255,.25)}
+.theme-yiban .area-btn.has-images{border-color:#00cccc;background:linear-gradient(135deg,rgba(0,80,80,.35),rgba(55,55,62,.88));color:#00ffff}
+.theme-yiban .area-btn.has-images.expanded{border-color:#00ffff;background:linear-gradient(135deg,rgba(0,80,80,.35),rgba(55,55,62,.88));color:#00ffff}
+/* 座位编号按钮：暗灰 + 全息网格 + 暗青边框 */
+.theme-yiban .seat-btn{font-family:'Segoe UI','Helvetica Neue',sans-serif;background:rgba(45,45,52,.92);border:1px solid rgba(0,255,255,.2);color:#a0a8b0;font-size:12px;transition:background .1s,border-color .1s,box-shadow .1s}
+.theme-yiban .seat-btn:hover{background:rgba(55,55,62,.92);border-color:rgba(0,255,255,.4)}
+.theme-yiban .seat-btn:active{background:rgba(65,65,72,.92)}
+.theme-yiban .seat-btn.expanded{border:2px solid #00ffff;background:rgba(45,45,52,.92);box-shadow:0 0 6px rgba(0,255,255,.25)}
+/* 座位提示色保留，叠加霓虹光晕 */
+.theme-yiban .seat-btn.has-images-1{border-color:#00aacc;background:linear-gradient(135deg,rgba(0,100,120,.4),rgba(45,45,52,.92));color:#00ffff;font-weight:700;box-shadow:0 0 8px rgba(0,170,204,.25)}
+.theme-yiban .seat-btn.has-images-2{border-color:#cc6633;background:linear-gradient(135deg,rgba(120,60,20,.35),rgba(45,45,52,.92));color:#e8820c;font-weight:700;box-shadow:0 0 8px rgba(204,102,51,.2)}
+.theme-yiban .seat-btn.has-images-1.expanded{border:2px solid #00ffff;background:linear-gradient(135deg,rgba(0,100,120,.4),rgba(45,45,52,.92));color:#00ffff}
+.theme-yiban .seat-btn.has-images-2.expanded{border:2px solid #00ffff;background:linear-gradient(135deg,rgba(120,60,20,.35),rgba(45,45,52,.92));color:#e8820c}
+/* 座位名称 */
+.theme-yiban .seat-name-text{color:#00cccc;border-bottom-color:rgba(0,255,255,.3)}
+.theme-yiban .seat-name-edit-input{color:#e0d0b8;border-bottom-color:rgba(0,255,255,.3)}
+.theme-yiban .seat-header-label{color:#00cccc}
+.theme-yiban .hidden-ts-hint{color:#cc3333}
+/* 时段卡片：暗铁灰 + 扫描线 */
+.theme-yiban .timeslot-card{background:rgba(50,50,58,.92);border:1px solid rgba(0,255,255,.1);box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.theme-yiban .ts-time{color:#00cccc;font-family:'Segoe UI','Helvetica Neue',sans-serif}
+/* 拍照/上传按钮 */
+.theme-yiban .ts-btn-capture{background:#00888a}
+.theme-yiban .ts-btn-upload{background:#8a5500}
+/* 菜单面板：暗铁灰磨砂 + 霓虹分隔线 */
+.theme-yiban .func-panel{background:rgba(45,45,52,.97);border-radius:10px 10px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,.4),0 0 12px rgba(0,255,255,.1)}
+.theme-yiban .func-panel-header{border-bottom:1px solid rgba(0,255,255,.2)}
+.theme-yiban .func-panel-title{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#00ffff;text-shadow:0 0 8px rgba(0,255,255,.3)}
+.theme-yiban .func-panel-close{background:rgba(204,51,51,.3);color:#cc3333}
+.theme-yiban .func-item{border-bottom:1px dashed rgba(0,255,255,.15)}
+.theme-yiban .func-item:active{background:rgba(0,255,255,.08);border-radius:4px}
+.theme-yiban .func-item-label{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#c8c8c8}
+.theme-yiban .func-item-label .func-item-desc{color:#888}
+/* 开关按钮 */
+.theme-yiban .func-toggle{background:#555}
+.theme-yiban .func-toggle.on{background:#00888a;box-shadow:0 0 6px rgba(0,255,255,.3)}
+/* 筛选面板 */
+.theme-yiban .filter-sheet{background:rgba(45,45,52,.97);box-shadow:0 -4px 20px rgba(0,0,0,.4),0 0 12px rgba(0,255,255,.1)}
+.theme-yiban .filter-sheet-header{border-bottom:1px solid rgba(0,255,255,.2)}
+.theme-yiban .filter-sheet-title{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#00ffff;text-shadow:0 0 8px rgba(0,255,255,.3)}
+.theme-yiban .filter-sheet-close{background:rgba(204,51,51,.3);color:#cc3333}
+.theme-yiban .filter-sheet-actions{border-bottom:1px dashed rgba(0,255,255,.15)}
+.theme-yiban .filter-action-btn{border-color:rgba(0,255,255,.3);color:#c8c8c8;font-family:'Segoe UI','Helvetica Neue',sans-serif}
+.theme-yiban .filter-action-btn.primary{border-color:#00ffff;color:#00ffff;background:rgba(0,255,255,.08)}
+.theme-yiban .filter-slot-item{border-bottom:1px dashed rgba(0,255,255,.1)}
+.theme-yiban .filter-slot-label{color:#c8c8c8;font-family:'Segoe UI','Helvetica Neue',sans-serif}
+/* 底部栏 */
+.theme-yiban #bottom-bar{background:rgba(45,45,52,.97);box-shadow:0 -2px 10px rgba(0,0,0,.3),0 0 8px rgba(0,255,255,.08)}
+.theme-yiban #selected-count{color:#00cccc}
+.theme-yiban #btn-clear-select{border-color:rgba(0,255,255,.3);color:#cc3333;background:rgba(45,45,52,.8)}
+.theme-yiban #btn-download-separate{background:#00888a;box-shadow:0 0 6px rgba(0,255,255,.2)}
+.theme-yiban #btn-download-concat{background:#8a5500;box-shadow:0 0 6px rgba(232,130,12,.2)}
+/* 弹窗 */
+.theme-yiban .modal-box{background:rgba(45,45,52,.97);border:1px solid rgba(0,255,255,.2);box-shadow:0 4px 20px rgba(0,0,0,.4),0 0 12px rgba(0,255,255,.1)}
+.theme-yiban .modal-box h3{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#00ffff;text-shadow:0 0 8px rgba(0,255,255,.3)}
+.theme-yiban .modal-cancel{background:rgba(80,80,88,.8);color:#c8c8c8}
+.theme-yiban .modal-confirm{background:#00888a;box-shadow:0 0 6px rgba(0,255,255,.2)}
+/* 批量下载弹窗 */
+.theme-yiban .batch-chip{border-color:rgba(0,255,255,.2);color:#c8c8c8;font-family:'Segoe UI','Helvetica Neue',sans-serif}
+.theme-yiban .batch-chip.checked{background:#00888a;color:#fff;border-color:#00cccc;box-shadow:0 0 6px rgba(0,255,255,.2)}
+.theme-yiban .batch-select-all{border-color:#00cccc;color:#00cccc}
+/* 拼接面板 */
+.theme-yiban #concat-sheet{background:rgba(45,45,52,.97)}
+.theme-yiban .concat-h{background:#00888a;box-shadow:0 0 6px rgba(0,255,255,.2)}
+.theme-yiban .concat-v{background:#8a5500}
+/* 缩略图 */
+.theme-yiban .thumb-wrap{border-color:rgba(0,255,255,.15)}
+/* 新增/删除座位 */
+.theme-yiban .add-seat-btn{border-color:rgba(0,255,255,.2);color:#888;background:rgba(45,45,52,.6)}
+.theme-yiban .add-seat-btn:active{background:rgba(0,255,255,.08);border-color:#00cccc;color:#00cccc}
+.theme-yiban .btn-delete-seat{border-color:#cc3333;color:#cc3333}
+/* Toast */
+.theme-yiban .toast{background:rgba(30,30,38,.9);border:1px solid rgba(0,255,255,.2)}
+/* 更新提示条 */
+.theme-yiban .update-bar{background:linear-gradient(135deg,#00888a,#cc3333)}
+/* 清理弹窗按钮 */
+.theme-yiban .cleanup-cancel{background:rgba(80,80,88,.8);color:#c8c8c8}
+.theme-yiban .cleanup-exec{background:#cc3333;box-shadow:0 0 6px rgba(204,51,51,.3)}
 </style>
 </head>
 <body>
@@ -515,8 +626,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.7.0 新增"普通"吉卜力动画风格主题
-const APP_VERSION = 'v1.7.0';
+// v1.8.0 新增"一般"废土赛博朋克未来科技风格主题
+const APP_VERSION = 'v1.8.0';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -830,7 +941,7 @@ function loadThemeState() {
   try {
     let t = localStorage.getItem('app_theme');
     // 【v1.6.2】如果存储的是已删除的主题，重置为默认
-    if (t && t !== 'default' && t !== 'normal') {
+    if (t && t !== 'default' && t !== 'normal' && t !== 'yiban') {
       t = 'default';
       state.currentTheme = 'default';
       localStorage.setItem('app_theme', 'default');
@@ -839,9 +950,10 @@ function loadThemeState() {
   } catch (e) {}
 }
 function applyTheme(theme) {
-  // 【v1.7.0】支持"普通"吉卜力主题
+  // 【v1.8.0】支持"一般"废土赛博朋克主题
   document.body.className = '';
   if (theme === 'normal') document.body.classList.add('theme-normal');
+  if (theme === 'yiban') document.body.classList.add('theme-yiban');
 }
 
 // 【v1.3.18 修复】筛选状态 localStorage 键名（隔离旧键名，避免被旧数据污染）
@@ -1590,11 +1702,12 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         const pad = Math.round(fs_time * 0.3);   // 左右内边距
         const vpad = Math.round(fs_time * 0.2);  // 上下内边距
         const r = 8; // 固定圆角
-        // 【v1.7.0】"普通"吉卜力主题水印：衬线字体 + 奶油色背景 + 深棕文字
+        // 【v1.8.0】"一般"废土赛博朋克主题水印：科技字体 + 铁锈背景 + 霓虹青文字
         const isNormalTheme = document.body.classList.contains('theme-normal');
-        const fontFam = isNormalTheme ? "Georgia, 'KaiTi', 'STKaiti', serif" : '-apple-system, sans-serif';
-        const wmBgColor = isNormalTheme ? 'rgba(255,248,240,0.75)' : 'rgba(0,0,0,0.55)';
-        const wmTextColor = isNormalTheme ? '#4A3728' : '#ffffff';
+        const isYibanTheme = document.body.classList.contains('theme-yiban');
+        const fontFam = isYibanTheme ? "'Segoe UI','Helvetica Neue',sans-serif" : (isNormalTheme ? "Georgia,'KaiTi','STKaiti',serif" : '-apple-system, sans-serif');
+        const wmBgColor = isYibanTheme ? 'rgba(50,50,60,0.7)' : (isNormalTheme ? 'rgba(255,248,240,0.2)' : 'rgba(0,0,0,0.55)');
+        const wmTextColor = isYibanTheme ? '#00ffff' : (isNormalTheme ? '#4A3728' : '#ffffff');
         // 拆分北京时间
         const datePart = beijingTime.split(' ')[0];
         const timePart = beijingTime.split(' ')[1] || beijingTime;
@@ -4174,6 +4287,7 @@ function renderFuncPanelBody() {
     <div class="theme-list" id="theme-list" style="display:none">
       <div class="theme-list-item${(!state.currentTheme || state.currentTheme === 'default') ? ' active' : ''}" data-theme="default"><span>默认</span><span class="theme-check"></span></div>
       <div class="theme-list-item${state.currentTheme === 'normal' ? ' active' : ''}" data-theme="normal"><span>普通</span><span class="theme-check"></span></div>
+      <div class="theme-list-item${state.currentTheme === 'yiban' ? ' active' : ''}" data-theme="yiban"><span>一般</span><span class="theme-check"></span></div>
     </div>
     <div class="func-item" data-func="toggle-auto-share">
       <div class="func-item-label">拍照后下载<div class="func-item-desc">拍照完成后提示下载图片</div></div>
@@ -4298,32 +4412,79 @@ funcPanelBody.addEventListener('click', (e) => {
     const toggle = document.getElementById('func-toggle-upload-wm');
     if (toggle) toggle.classList.toggle('on', state.uploadWatermark);
   }
-  // 【v1.3.0 菜单改名+重置功能】重置应用
+  // 【v1.3.0 菜单改名+重置功能】重置应用（v1.7.2 改为分批异步删除）
   else if (func === 'reset-app') {
     if (!confirm('此操作将清除所有图片和设置，不可恢复。确认重置？')) return;
     closeFuncPanel();
+    // 显示不可关闭的 loading 弹窗
+    cleanupLoadingText.textContent = '正在重置...';
+    cleanupLoadingModal.classList.add('show');
     (async () => {
+      let hasError = false;
       try {
-        // 清空 IndexedDB 中所有图片数据
+        // 第一步：分批异步清空 IndexedDB 所有 store
         if (dbIsFallback) {
           dbFallback = {};
         } else if (dbInstance) {
+          const db = await openDB();
           const storeNames = ['cells', 'seatNames', 'extraSeats', 'deletedSeats'];
+          const BATCH_SIZE = 50;
           for (const storeName of storeNames) {
             try {
-              const tx = dbInstance.transaction(storeName, 'readwrite');
-              const store = tx.objectStore(storeName);
-              store.clear();
-              await new Promise((resolve, reject) => { tx.oncomplete = resolve; tx.onerror = reject; });
-            } catch (e) { console.warn('清空 store 出错:', storeName, e); }
+              // 统计该 store 总数
+              let totalCount = 0;
+              await new Promise((resolve) => {
+                const tx = db.transaction(storeName, 'readonly');
+                const countReq = tx.objectStore(storeName).count();
+                countReq.onsuccess = () => { totalCount = countReq.result; resolve(); };
+                countReq.onerror = () => resolve();
+              });
+              // 分批游标删除
+              let processed = 0;
+              let done = false;
+              while (!done) {
+                const batchKeys = [];
+                await new Promise((resolve) => {
+                  const tx = db.transaction(storeName, 'readonly');
+                  const req = tx.objectStore(storeName).openCursor();
+                  req.onsuccess = (e) => {
+                    const cursor = e.target.result;
+                    if (cursor && batchKeys.length < BATCH_SIZE) {
+                      batchKeys.push(cursor.primaryKey);
+                      cursor.continue();
+                    } else { resolve(); }
+                  };
+                  req.onerror = () => resolve();
+                });
+                if (batchKeys.length === 0) { done = true; break; }
+                // 删除本批
+                for (const key of batchKeys) {
+                  try { await dbDelete(storeName, key); } catch (e) { hasError = true; }
+                }
+                // 清除内存缓存（仅 cells store）
+                if (storeName === 'cells') {
+                  for (const key of batchKeys) {
+                    imageCountCache.set(key, 0);
+                    clearCellBlobCache(key);
+                  }
+                }
+                processed += batchKeys.length;
+                if (totalCount > 0) {
+                  const pct = Math.min(Math.round(processed / totalCount * 100), 99);
+                  cleanupLoadingText.textContent = `正在重置... ${pct}%`;
+                }
+                await new Promise(r => setTimeout(r, 0)); // 让出主线程
+              }
+            } catch (e) { console.warn('清空 store 出错:', storeName, e); hasError = true; }
           }
         }
-        // 清空 localStorage 中所有设置
+        // 第二步：清空 localStorage 中所有设置
         try { localStorage.clear(); } catch (e) {}
-        // 刷新页面，回到初始状态
+        // 第三步：刷新页面，回到初始状态
         location.reload();
       } catch (err) {
         console.error('重置出错:', err);
+        cleanupLoadingModal.classList.remove('show');
         showToast('重置出错，请手动清除浏览器数据');
       }
     })();
