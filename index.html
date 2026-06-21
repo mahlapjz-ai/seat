@@ -280,120 +280,123 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .filter-slot-label.passed{color:#999}
 
 /* ============================================================
-   【v1.6.0 新增】千与千寻主题（.theme-spirited-away 作用域）
-   风格：宫崎骏动画 · 温暖手绘 · 水彩怀旧
+   【v1.6.0 新增】主题系统 - 主题选择列表样式
    ============================================================ */
-/* 全局底色：暖黄→浅绿→天空蓝渐变，模拟千与千寻海报色调 */
-.theme-spirited-away{background:linear-gradient(168deg,#f7e8c8 0%,#eeddc0 25%,#d8e8c4 55%,#c0d8e4 85%,#b8d0dc 100%);color:#4A3728}
-/* 水彩云纹纹理（#app::before 避免遮挡固定元素） */
-.theme-spirited-away #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 70% 35% at 15% 12%,rgba(255,255,255,.4) 0%,transparent 70%),radial-gradient(ellipse 55% 28% at 78% 20%,rgba(255,255,255,.3) 0%,transparent 65%),radial-gradient(ellipse 85% 30% at 45% 78%,rgba(192,216,228,.35) 0%,transparent 55%),radial-gradient(ellipse 40% 20% at 60% 50%,rgba(216,232,196,.2) 0%,transparent 60%)}
-/* 确保交互元素在纹理之上（func-panel/filter-sheet 等已有自身 z-index，不覆盖） */
-.theme-spirited-away #app,.theme-spirited-away .page-header,.theme-spirited-away #bottom-bar,.theme-spirited-away .modal-box,.theme-spirited-away .toast{position:relative;z-index:1}
-/* 页面标题：衬线体 + 暗红墨水感 */
-.theme-spirited-away .page-header{background:linear-gradient(168deg,#f7e8c8 0%,#eeddc0 100%)}
-.theme-spirited-away .page-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#8B4513;letter-spacing:2px;text-shadow:0 1px 3px rgba(139,69,19,.1)}
-.theme-spirited-away .page-title small{color:#a08060!important}
-/* 菜单按钮：暖棕木牌感 */
-.theme-spirited-away .header-btn{background:#8B7355;border:1px solid rgba(139,115,85,.3);border-radius:8px;box-shadow:0 1px 3px rgba(139,115,85,.2)}
-.theme-spirited-away .header-btn:active{opacity:.85;transform:scale(.97)}
-/* 楼层卡片：纸窗/木牌质感，手绘暖棕边框 */
-.theme-spirited-away .floor-btn{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728;border:1.5px dashed #8B7355;border-radius:10px;box-shadow:0 2px 10px rgba(139,115,85,.12);transition:transform .15s,border-color .2s,box-shadow .2s,background .2s}
-.theme-spirited-away .floor-1{background:linear-gradient(135deg,rgba(255,250,238,.93),rgba(248,235,210,.93))}
-.theme-spirited-away .floor-2{background:linear-gradient(135deg,rgba(242,250,238,.93),rgba(225,242,215,.93))}
-.theme-spirited-away .floor-3{background:linear-gradient(135deg,rgba(238,248,255,.93),rgba(215,235,252,.93))}
-.theme-spirited-away .floor-4{background:linear-gradient(135deg,rgba(242,252,238,.93),rgba(220,248,220,.93))}
-.theme-spirited-away .floor-5{background:linear-gradient(135deg,rgba(255,248,235,.93),rgba(252,235,208,.93))}
-.theme-spirited-away .floor-btn:hover{border-color:#c87830;border-style:solid;box-shadow:0 3px 14px rgba(200,120,48,.18);transform:scale(1.01)}
-.theme-spirited-away .floor-btn:active{transform:scale(.98);box-shadow:0 1px 4px rgba(139,115,85,.1)}
-/* 区域按钮：浅奶油/淡绿，暖棕边框 */
-.theme-spirited-away .area-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(255,250,240,.92);border:1.5px solid #a89070;color:#4A3728;box-shadow:0 1px 5px rgba(139,115,85,.08);transition:background .15s,border-color .15s}
-.theme-spirited-away .area-btn:hover{background:rgba(255,242,218,.92);border-color:#8B7355}
-.theme-spirited-away .area-btn:active{transform:scale(.95)}
-.theme-spirited-away .area-btn .area-count{color:#8B7355}
-.theme-spirited-away .area-btn.expanded{border-color:#c87830;background:rgba(255,248,230,.92);border-style:solid}
-.theme-spirited-away .area-btn.has-images{border-color:#6a9a4a;background:linear-gradient(135deg,rgba(232,248,225,.92),rgba(205,235,188,.92));color:#3a6a1a}
-.theme-spirited-away .area-btn.has-images.expanded{border-color:#c87830;background:linear-gradient(135deg,rgba(232,248,225,.92),rgba(205,235,188,.92));color:#3a6a1a}
-/* 座位编号按钮：米白底，暖灰棕边框，小号衬线 */
-.theme-spirited-away .seat-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(255,253,248,.96);border:1px solid #c4b8a4;color:#4A3728;font-size:12px;transition:background .12s,border-color .12s}
-.theme-spirited-away .seat-btn:hover{background:rgba(255,248,230,.96)}
-.theme-spirited-away .seat-btn:active{background:rgba(255,238,205,.96)}
-.theme-spirited-away .seat-btn.expanded{border:2px solid #c87830;background:rgba(255,253,248,.96)}
-/* 座位提示色保留，加暖色光晕融入主题 */
-.theme-spirited-away .seat-btn.has-images-1{border-color:#6aa8cc;background:linear-gradient(135deg,rgba(215,240,252,.92),rgba(188,225,248,.92));color:#1a6a9a;font-weight:700;box-shadow:0 0 8px rgba(106,168,204,.18)}
-.theme-spirited-away .seat-btn.has-images-2{border-color:#d49838;background:linear-gradient(135deg,rgba(255,242,215,.92),rgba(255,228,182,.92));color:#a06010;font-weight:700;box-shadow:0 0 8px rgba(212,152,56,.18)}
-.theme-spirited-away .seat-btn.has-images-1.expanded{border:2px solid #c87830;background:linear-gradient(135deg,rgba(215,240,252,.92),rgba(188,225,248,.92));color:#1a6a9a}
-.theme-spirited-away .seat-btn.has-images-2.expanded{border:2px solid #c87830;background:linear-gradient(135deg,rgba(255,242,215,.92),rgba(255,228,182,.92));color:#a06010}
-/* 座位名称编辑 */
-.theme-spirited-away .seat-name-text{color:#8B7355;border-bottom-color:#8B7355}
-.theme-spirited-away .seat-name-edit-input{color:#8B7355;border-bottom-color:#8B7355}
-.theme-spirited-away .seat-header-label{color:#8B7355}
-.theme-spirited-away .hidden-ts-hint{color:#c87830}
-/* 时段卡片：奶油色纸片感 */
-.theme-spirited-away .timeslot-card{background:rgba(255,253,248,.94);border:1px solid rgba(139,115,85,.12);box-shadow:0 1px 5px rgba(139,115,85,.06)}
-.theme-spirited-away .ts-time{color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif}
-/* 拍照/上传按钮暖化 */
-.theme-spirited-away .ts-btn-capture{background:#7a9e5a}
-.theme-spirited-away .ts-btn-upload{background:#b08840}
-/* 菜单面板：奶油色半透明 + 暖色虚线分隔 */
-.theme-spirited-away .func-panel{background:rgba(255,250,240,.97);border-radius:16px 16px 0 0;box-shadow:0 -4px 20px rgba(139,115,85,.12)}
-.theme-spirited-away .func-panel-header{border-bottom:1px dashed #d4c4a8}
-.theme-spirited-away .func-panel-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
-.theme-spirited-away .func-panel-close{background:#f5ede0;color:#8B7355}
-.theme-spirited-away .func-item{border-bottom:1px dashed #d4c4a8}
-.theme-spirited-away .func-item:active{background:rgba(255,242,218,.5);border-radius:8px}
-.theme-spirited-away .func-item-label{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
-.theme-spirited-away .func-item-label .func-item-desc{color:#8B7355}
-/* 开关按钮暖化 */
-.theme-spirited-away .func-toggle{background:#c4b8a4}
-.theme-spirited-away .func-toggle.on{background:#7a9e5a}
-/* 筛选面板 */
-.theme-spirited-away .filter-sheet{background:rgba(255,250,240,.97);box-shadow:0 -4px 20px rgba(139,115,85,.12)}
-.theme-spirited-away .filter-sheet-header{border-bottom:1px dashed #d4c4a8}
-.theme-spirited-away .filter-sheet-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
-.theme-spirited-away .filter-sheet-close{background:#f5ede0;color:#8B7355}
-.theme-spirited-away .filter-sheet-actions{border-bottom:1px dashed #d4c4a8}
-.theme-spirited-away .filter-action-btn{border-color:#c4b8a4;color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif}
-.theme-spirited-away .filter-action-btn.primary{border-color:#8B7355;color:#8B7355;background:rgba(255,242,218,.5)}
-.theme-spirited-away .filter-slot-item{border-bottom:1px dashed #d4c4a8}
-.theme-spirited-away .filter-slot-label{color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif}
-/* 底部栏 */
-.theme-spirited-away #bottom-bar{background:rgba(255,250,240,.97);box-shadow:0 -2px 10px rgba(139,115,85,.1)}
-.theme-spirited-away #selected-count{color:#8B7355}
-.theme-spirited-away #btn-clear-select{border-color:#c4b8a4;color:#8B7355;background:rgba(255,250,240,.8)}
-.theme-spirited-away #btn-download-separate{background:#7a9e5a}
-.theme-spirited-away #btn-download-concat{background:#b08840}
-/* 弹窗 */
-.theme-spirited-away .modal-box{background:rgba(255,250,240,.97);box-shadow:0 4px 20px rgba(139,115,85,.15)}
-.theme-spirited-away .modal-box h3{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
-.theme-spirited-away .modal-cancel{background:#f5ede0;color:#4A3728}
-.theme-spirited-away .modal-confirm{background:#8B7355}
-/* 批量下载弹窗 */
-.theme-spirited-away .batch-chip{border-color:#c4b8a4;color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif}
-.theme-spirited-away .batch-chip.checked{background:#8B7355;color:#fff;border-color:#8B7355}
-.theme-spirited-away .batch-select-all{border-color:#8B7355;color:#8B7355}
-/* 拼接面板 */
-.theme-spirited-away #concat-sheet{background:rgba(255,250,240,.97)}
-.theme-spirited-away .concat-h{background:#7a9e5a}
-.theme-spirited-away .concat-v{background:#8B7355}
-/* 缩略图边框 */
-.theme-spirited-away .thumb-wrap{border-color:#d4c4a8}
-/* 新增座位按钮 */
-.theme-spirited-away .add-seat-btn{border-color:#c4b8a4;color:#a89070;background:rgba(255,250,240,.6)}
-.theme-spirited-away .add-seat-btn:active{background:rgba(255,242,218,.8);border-color:#8B7355;color:#8B7355}
-/* 删除座位按钮 */
-.theme-spirited-away .btn-delete-seat{border-color:#c87830;color:#c87830}
-/* Toast 提示暖化 */
-.theme-spirited-away .toast{background:rgba(74,55,40,.82)}
-/* 更新提示条 */
-.theme-spirited-away .update-bar{background:linear-gradient(135deg,#8B7355,#a08860)}
-/* 主题选择列表 */
 .theme-list{padding:0 0 4px;margin:0;list-style:none}
-.theme-list-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin:2px 0;border-radius:8px;cursor:pointer;font-size:14px;color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif;transition:background .15s}
-.theme-list-item:active{background:rgba(255,242,218,.5)}
-.theme-list-item.active{background:rgba(139,115,85,.1);font-weight:600}
+.theme-list-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin:2px 0;border-radius:8px;cursor:pointer;font-size:14px;color:#333;transition:background .15s}
+.theme-list-item:active{background:#f5f5f5}
+.theme-list-item.active{background:rgba(24,144,255,.08);font-weight:600}
 .theme-list-item .theme-check{width:20px;height:20px;border-radius:50%;border:2px solid #bbb;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
-.theme-list-item.active .theme-check{background:#8B7355;border-color:#8B7355}
+.theme-list-item.active .theme-check{background:#1890ff;border-color:#1890ff}
 .theme-list-item.active .theme-check::after{content:'✓';color:#fff;font-size:12px;font-weight:700}
+
+/* ============================================================
+   【v1.7.0 新增】"普通"主题 - 吉卜力动画风格
+   色彩提取：天空蓝 / 草地暖绿 / 木质暖棕 / 云朵米白 / 花朵淡粉
+   纹理：CSS 模拟水彩纸纹 + 柔和云影
+   ============================================================ */
+/* 全局底色：天空蓝到草地暖绿渐变，模拟吉卜力经典天空 */
+.theme-normal{background:linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 40%,#f2f0e4 75%,#f8f4ec 100%);color:#4A3728}
+/* 水彩纸纹 + 淡云纹理（#app::before，不遮挡固定元素） */
+.theme-normal #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(200,185,165,.03) 2px,rgba(200,185,165,.03) 4px),radial-gradient(ellipse 65% 30% at 20% 10%,rgba(255,255,255,.45) 0%,transparent 70%),radial-gradient(ellipse 50% 25% at 80% 18%,rgba(255,255,255,.35) 0%,transparent 60%),radial-gradient(ellipse 80% 28% at 50% 82%,rgba(232,242,228,.3) 0%,transparent 55%)}
+/* 交互元素提升层级 */
+.theme-normal #app,.theme-normal .page-header,.theme-normal #bottom-bar,.theme-normal .modal-box,.theme-normal .toast{position:relative;z-index:1}
+/* 页面标题：衬线体 + 暗红墨水感 */
+.theme-normal .page-header{background:linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 100%)}
+.theme-normal .page-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#5B3A1A;letter-spacing:1.5px;text-shadow:0 1px 2px rgba(91,58,26,.08)}
+.theme-normal .page-title small{color:#9a8060!important}
+/* 菜单按钮：暖棕木牌 */
+.theme-normal .header-btn{background:#8B7355;border:1px solid rgba(139,115,85,.25);border-radius:8px;box-shadow:0 1px 3px rgba(139,115,85,.15)}
+.theme-normal .header-btn:active{opacity:.85;transform:scale(.97)}
+/* 楼层卡片：纸窗/木牌质感，手绘暖棕边框 */
+.theme-normal .floor-btn{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728;border:1.5px solid #a89070;border-radius:10px;box-shadow:0 2px 8px rgba(120,100,70,.1);transition:transform .15s,border-color .2s,box-shadow .2s,background .2s}
+.theme-normal .floor-1{background:linear-gradient(135deg,rgba(255,252,245,.94),rgba(250,242,228,.94))}
+.theme-normal .floor-2{background:linear-gradient(135deg,rgba(245,252,245,.94),rgba(230,245,225,.94))}
+.theme-normal .floor-3{background:linear-gradient(135deg,rgba(242,248,255,.94),rgba(225,238,252,.94))}
+.theme-normal .floor-4{background:linear-gradient(135deg,rgba(248,252,245,.94),rgba(232,248,225,.94))}
+.theme-normal .floor-5{background:linear-gradient(135deg,rgba(255,250,242,.94),rgba(252,242,222,.94))}
+.theme-normal .floor-btn:hover{border-color:#7a9a5a;box-shadow:0 3px 12px rgba(122,154,90,.15);transform:scale(1.01)}
+.theme-normal .floor-btn:active{transform:scale(.98)}
+/* 区域按钮：浅奶绿/淡天蓝 */
+.theme-normal .area-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(245,252,245,.92);border:1.5px solid #a8c898;color:#4A3728;box-shadow:0 1px 4px rgba(120,160,90,.08);transition:background .15s,border-color .15s}
+.theme-normal .area-btn:hover{background:rgba(255,248,230,.92);border-color:#8B7355}
+.theme-normal .area-btn:active{transform:scale(.95)}
+.theme-normal .area-btn .area-count{color:#7a9a5a}
+.theme-normal .area-btn.expanded{border-color:#7a9a5a;background:rgba(248,255,240,.92)}
+.theme-normal .area-btn.has-images{border-color:#6a9a4a;background:linear-gradient(135deg,rgba(235,250,228,.92),rgba(210,240,195,.92));color:#3a6a1a}
+.theme-normal .area-btn.has-images.expanded{border-color:#7a9a5a;background:linear-gradient(135deg,rgba(235,250,228,.92),rgba(210,240,195,.92));color:#3a6a1a}
+/* 座位编号按钮：米白底，暖棕边框 */
+.theme-normal .seat-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(255,253,248,.96);border:1px solid #c8bca8;color:#4A3728;font-size:12px;transition:background .12s,border-color .12s}
+.theme-normal .seat-btn:hover{background:rgba(255,248,232,.96)}
+.theme-normal .seat-btn:active{background:rgba(255,240,215,.96)}
+.theme-normal .seat-btn.expanded{border:2px solid #7a9a5a;background:rgba(255,253,248,.96)}
+/* 座位提示色保留，加暖色柔和光晕 */
+.theme-normal .seat-btn.has-images-1{border-color:#5a9ec8;background:linear-gradient(135deg,rgba(218,240,252,.92),rgba(195,228,248,.92));color:#1a6a9a;font-weight:700;box-shadow:0 0 6px rgba(90,158,200,.15)}
+.theme-normal .seat-btn.has-images-2{border-color:#d49838;background:linear-gradient(135deg,rgba(255,244,220,.92),rgba(255,232,190,.92));color:#a06010;font-weight:700;box-shadow:0 0 6px rgba(212,152,56,.15)}
+.theme-normal .seat-btn.has-images-1.expanded{border:2px solid #7a9a5a;background:linear-gradient(135deg,rgba(218,240,252,.92),rgba(195,228,248,.92));color:#1a6a9a}
+.theme-normal .seat-btn.has-images-2.expanded{border:2px solid #7a9a5a;background:linear-gradient(135deg,rgba(255,244,220,.92),rgba(255,232,190,.92));color:#a06010}
+/* 座位名称 */
+.theme-normal .seat-name-text{color:#7a9a5a;border-bottom-color:#a8c898}
+.theme-normal .seat-name-edit-input{color:#4A3728;border-bottom-color:#a8c898}
+.theme-normal .seat-header-label{color:#7a9a5a}
+.theme-normal .hidden-ts-hint{color:#b08840}
+/* 时段卡片：米白纸片 */
+.theme-normal .timeslot-card{background:rgba(255,253,248,.94);border:1px solid rgba(168,200,152,.15);box-shadow:0 1px 4px rgba(120,160,90,.06)}
+.theme-normal .ts-time{color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif}
+/* 拍照/上传按钮 */
+.theme-normal .ts-btn-capture{background:#6a9a4a}
+.theme-normal .ts-btn-upload{background:#b08840}
+/* 菜单面板：奶油色半透明 + 暖色虚线 */
+.theme-normal .func-panel{background:rgba(255,252,245,.97);border-radius:16px 16px 0 0;box-shadow:0 -4px 18px rgba(120,100,70,.1)}
+.theme-normal .func-panel-header{border-bottom:1px dashed #d4c8b0}
+.theme-normal .func-panel-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
+.theme-normal .func-panel-close{background:#f0e8d8;color:#8B7355}
+.theme-normal .func-item{border-bottom:1px dashed #d4c8b0}
+.theme-normal .func-item:active{background:rgba(245,252,245,.5);border-radius:8px}
+.theme-normal .func-item-label{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
+.theme-normal .func-item-label .func-item-desc{color:#9a8060}
+/* 开关按钮 */
+.theme-normal .func-toggle{background:#c8bca8}
+.theme-normal .func-toggle.on{background:#6a9a4a}
+/* 筛选面板 */
+.theme-normal .filter-sheet{background:rgba(255,252,245,.97);box-shadow:0 -4px 18px rgba(120,100,70,.1)}
+.theme-normal .filter-sheet-header{border-bottom:1px dashed #d4c8b0}
+.theme-normal .filter-sheet-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
+.theme-normal .filter-sheet-close{background:#f0e8d8;color:#8B7355}
+.theme-normal .filter-sheet-actions{border-bottom:1px dashed #d4c8b0}
+.theme-normal .filter-action-btn{border-color:#c8bca8;color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif}
+.theme-normal .filter-action-btn.primary{border-color:#7a9a5a;color:#5a7a3a;background:rgba(245,252,245,.5)}
+.theme-normal .filter-slot-item{border-bottom:1px dashed #d4c8b0}
+.theme-normal .filter-slot-label{color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif}
+/* 底部栏 */
+.theme-normal #bottom-bar{background:rgba(255,252,245,.97);box-shadow:0 -2px 8px rgba(120,100,70,.08)}
+.theme-normal #selected-count{color:#7a9a5a}
+.theme-normal #btn-clear-select{border-color:#c8bca8;color:#8B7355;background:rgba(255,252,245,.8)}
+.theme-normal #btn-download-separate{background:#6a9a4a}
+.theme-normal #btn-download-concat{background:#b08840}
+/* 弹窗 */
+.theme-normal .modal-box{background:rgba(255,252,245,.97);box-shadow:0 4px 18px rgba(120,100,70,.12)}
+.theme-normal .modal-box h3{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
+.theme-normal .modal-cancel{background:#f0e8d8;color:#4A3728}
+.theme-normal .modal-confirm{background:#6a9a4a}
+/* 批量下载弹窗 */
+.theme-normal .batch-chip{border-color:#c8bca8;color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif}
+.theme-normal .batch-chip.checked{background:#6a9a4a;color:#fff;border-color:#6a9a4a}
+.theme-normal .batch-select-all{border-color:#7a9a5a;color:#5a7a3a}
+/* 拼接面板 */
+.theme-normal #concat-sheet{background:rgba(255,252,245,.97)}
+.theme-normal .concat-h{background:#6a9a4a}
+.theme-normal .concat-v{background:#8B7355}
+/* 缩略图 */
+.theme-normal .thumb-wrap{border-color:#d4c8b0}
+/* 新增/删除座位 */
+.theme-normal .add-seat-btn{border-color:#c8bca8;color:#a89070;background:rgba(255,252,245,.6)}
+.theme-normal .add-seat-btn:active{background:rgba(245,252,245,.8);border-color:#7a9a5a;color:#5a7a3a}
+.theme-normal .btn-delete-seat{border-color:#c87830;color:#c87830}
+/* Toast */
+.theme-normal .toast{background:rgba(74,55,40,.82)}
+/* 更新提示条 */
+.theme-normal .update-bar{background:linear-gradient(135deg,#6a9a4a,#8B7355)}
 </style>
 </head>
 <body>
@@ -512,8 +515,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.6.1 修复切换主题后菜单面板消失的Bug
-const APP_VERSION = 'v1.6.1';
+// v1.7.0 新增"普通"吉卜力动画风格主题
+const APP_VERSION = 'v1.7.0';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -823,10 +826,22 @@ function saveUploadWatermarkState() { try { localStorage.setItem('seat_upload_wa
 function loadUploadWatermarkState() { try { state.uploadWatermark = localStorage.getItem('seat_upload_watermark') === '1'; } catch (e) {} }
 // 【v1.6.0】主题状态持久化
 function saveThemeState() { try { localStorage.setItem('app_theme', state.currentTheme); } catch (e) {} }
-function loadThemeState() { try { const t = localStorage.getItem('app_theme'); if (t) { state.currentTheme = t; applyTheme(t); } } catch (e) {} }
+function loadThemeState() {
+  try {
+    let t = localStorage.getItem('app_theme');
+    // 【v1.6.2】如果存储的是已删除的主题，重置为默认
+    if (t && t !== 'default' && t !== 'normal') {
+      t = 'default';
+      state.currentTheme = 'default';
+      localStorage.setItem('app_theme', 'default');
+    }
+    if (t) { state.currentTheme = t; applyTheme(t); }
+  } catch (e) {}
+}
 function applyTheme(theme) {
-  document.body.classList.remove('theme-spirited-away');
-  if (theme === 'spirited-away') document.body.classList.add('theme-spirited-away');
+  // 【v1.7.0】支持"普通"吉卜力主题
+  document.body.className = '';
+  if (theme === 'normal') document.body.classList.add('theme-normal');
 }
 
 // 【v1.3.18 修复】筛选状态 localStorage 键名（隔离旧键名，避免被旧数据污染）
@@ -1575,11 +1590,11 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         const pad = Math.round(fs_time * 0.3);   // 左右内边距
         const vpad = Math.round(fs_time * 0.2);  // 上下内边距
         const r = 8; // 固定圆角
-        // 【v1.6.0】千与千寻主题水印：衬线字体 + 奶油色背景 + 深棕文字
-        const isSpiritedAway = document.body.classList.contains('theme-spirited-away');
-        const fontFam = isSpiritedAway ? "Georgia, 'KaiTi', 'STKaiti', serif" : '-apple-system, sans-serif';
-        const wmBgColor = isSpiritedAway ? 'rgba(255,248,240,0.7)' : 'rgba(0,0,0,0.55)';
-        const wmTextColor = isSpiritedAway ? '#4A3728' : '#ffffff';
+        // 【v1.7.0】"普通"吉卜力主题水印：衬线字体 + 奶油色背景 + 深棕文字
+        const isNormalTheme = document.body.classList.contains('theme-normal');
+        const fontFam = isNormalTheme ? "Georgia, 'KaiTi', 'STKaiti', serif" : '-apple-system, sans-serif';
+        const wmBgColor = isNormalTheme ? 'rgba(255,248,240,0.75)' : 'rgba(0,0,0,0.55)';
+        const wmTextColor = isNormalTheme ? '#4A3728' : '#ffffff';
         // 拆分北京时间
         const datePart = beijingTime.split(' ')[0];
         const timePart = beijingTime.split(' ')[1] || beijingTime;
@@ -4158,7 +4173,7 @@ function renderFuncPanelBody() {
     </div>
     <div class="theme-list" id="theme-list" style="display:none">
       <div class="theme-list-item${(!state.currentTheme || state.currentTheme === 'default') ? ' active' : ''}" data-theme="default"><span>默认</span><span class="theme-check"></span></div>
-      <div class="theme-list-item${state.currentTheme === 'spirited-away' ? ' active' : ''}" data-theme="spirited-away"><span>千与千寻</span><span class="theme-check"></span></div>
+      <div class="theme-list-item${state.currentTheme === 'normal' ? ' active' : ''}" data-theme="normal"><span>普通</span><span class="theme-check"></span></div>
     </div>
     <div class="func-item" data-func="toggle-auto-share">
       <div class="func-item-label">拍照后下载<div class="func-item-desc">拍照完成后提示下载图片</div></div>
