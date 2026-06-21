@@ -396,8 +396,8 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
-// v1.5.11 修复清除全部图片大数据量崩溃：分批异步删除 + 进度提示
-const APP_VERSION = 'v1.5.11';
+// v1.5.12 水印第一行新增星期几，背景圆角
+const APP_VERSION = 'v1.5.12';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1440,14 +1440,20 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         // 拆分北京时间
         const datePart = beijingTime.split(' ')[0];
         const timePart = beijingTime.split(' ')[1] || beijingTime;
+        // 【v1.5.12 新增】计算星期几
+        const weekDays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+        const weekDay = weekDays[new Date(datePart).getDay()] || '';
         // 逐行测量宽度
         ctx.font = `300 ${fs_date}px ${fontFam}`;
         const tw1 = ctx.measureText(datePart).width;
+        const twWeek = weekDay ? ctx.measureText(weekDay).width : 0;
         ctx.font = `700 ${fs_time}px ${fontFam}`;
         const tw2 = ctx.measureText(timePart).width;
         ctx.font = `400 ${fs_seat}px ${fontFam}`;
         const tw3 = ctx.measureText(seatName).width;
-        const maxTW = Math.max(tw1, tw2, tw3);
+        // 【v1.5.12】背景宽度：取三行最大值，但第一行（日期+星期几）宽度不超过第二行
+        const tw1Full = tw1 + (twWeek > 0 ? Math.round(fs_date * 0.6) + twWeek : 0); // 日期+间距+星期几
+        const maxTW = Math.max(tw1Full, tw2, tw3);
         const totalH = fs_date + fs_time + fs_seat + lineGap * 2;
         const bgX = 24, bgW = maxTW + pad * 2, bgH = totalH + vpad * 2;
         // 【v1.3.4 Bug2修复】文字水印位置固定：距下边缘 24px，不受 LOGO 影响
@@ -1464,12 +1470,20 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         ctx.lineTo(bgX, bgY + r);
         ctx.quadraticCurveTo(bgX, bgY, bgX + r, bgY);
         ctx.closePath(); ctx.fill();
-        // 绘制三行白色文本：年月日（细体）、时分秒（粗体）、座位编号（常规）
+        // 绘制三行白色文本：年月日+星期几（细体）、时分秒（粗体）、座位编号（常规）
         ctx.textBaseline = 'top'; ctx.fillStyle = '#ffffff';
         const textX = bgX + pad;
         let curY = bgY + vpad;
         ctx.font = `300 ${fs_date}px ${fontFam}`;
         ctx.fillText(datePart, textX, curY);
+        // 【v1.5.12 新增】第一行右侧绘制星期几，右对齐且不超第二行右边缘
+        if (weekDay) {
+          const line2Right = textX + tw2; // 第二行文字右边缘
+          const weekX = line2Right - twWeek;
+          if (weekX > textX + tw1 + Math.round(fs_date * 0.3)) {
+            ctx.fillText(weekDay, weekX, curY);
+          }
+        }
         curY += fs_date + lineGap;
         ctx.font = `700 ${fs_time}px ${fontFam}`;
         ctx.fillText(timePart, textX, curY);
