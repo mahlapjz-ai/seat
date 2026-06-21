@@ -283,8 +283,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
    【v1.6.0 新增】千与千寻主题（.theme-spirited-away 作用域）
    ============================================================ */
 .theme-spirited-away{background:linear-gradient(170deg,#f5e6c8 0%,#e8dcc8 30%,#d4e8c2 65%,#c5dde8 100%);color:#4A3728}
-/* 叠加水彩云纹纹理 */
-.theme-spirited-away::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 40% at 20% 15%,rgba(255,255,255,.35) 0%,transparent 70%),radial-gradient(ellipse 60% 30% at 75% 25%,rgba(255,255,255,.25) 0%,transparent 65%),radial-gradient(ellipse 90% 35% at 50% 80%,rgba(197,221,232,.3) 0%,transparent 60%)}
+/* 叠加水彩云纹纹理（放在 #app 上，避免遮挡菜单按钮等固定元素） */
+.theme-spirited-away #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 40% at 20% 15%,rgba(255,255,255,.35) 0%,transparent 70%),radial-gradient(ellipse 60% 30% at 75% 25%,rgba(255,255,255,.25) 0%,transparent 65%),radial-gradient(ellipse 90% 35% at 50% 80%,rgba(197,221,232,.3) 0%,transparent 60%)}
 .theme-spirited-away #app,.theme-spirited-away .page-header,.theme-spirited-away .func-panel,.theme-spirited-away .filter-sheet,.theme-spirited-away #bottom-bar,.theme-spirited-away .modal-box,.theme-spirited-away .concat-sheet{position:relative;z-index:1}
 /* 页面标题 */
 .theme-spirited-away .page-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#8B4513;text-shadow:0 1px 2px rgba(139,69,19,.12)}
