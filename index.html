@@ -303,7 +303,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .theme-normal #app,.theme-normal #bottom-bar,.theme-normal .toast{position:relative;z-index:1}
 /* 页面标题：衬线体 + 暗红墨水感 */
 .theme-normal .page-header{background:linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 100%);position:relative;z-index:10}
-.theme-normal .page-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#5B3A1A;letter-spacing:1.5px;text-shadow:0 1px 2px rgba(91,58,26,.08)}
+.theme-normal .page-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#5B3A1A;letter-spacing:1.5px;text-shadow:0 1px 2px rgba(91,58,26,.08);pointer-events:auto;position:relative;z-index:1}
 .theme-normal .page-title small{color:#9a8060!important}
 /* 菜单按钮：暖棕木牌 */
 .theme-normal .header-btn{background:#8B7355;border:1px solid rgba(139,115,85,.25);border-radius:8px;box-shadow:0 1px 3px rgba(139,115,85,.15)}
@@ -411,7 +411,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .theme-yiban #app,.theme-yiban #bottom-bar,.theme-yiban .toast{position:relative;z-index:1}
 /* 页面标题：霓虹青发光 */
 .theme-yiban .page-header{background:linear-gradient(170deg,#3c3c46 0%,#4a4540 100%);position:relative;z-index:10}
-.theme-yiban .page-title{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#00ffff;text-shadow:0 0 15px rgba(0,255,255,.5),0 0 5px rgba(0,255,255,.4);letter-spacing:2px;font-weight:700}
+.theme-yiban .page-title{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#00ffff;text-shadow:0 0 15px rgba(0,255,255,.5),0 0 5px rgba(0,255,255,.4);letter-spacing:2px;font-weight:700;pointer-events:auto;position:relative;z-index:1}
 .theme-yiban .page-title small{color:#e8820c!important;text-shadow:none}
 /* 菜单按钮：废土金属感 */
 .theme-yiban .header-btn{background:linear-gradient(135deg,#4a4540,#3c3c46);border:1px solid rgba(0,255,255,.4);border-radius:4px;box-shadow:0 0 6px rgba(0,255,255,.2);color:#00ffff}
@@ -531,7 +531,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .theme-pixel #app,.theme-pixel #bottom-bar,.theme-pixel .toast{position:relative;z-index:1}
 /* 页面标题：像素风 + 硬阴影 */
 .theme-pixel .page-header{background:linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 100%);position:relative;z-index:10}
-.theme-pixel .page-title{font-family:'Courier New',monospace;color:#3e2b1f;letter-spacing:1px;font-weight:900;text-shadow:2px 2px 0 #e0d7c5}
+.theme-pixel .page-title{font-family:'Courier New',monospace;color:#3e2b1f;letter-spacing:1px;font-weight:900;text-shadow:2px 2px 0 #e0d7c5;pointer-events:auto;position:relative;z-index:1}
 .theme-pixel .page-title small{color:#ffaa00!important}
 /* 菜单按钮：木板材质 + 像素描边 */
 .theme-pixel .header-btn{background:#c8a96e;border:4px solid #5a3d2b;border-radius:0;box-shadow:4px 4px 0 #2d2d2d;color:#4a3728;font-family:'Courier New',monospace;font-weight:700;transition:transform .08s,box-shadow .08s}
@@ -639,7 +639,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 <body>
 <div class="update-bar" id="update-bar">有新版本可用，点击刷新</div>
 <!-- 【修复文字消失】page-header 移出 app，作为静态 DOM，不会被 renderMain 重建 -->
-<div class="page-header" id="page-header"><span class="page-title">座位图片管理 <small style="font-size:12px;font-weight:400;color:#999;letter-spacing:0" id="header-version"></small></span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">菜单</button></div>
+<div class="page-header" id="page-header"><span class="page-title" data-action="check-update">座位图片管理 <small style="font-size:12px;font-weight:400;color:#999;letter-spacing:0" id="header-version"></small></span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">菜单</button></div>
 <div id="app"></div>
 <div id="bottom-bar">
   <span id="selected-count">已选 0 个时段</span>
@@ -753,7 +753,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.11';
+const APP_VERSION = 'v1.9.13';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1833,8 +1833,9 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         const isYibanTheme = document.body.classList.contains('theme-yiban');
         const isPixelTheme = document.body.classList.contains('theme-pixel');
         const fontFam = isPixelTheme ? "'Courier New',monospace" : (isYibanTheme ? "'Segoe UI','Helvetica Neue',sans-serif" : (isNormalTheme ? "Georgia,'KaiTi','STKaiti',serif" : '-apple-system, sans-serif'));
-        const wmBgColor = isPixelTheme ? 'rgba(200,169,110,0.35)' : (isYibanTheme ? 'rgba(50,50,60,0.7)' : (isNormalTheme ? 'rgba(255,248,240,0.4)' : 'rgba(0,0,0,0.55)'));
+        const wmBgColor = isPixelTheme ? 'transparent' : (isYibanTheme ? 'rgba(50,50,60,0.7)' : (isNormalTheme ? 'rgba(255,248,240,0.4)' : 'rgba(0,0,0,0.55)'));
         const wmTextColor = isPixelTheme ? '#4a3728' : (isYibanTheme ? '#00ffff' : (isNormalTheme ? '#4A3728' : '#ffffff'));
+        const wmShadowColor = isPixelTheme ? 'rgba(255,255,255,0.9)' : null; // 【v1.9.12】像素主题水印白色阴影
         const r = isPixelTheme ? 0 : 8; // 像素主题直角，其他圆角
         // 拆分北京时间
         const datePart = beijingTime.split(' ')[0];
@@ -1871,24 +1872,30 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         ctx.closePath(); ctx.fill();
         // 绘制三行文本：年月日+星期几（细体）、时分秒（粗体）、座位编号（常规）
         ctx.textBaseline = 'top'; ctx.fillStyle = wmTextColor;
+        // 【v1.9.12】像素主题水印：先绘制白色阴影层，再绘制主文字
+        const wmShadowOff = isPixelTheme ? 2 : 0;
         const textX = bgX + pad;
         let curY = bgY + vpad;
         ctx.font = `300 ${fs_date}px ${fontFam}`;
-        ctx.fillText(datePart, textX, curY);
+        if (wmShadowColor) { ctx.fillStyle = wmShadowColor; ctx.fillText(datePart, textX + wmShadowOff, curY + wmShadowOff); }
+        ctx.fillStyle = wmTextColor; ctx.fillText(datePart, textX, curY);
         // 【v1.5.12 新增】第一行右侧绘制星期几，右对齐且不超第二行右边缘
         if (weekDay) {
           const line2Right = textX + tw2; // 第二行文字右边缘
           const weekX = line2Right - twWeek;
           if (weekX > textX + tw1 + Math.round(fs_date * 0.3)) {
-            ctx.fillText(weekDay, weekX, curY);
+            if (wmShadowColor) { ctx.fillStyle = wmShadowColor; ctx.fillText(weekDay, weekX + wmShadowOff, curY + wmShadowOff); }
+            ctx.fillStyle = wmTextColor; ctx.fillText(weekDay, weekX, curY);
           }
         }
         curY += fs_date + lineGap;
         ctx.font = `700 ${fs_time}px ${fontFam}`;
-        ctx.fillText(timePart, textX, curY);
+        if (wmShadowColor) { ctx.fillStyle = wmShadowColor; ctx.fillText(timePart, textX + wmShadowOff, curY + wmShadowOff); }
+        ctx.fillStyle = wmTextColor; ctx.fillText(timePart, textX, curY);
         curY += fs_time + lineGap;
         ctx.font = `400 ${fs_seat}px ${fontFam}`;
-        ctx.fillText(seatName, textX, curY);
+        if (wmShadowColor) { ctx.fillStyle = wmShadowColor; ctx.fillText(seatName, textX + wmShadowOff, curY + wmShadowOff); }
+        ctx.fillStyle = wmTextColor; ctx.fillText(seatName, textX, curY);
         // 【v1.3.4 Bug2修复】LOGO 绘制在文字水印正上方，文字位置不受影响
         if (state.showLogo) {
           const logoAspect = 913 / 2662; // LOGO 原始宽高比
@@ -4088,6 +4095,30 @@ document.getElementById('btn-clear-select').addEventListener('click', () => { st
 // 【修复文字消失】事件委托改为 document，因为 page-header 已移出 app
 document.addEventListener('click', async (e) => {
   const target = e.target;
+  // 【v1.9.13】标题点击检查更新：使用与楼层/区域按钮相同的 data-action 事件委托通道
+  const checkUpdateBtn = target.closest('[data-action="check-update"]');
+  if (checkUpdateBtn) {
+    if (checkUpdateDebounce) return;
+    checkUpdateDebounce = true;
+    setTimeout(() => { checkUpdateDebounce = false; }, 3000);
+    try {
+      if (swRegistration && swRegistration.waiting) {
+        try { saveFilterState(); } catch(e) {}
+        swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          try { saveFilterState(); } catch(e) {}
+          window.location.reload();
+        });
+        setTimeout(() => {
+          try { saveFilterState(); } catch(e) {}
+          window.location.reload();
+        }, 1000);
+      } else {
+        showToast('已是最新版本');
+      }
+    } catch(e) { console.warn('检查更新失败:', e); }
+    return;
+  }
   const floorBtn = target.closest('[data-action="toggle-floor"]');
   if (floorBtn) { const fid = parseInt(floorBtn.dataset.floor); state.expandedFloors.has(fid) ? state.expandedFloors.delete(fid) : state.expandedFloors.add(fid); saveUIState(); renderMain(); return; }
   const areaBtn = target.closest('[data-action="toggle-area"]');
@@ -4632,6 +4663,10 @@ window.addEventListener('error', (e) => {
   console.warn('全局异常:', e.message);
 });
 
+// 【v1.9.13】全局变量：SW registration 和检查更新防抖，供全局事件委托使用
+let swRegistration = null;
+let checkUpdateDebounce = false;
+
 async function init() {
   try {
     await openDB();
@@ -4661,8 +4696,7 @@ async function init() {
   }
   // 【v1.2.2 微信兼容】SW 注册包裹在 try-catch 中，微信浏览器中失败不影响主功能
   // 微信内置浏览器中跳过 SW 注册（兼容性差且无 PWA 需求）
-  // 【v1.9.5】全局存储 SW registration，供标题点击检查更新使用
-  let swRegistration = null;
+  // 【v1.9.13】swRegistration 移至全局，供全局事件委托中的 check-update 使用
   if (!isWeChat && 'serviceWorker' in navigator) {
     try {
       navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -4705,31 +4739,7 @@ async function init() {
       };
     } catch(e) {}
   }
-  // 【v1.9.5】标题点击检查更新 + 防抖3秒
-  // 【v1.9.11 修复】改用事件委托到 document，避免自定义主题下点击被伪元素遮挡导致事件不触发
-  let checkUpdateDebounce = false;
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.page-title')) return;
-    if (checkUpdateDebounce) return;
-    checkUpdateDebounce = true;
-    setTimeout(() => { checkUpdateDebounce = false; }, 3000);
-    try {
-      if (swRegistration && swRegistration.waiting) {
-        try { saveFilterState(); } catch(e) {}
-        swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          try { saveFilterState(); } catch(e) {}
-          window.location.reload();
-        });
-        setTimeout(() => {
-          try { saveFilterState(); } catch(e) {}
-          window.location.reload();
-        }, 1000);
-      } else {
-        showToast('已是最新版本');
-      }
-    } catch(e) { console.warn('检查更新失败:', e); }
-  });
+  // 【v1.9.13】标题点击检查更新已移至全局事件委托（data-action="check-update"），此处不再绑定
 }
 // 【v1.2.2 微信兼容】最外层 try-catch 防止任何未捕获异常导致页面崩溃
 try {
