@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<!-- 【v1.10.0】粉红主题字体：ZCOOL XiaoWei + Satisfy，font-display:swap 确保不阻塞渲染 -->
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Satisfy&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="seat-icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="seat-icon.png">
@@ -634,6 +638,125 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .theme-pixel .theme-list-item.active{background:#7ec850;border:2px solid #5a8a30}
 .theme-pixel .theme-list-item .theme-check{border-radius:0;border:2px solid #5a3d2b}
 .theme-pixel .theme-list-item.active .theme-check{background:#7ec850;border-color:#5a8a30}
+
+/* ============================================================
+   【v1.10.0 新增】"粉红"主题 - 甜美少女感粉色系
+   关键词：甜美 / 温柔 / 少女 / 仙气 / 芭比 / 棉花糖 / 花朵 / 蕾丝
+   色彩：樱花粉 #ffd1dc / 蜜桃粉 #ffb6c1 / 玫瑰粉 #e8789a / 淡金 #f5deb3 / 浅紫 #d8b4fe
+   字体：ZCOOL XiaoWei（中文圆体手写）+ Satisfy（英文手写）
+   ============================================================ */
+/* 全局底色：柔和粉色渐变 */
+.theme-pink{background:linear-gradient(175deg,#ffd1dc 0%,#ffe4e1 35%,#fff0f5 65%,#ffe8f0 100%);color:#8b3a62}
+/* 柔和云朵纹理（#app::before） */
+.theme-pink #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 60% 30% at 15% 8%,rgba(255,255,255,.5) 0%,transparent 60%),radial-gradient(ellipse 45% 22% at 75% 12%,rgba(255,255,255,.4) 0%,transparent 55%),radial-gradient(ellipse 70% 25% at 50% 85%,rgba(255,228,240,.3) 0%,transparent 50%),radial-gradient(ellipse 35% 18% at 85% 75%,rgba(245,222,179,.15) 0%,transparent 50%)}
+/* 交互元素提升层级 */
+.theme-pink #app,.theme-pink #bottom-bar,.theme-pink .toast{position:relative;z-index:1}
+/* 页面标题：手写圆体 + 玫瑰粉光晕 */
+.theme-pink .page-header{background:linear-gradient(175deg,#ffd1dc 0%,#ffe4e1 100%);position:relative;z-index:10}
+.theme-pink .page-title{font-family:'ZCOOL XiaoWei','Satisfy','PingFang SC','Microsoft YaHei',sans-serif;color:#c2185b;letter-spacing:2px;text-shadow:0 0 12px rgba(232,120,154,.35),0 1px 3px rgba(194,24,91,.1)}
+.theme-pink .page-title small{color:#e8789a!important}
+/* 菜单按钮：粉色糖果质感 */
+.theme-pink .header-btn{background:linear-gradient(135deg,#f48fb1,#ec407a);border:1px solid rgba(236,64,122,.3);border-radius:20px;box-shadow:0 2px 8px rgba(236,64,122,.25);color:#fff;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif}
+.theme-pink .header-btn:active{opacity:.85;transform:scale(.96)}
+/* 楼层卡片：半透明白粉底 + 柔和阴影 + 爱心装饰 */
+.theme-pink .floor-btn{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif;color:#8b3a62;border:1.5px solid #f8bbd0;border-radius:14px;box-shadow:0 3px 12px rgba(236,64,122,.12),inset 0 1px 0 rgba(255,255,255,.6);transition:transform .18s,border-color .2s,box-shadow .2s,background .2s;position:relative;overflow:visible}
+.theme-pink .floor-btn::after{content:'♥';position:absolute;top:-4px;right:-2px;font-size:10px;color:#f48fb1;opacity:.6;pointer-events:none}
+.theme-pink .floor-1{background:linear-gradient(135deg,rgba(255,240,245,.95),rgba(255,228,238,.95))}
+.theme-pink .floor-2{background:linear-gradient(135deg,rgba(255,245,250,.95),rgba(255,232,240,.95))}
+.theme-pink .floor-3{background:linear-gradient(135deg,rgba(255,248,252,.95),rgba(248,220,240,.95))}
+.theme-pink .floor-4{background:linear-gradient(135deg,rgba(255,243,248,.95),rgba(252,228,236,.95))}
+.theme-pink .floor-5{background:linear-gradient(135deg,rgba(255,240,245,.95),rgba(245,222,230,.95))}
+.theme-pink .floor-btn:hover{border-color:#ec407a;box-shadow:0 5px 18px rgba(236,64,122,.2),inset 0 1px 0 rgba(255,255,255,.6);transform:scale(1.02)}
+.theme-pink .floor-btn:active{transform:scale(.98)}
+/* 区域按钮：糖果光泽粉色渐变 */
+.theme-pink .area-btn{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif;background:linear-gradient(135deg,rgba(255,228,238,.92),rgba(252,210,225,.92));border:1.5px solid #f8bbd0;color:#8b3a62;box-shadow:0 1px 6px rgba(236,64,122,.1);transition:background .15s,border-color .15s,box-shadow .15s}
+.theme-pink .area-btn:hover{background:linear-gradient(135deg,rgba(248,187,208,.92),rgba(244,143,177,.92));border-color:#ec407a;box-shadow:0 2px 10px rgba(236,64,122,.2)}
+.theme-pink .area-btn:active{transform:scale(.95)}
+.theme-pink .area-btn .area-count{color:#e8789a}
+.theme-pink .area-btn.expanded{border-color:#ec407a;background:linear-gradient(135deg,rgba(248,187,208,.92),rgba(244,143,177,.92))}
+.theme-pink .area-btn.has-images{border-color:#e8789a;background:linear-gradient(135deg,rgba(248,187,208,.92),rgba(232,120,154,.85));color:#fff}
+.theme-pink .area-btn.has-images.expanded{border-color:#ec407a;background:linear-gradient(135deg,rgba(248,187,208,.92),rgba(232,120,154,.85));color:#fff}
+/* 座位编号按钮：米白淡粉底 + 浅粉边框 */
+.theme-pink .seat-btn{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif;background:rgba(255,252,253,.96);border:1px solid #f3d0db;color:#8b5a72;font-size:12px;transition:background .12s,border-color .12s,box-shadow .12s}
+.theme-pink .seat-btn:hover{background:rgba(255,235,242,.96);border-color:#f48fb1;box-shadow:0 0 6px rgba(244,143,177,.15)}
+.theme-pink .seat-btn:active{background:rgba(248,187,208,.3)}
+.theme-pink .seat-btn.expanded{border:2px solid #ec407a;background:rgba(255,252,253,.96)}
+/* 座位提示色：粉蓝 / 橘粉 / 薄荷绿 */
+.theme-pink .seat-btn.has-images-1{border-color:#90caf9;background:linear-gradient(135deg,rgba(176,216,252,.88),rgba(144,202,249,.88));color:#1565c0;font-weight:700;box-shadow:0 0 8px rgba(144,202,249,.25)}
+.theme-pink .seat-btn.has-images-2{border-color:#ffab91;background:linear-gradient(135deg,rgba(255,204,188,.88),rgba(255,171,145,.88));color:#bf360c;font-weight:700;box-shadow:0 0 8px rgba(255,171,145,.25)}
+.theme-pink .seat-btn.has-images-1.expanded{border:2px solid #ec407a;background:linear-gradient(135deg,rgba(176,216,252,.88),rgba(144,202,249,.88));color:#1565c0}
+.theme-pink .seat-btn.has-images-2.expanded{border:2px solid #ec407a;background:linear-gradient(135deg,rgba(255,204,188,.88),rgba(255,171,145,.88));color:#bf360c}
+/* 座位名称 */
+.theme-pink .seat-name-text{color:#e8789a;border-bottom-color:#f8bbd0}
+.theme-pink .seat-name-edit-input{color:#8b3a62;border-bottom-color:#f8bbd0}
+.theme-pink .seat-header-label{color:#e8789a}
+.theme-pink .hidden-ts-hint{color:#c2185b}
+/* 时段卡片：半透明白粉 */
+.theme-pink .timeslot-card{background:rgba(255,252,253,.95);border:1px solid rgba(248,187,208,.2);box-shadow:0 1px 6px rgba(236,64,122,.06)}
+.theme-pink .ts-time{color:#8b3a62;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif}
+/* 拍照/上传按钮 */
+.theme-pink .ts-btn-capture{background:linear-gradient(135deg,#ec407a,#e8789a);border-radius:20px}
+.theme-pink .ts-btn-upload{background:linear-gradient(135deg,#f5deb3,#e8c97a);color:#8b6914;border-radius:20px}
+/* 菜单面板：半透明白粉 + 圆角 + 柔和阴影 */
+.theme-pink .func-panel{background:rgba(255,248,252,.97);border-radius:20px 20px 0 0;box-shadow:0 -4px 20px rgba(236,64,122,.12)}
+.theme-pink .func-panel-header{border-bottom:1px dashed #f8bbd0}
+.theme-pink .func-panel-title{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif;color:#c2185b}
+.theme-pink .func-panel-close{background:#fce4ec;color:#e8789a;border-radius:12px}
+.theme-pink .func-item{border-bottom:1px dashed #f8bbd0}
+.theme-pink .func-item:active{background:rgba(248,187,208,.2);border-radius:10px}
+.theme-pink .func-item-label{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif;color:#8b3a62}
+.theme-pink .func-item-label .func-item-desc{color:#c4889a}
+/* 开关按钮 */
+.theme-pink .func-toggle{background:#e0c8cc;border-radius:12px}
+.theme-pink .func-toggle.on{background:linear-gradient(135deg,#ec407a,#e8789a);box-shadow:0 0 8px rgba(236,64,122,.3)}
+/* 筛选面板 */
+.theme-pink .filter-sheet{background:rgba(255,248,252,.97);box-shadow:0 -4px 20px rgba(236,64,122,.12)}
+.theme-pink .filter-sheet-header{border-bottom:1px dashed #f8bbd0}
+.theme-pink .filter-sheet-title{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif;color:#c2185b}
+.theme-pink .filter-sheet-close{background:#fce4ec;color:#e8789a;border-radius:12px}
+.theme-pink .filter-sheet-actions{border-bottom:1px dashed #f8bbd0}
+.theme-pink .filter-action-btn{border-color:#f8bbd0;color:#8b3a62;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif;border-radius:16px}
+.theme-pink .filter-action-btn.primary{border-color:#ec407a;color:#c2185b;background:rgba(248,187,208,.2)}
+.theme-pink .filter-slot-item{border-bottom:1px dashed #f8bbd0}
+.theme-pink .filter-slot-label{color:#8b3a62;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif}
+/* 底部栏 */
+.theme-pink #bottom-bar{background:rgba(255,248,252,.97);box-shadow:0 -2px 10px rgba(236,64,122,.08)}
+.theme-pink #selected-count{color:#e8789a}
+.theme-pink #btn-clear-select{border-color:#f8bbd0;color:#e8789a;background:rgba(255,248,252,.8);border-radius:16px}
+.theme-pink #btn-download-separate{background:linear-gradient(135deg,#ec407a,#e8789a);border-radius:20px}
+.theme-pink #btn-download-concat{background:linear-gradient(135deg,#f5deb3,#e8c97a);color:#8b6914;border-radius:20px}
+/* 弹窗 */
+.theme-pink .modal-box{background:rgba(255,248,252,.97);border:1px solid #f8bbd0;border-radius:16px;box-shadow:0 4px 20px rgba(236,64,122,.15)}
+.theme-pink .modal-box h3{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif;color:#c2185b}
+.theme-pink .modal-cancel{background:#fce4ec;color:#8b3a62;border-radius:20px}
+.theme-pink .modal-confirm{background:linear-gradient(135deg,#ec407a,#e8789a);border-radius:20px}
+/* 批量下载弹窗 */
+.theme-pink .batch-chip{border-color:#f8bbd0;color:#8b3a62;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif;border-radius:16px}
+.theme-pink .batch-chip.checked{background:linear-gradient(135deg,#ec407a,#e8789a);color:#fff;border-color:#ec407a}
+.theme-pink .batch-select-all{border-color:#ec407a;color:#c2185b;border-radius:16px}
+/* 拼接面板 */
+.theme-pink #concat-sheet{background:rgba(255,248,252,.97)}
+.theme-pink .concat-h{background:linear-gradient(135deg,#ec407a,#e8789a);border-radius:16px}
+.theme-pink .concat-v{background:linear-gradient(135deg,#f5deb3,#e8c97a);color:#8b6914;border-radius:16px}
+/* 缩略图 */
+.theme-pink .thumb-wrap{border-color:#f8bbd0}
+/* 新增/删除座位 */
+.theme-pink .add-seat-btn{border-color:#f8bbd0;color:#c4889a;background:rgba(255,248,252,.6);border-radius:12px}
+.theme-pink .add-seat-btn:active{background:rgba(248,187,208,.3);border-color:#ec407a;color:#c2185b}
+.theme-pink .btn-delete-seat{border-color:#e57373;color:#e57373}
+/* Toast */
+.theme-pink .toast{background:rgba(139,58,98,.85);border-radius:20px}
+/* 更新提示条 */
+.theme-pink .update-bar{background:linear-gradient(135deg,#ec407a,#f5deb3)}
+/* 清理弹窗按钮 */
+.theme-pink .cleanup-cancel{background:#fce4ec;color:#8b3a62;border-radius:20px}
+.theme-pink .cleanup-exec{background:linear-gradient(135deg,#ec407a,#e8789a);border-radius:20px}
+/* 主题选择列表：粉色风 */
+.theme-pink .theme-list-item{color:#8b3a62;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei',sans-serif}
+.theme-pink .theme-list-item:active{background:rgba(248,187,208,.2)}
+.theme-pink .theme-list-item.active{background:rgba(248,187,208,.25)}
+.theme-pink .theme-list-item .theme-check{border-color:#f8bbd0}
+.theme-pink .theme-list-item.active .theme-check{background:#ec407a;border-color:#ec407a}
 </style>
 </head>
 <body>
@@ -753,7 +876,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.20';
+const APP_VERSION = 'v1.10.0';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1067,7 +1190,7 @@ function loadThemeState() {
   try {
     let t = localStorage.getItem('app_theme');
     // 【v1.6.2】如果存储的是已删除的主题，重置为默认
-    if (t && t !== 'default' && t !== 'normal' && t !== 'yiban' && t !== 'pixel') {
+    if (t && t !== 'default' && t !== 'normal' && t !== 'yiban' && t !== 'pixel' && t !== 'pink') {
       t = 'default';
       state.currentTheme = 'default';
       localStorage.setItem('app_theme', 'default');
@@ -1076,11 +1199,12 @@ function loadThemeState() {
   } catch (e) {}
 }
 function applyTheme(theme) {
-  // 【v1.9.0】支持"像素"主题
+  // 【v1.9.0】支持"像素"主题；【v1.10.0】支持"粉红"主题
   document.body.className = '';
   if (theme === 'normal') document.body.classList.add('theme-normal');
   if (theme === 'yiban') document.body.classList.add('theme-yiban');
   if (theme === 'pixel') document.body.classList.add('theme-pixel');
+  if (theme === 'pink') document.body.classList.add('theme-pink');
 }
 
 // 【v1.3.18 修复】筛选状态 localStorage 键名（隔离旧键名，避免被旧数据污染）
@@ -1832,10 +1956,11 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         const isNormalTheme = document.body.classList.contains('theme-normal');
         const isYibanTheme = document.body.classList.contains('theme-yiban');
         const isPixelTheme = document.body.classList.contains('theme-pixel');
-        const fontFam = isPixelTheme ? "'Courier New',monospace" : (isYibanTheme ? "'Segoe UI','Helvetica Neue',sans-serif" : (isNormalTheme ? "Georgia,'KaiTi','STKaiti',serif" : '-apple-system, sans-serif'));
-        const wmBgColor = isPixelTheme ? 'rgba(200,169,110,0.6)' : (isYibanTheme ? 'rgba(50,50,60,0.7)' : (isNormalTheme ? 'rgba(255,248,240,0.4)' : 'rgba(0,0,0,0.55)'));
-        const wmTextColor = isPixelTheme ? '#2e1f0e' : (isYibanTheme ? '#00ffff' : (isNormalTheme ? '#4A3728' : '#ffffff'));
-        const wmShadowColor = isPixelTheme ? 'rgba(255,255,255,0.9)' : null; // 【v1.9.12】像素主题水印白色阴影
+        const isPinkTheme = document.body.classList.contains('theme-pink');
+        const fontFam = isPixelTheme ? "'Courier New',monospace" : (isYibanTheme ? "'Segoe UI','Helvetica Neue',sans-serif" : (isNormalTheme ? "Georgia,'KaiTi','STKaiti',serif" : (isPinkTheme ? "'ZCOOL XiaoWei','Satisfy','PingFang SC',sans-serif" : '-apple-system, sans-serif')));
+        const wmBgColor = isPixelTheme ? 'rgba(200,169,110,0.6)' : (isYibanTheme ? 'rgba(50,50,60,0.7)' : (isPinkTheme ? 'rgba(255,180,190,0.5)' : (isNormalTheme ? 'rgba(255,248,240,0.4)' : 'rgba(0,0,0,0.55)')));
+        const wmTextColor = isPixelTheme ? '#2e1f0e' : (isYibanTheme ? '#00ffff' : (isPinkTheme ? '#8b3a62' : (isNormalTheme ? '#4A3728' : '#ffffff')));
+        const wmShadowColor = isPixelTheme ? 'rgba(255,255,255,0.9)' : (isPinkTheme ? 'rgba(255,255,255,0.7)' : null); // 【v1.9.12】像素主题水印白色阴影
         const r = isPixelTheme ? 0 : 8; // 像素主题直角，其他圆角
         // 【v1.9.18】像素主题：第一行字号加大、阴影偏移拉远
         const fs_date_draw = isPixelTheme ? Math.round(24 * scaleFactor) : fs_date;
@@ -4467,6 +4592,7 @@ function renderFuncPanelBody() {
       <div class="theme-list-item${state.currentTheme === 'normal' ? ' active' : ''}" data-theme="normal"><span>护眼</span><span class="theme-check"></span></div>
       <div class="theme-list-item${state.currentTheme === 'yiban' ? ' active' : ''}" data-theme="yiban"><span>蓝色</span><span class="theme-check"></span></div>
       <div class="theme-list-item${state.currentTheme === 'pixel' ? ' active' : ''}" data-theme="pixel"><span>怀旧</span><span class="theme-check"></span></div>
+      <div class="theme-list-item${state.currentTheme === 'pink' ? ' active' : ''}" data-theme="pink"><span>粉红</span><span class="theme-check"></span></div>
     </div>
     <div class="func-item" data-func="toggle-auto-share">
       <div class="func-item-label">拍照后下载<div class="func-item-desc">拍照完成后提示下载图片</div></div>
