@@ -815,7 +815,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.39';
+const APP_VERSION = 'v1.9.40';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -2326,6 +2326,13 @@ uploadInput.addEventListener('change', async (e) => {
   if (!file || !currentUploadCellKey) { uploadInput.value = ''; return; }
   const ck = currentUploadCellKey; currentUploadCellKey = null;
   try {
+    // 【v1.9.40】上传入口拦截：检查当前单元格是否有图片正在后台处理
+    const existingData = await getCellData(ck);
+    if (existingData && existingData.images && existingData.images.some(img => img.processingState === 'processing')) {
+      showToast('图片正在处理中，请稍后再试');
+      uploadInput.value = '';
+      return;
+    }
     const parts = ck.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
     const sName = getSeatNameSync(fid, aname, sidx);
     const bTime = getBeijingTime();
@@ -2458,7 +2465,7 @@ uploadInput.addEventListener('change', async (e) => {
   uploadInput.value = '';
 });
 
-// 【v1.9.39】失败自动恢复：重试失败的后台处理任务
+// 【v1.9.40】失败自动恢复：清理损坏数据 + 重新生成高清水印图
 async function retryFailedProcessing(cellKey, imgIdx) {
   // 延迟 2 秒后重试，避免立即重试导致连续失败
   await new Promise(r => setTimeout(r, 2000));
@@ -2469,32 +2476,49 @@ async function retryFailedProcessing(cellKey, imgIdx) {
     if (img.processingState !== 'failed') return; // 已被其他流程处理
     img.processingState = 'processing';
     await saveCellData(cellKey, cd.images);
-    // 重新生成水印图
-    const sName = img.seatName || '';
-    const bTime = img.beijingTime || getBeijingTime();
-    if (img.type === 'capture' && img.data) {
-      // 拍照：data 已有水印图，只需重新存入
-      const sk = cellToSeatKey(cellKey);
-      invalidateTimeslotCache(sk);
-      await renderTimeSlots(sk);
-      img.processingState = 'done';
-      await saveCellData(cellKey, cd.images);
-      notifyPreviewDataReady(cellKey);
-    } else if (img.type === 'upload' && img.data) {
-      const sk = cellToSeatKey(cellKey);
-      invalidateTimeslotCache(sk);
-      await renderTimeSlots(sk);
-      img.processingState = 'done';
-      await saveCellData(cellKey, cd.images);
-      notifyPreviewDataReady(cellKey);
-    } else {
-      // 数据不完整，无法重试，标记为 done 避免无限重试
-      img.processingState = 'done';
-      await saveCellData(cellKey, cd.images);
+
+    // 第一步：清理损坏的缩略图/数据
+    const sk = cellToSeatKey(cellKey);
+
+    // 第二步：尝试从内存 Blob 缓存重新生成
+    const memBlob = getMemoryBlobURL(cellKey, imgIdx);
+    if (memBlob && memBlob.fullBlobURL) {
+      try {
+        // 从内存 Blob 重新转 Base64 存入 IndexedDB
+        const resp = await fetch(memBlob.fullBlobURL);
+        const blob = await resp.blob();
+        const watermarked = await blobToDataURL(blob);
+        img.data = watermarked;
+        img.processingState = 'done';
+        await saveCellData(cellKey, cd.images);
+        invalidateTimeslotCache(sk);
+        await renderTimeSlots(sk);
+        notifyPreviewDataReady(cellKey);
+        return;
+      } catch (e) { console.warn('从内存Blob重试失败:', e); }
     }
+
+    // 第三步：内存缓存不可用，尝试从现有 data 字段重新生成缩略图
+    if (img.data && img.data.length > 100) {
+      // data 字段有有效数据，只需重新生成缩略图
+      try {
+        const thumbnail = await generateThumbnail(img.data);
+        img.thumbnail = thumbnail;
+        img.processingState = 'done';
+        await saveCellData(cellKey, cd.images);
+        invalidateTimeslotCache(sk);
+        await renderTimeSlots(sk);
+        notifyPreviewDataReady(cellKey);
+        return;
+      } catch (e) { console.warn('重新生成缩略图失败:', e); }
+    }
+
+    // 第四步：数据不完整，无法恢复，标记为 done 避免无限重试
+    img.processingState = 'done';
+    await saveCellData(cellKey, cd.images);
   } catch (err) {
     console.error('重试失败:', err);
-    // 重试也失败，标记为 done 避免无限重试（缩略图仍可用）
+    // 重试也失败，标记为 done 避免无限重试
     try {
       const cd2 = await getCellData(cellKey);
       if (cd2 && cd2.images && cd2.images[imgIdx]) {
