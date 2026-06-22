@@ -815,7 +815,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.38';
+const APP_VERSION = 'v1.9.39';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -2241,6 +2241,7 @@ captureInput.addEventListener('change', async (e) => {
       seatName: sName,
       beijingTime: bTime,
       isHighResReady: true,  // 【v1.9.37】拍照同步生成高清 Blob，立即可用
+      processingState: 'processing', // 【v1.9.39】后台存储进行中
       // 【关键】Blob 缓存，预览和拼接直接使用，不依赖 IndexedDB
       _fullBlob: fullBlob,
       _thumbBlob: thumbBlob,
@@ -2276,6 +2277,7 @@ captureInput.addEventListener('change', async (e) => {
           const lastIdx = cd.images.length - 1;
           cd.images[lastIdx].data = watermarked;
           cd.images[lastIdx].thumbnail = thumbnail;
+          cd.images[lastIdx].processingState = 'done'; // 【v1.9.39】后台存储完成
           await saveCellData(ck, cd.images);
           // 数据已持久化，刷新 DOM 缓存
           invalidateTimeslotCache(sk);
@@ -2295,6 +2297,16 @@ captureInput.addEventListener('change', async (e) => {
         }
       } catch (err) {
         console.error('后台存储出错:', err);
+        // 【v1.9.39】标记失败并自动重试
+        try {
+          const cd = await getCellData(ck);
+          if (cd && cd.images && cd.images.length > 0) {
+            const lastIdx = cd.images.length - 1;
+            cd.images[lastIdx].processingState = 'failed';
+            await saveCellData(ck, cd.images);
+            retryFailedProcessing(ck, lastIdx);
+          }
+        } catch (e2) { console.error('标记失败状态出错:', e2); }
       }
     };
     if ('requestIdleCallback' in window) {
@@ -2336,6 +2348,7 @@ uploadInput.addEventListener('change', async (e) => {
       seatName: sName,
       beijingTime: bTime,
       isHighResReady: false, // 【v1.9.37】上传占位图，高清源尚未就绪
+      processingState: 'processing', // 【v1.9.39】后台处理进行中
       _placeholder: true
     };
     images.push(placeholderImg);
@@ -2397,7 +2410,7 @@ uploadInput.addEventListener('change', async (e) => {
           const cd = await getCellData(ck);
           if (cd && cd.images && cd.images.length > 0) {
             const lastIdx = cd.images.length - 1;
-            cd.images[lastIdx] = { data: watermarked, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime, isHighResReady: true };
+            cd.images[lastIdx] = { data: watermarked, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime, isHighResReady: true, processingState: 'done' };
             await saveCellData(ck, cd.images);
             invalidateTimeslotCache(sk);
             await renderTimeSlots(sk);
@@ -2411,7 +2424,7 @@ uploadInput.addEventListener('change', async (e) => {
           const cd = await getCellData(ck);
           if (cd && cd.images && cd.images.length > 0) {
             const lastIdx = cd.images.length - 1;
-            cd.images[lastIdx] = { data: original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime, isHighResReady: true };
+            cd.images[lastIdx] = { data: original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime, isHighResReady: true, processingState: 'done' };
             await saveCellData(ck, cd.images);
             invalidateTimeslotCache(sk);
             await renderTimeSlots(sk);
@@ -2421,6 +2434,16 @@ uploadInput.addEventListener('change', async (e) => {
         }
       } catch (err) {
         console.error('上传后台处理出错:', err);
+        // 【v1.9.39】标记失败并自动重试
+        try {
+          const cd = await getCellData(ck);
+          if (cd && cd.images && cd.images.length > 0) {
+            const lastIdx = cd.images.length - 1;
+            cd.images[lastIdx].processingState = 'failed';
+            await saveCellData(ck, cd.images);
+            retryFailedProcessing(ck, lastIdx);
+          }
+        } catch (e2) { console.error('标记上传失败状态出错:', e2); }
       }
     };
     if ('requestIdleCallback' in window) {
@@ -2434,6 +2457,53 @@ uploadInput.addEventListener('change', async (e) => {
   }
   uploadInput.value = '';
 });
+
+// 【v1.9.39】失败自动恢复：重试失败的后台处理任务
+async function retryFailedProcessing(cellKey, imgIdx) {
+  // 延迟 2 秒后重试，避免立即重试导致连续失败
+  await new Promise(r => setTimeout(r, 2000));
+  try {
+    const cd = await getCellData(cellKey);
+    if (!cd || !cd.images || !cd.images[imgIdx]) return;
+    const img = cd.images[imgIdx];
+    if (img.processingState !== 'failed') return; // 已被其他流程处理
+    img.processingState = 'processing';
+    await saveCellData(cellKey, cd.images);
+    // 重新生成水印图
+    const sName = img.seatName || '';
+    const bTime = img.beijingTime || getBeijingTime();
+    if (img.type === 'capture' && img.data) {
+      // 拍照：data 已有水印图，只需重新存入
+      const sk = cellToSeatKey(cellKey);
+      invalidateTimeslotCache(sk);
+      await renderTimeSlots(sk);
+      img.processingState = 'done';
+      await saveCellData(cellKey, cd.images);
+      notifyPreviewDataReady(cellKey);
+    } else if (img.type === 'upload' && img.data) {
+      const sk = cellToSeatKey(cellKey);
+      invalidateTimeslotCache(sk);
+      await renderTimeSlots(sk);
+      img.processingState = 'done';
+      await saveCellData(cellKey, cd.images);
+      notifyPreviewDataReady(cellKey);
+    } else {
+      // 数据不完整，无法重试，标记为 done 避免无限重试
+      img.processingState = 'done';
+      await saveCellData(cellKey, cd.images);
+    }
+  } catch (err) {
+    console.error('重试失败:', err);
+    // 重试也失败，标记为 done 避免无限重试（缩略图仍可用）
+    try {
+      const cd2 = await getCellData(cellKey);
+      if (cd2 && cd2.images && cd2.images[imgIdx]) {
+        cd2.images[imgIdx].processingState = 'done';
+        await saveCellData(cellKey, cd2.images);
+      }
+    } catch (e3) { /* 放弃 */ }
+  }
+}
 
 // ============================================================
 // 七、下载
@@ -2923,39 +2993,9 @@ async function downloadConcatenated() {
   try {
   const allImageData = await getSelectedImagesData();
   if (allImageData.length === 0) { showToast('无图片可拼接'); return; }
-  // 【v1.9.38】静默等待：有图片未就绪时不阻止，显示提示并等待就绪
-  const hasNotReady = allImageData.some(img => img.isHighResReady === false);
-  if (hasNotReady) {
-    const waitToast = document.createElement('div');
-    waitToast.className = 'toast';
-    waitToast.textContent = '图片处理中，即将预览...';
-    waitToast.style.animation = 'none';
-    waitToast.style.opacity = '1';
-    document.body.appendChild(waitToast);
-    try {
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => { reject(new Error('timeout')); }, 10000);
-        const check = async () => {
-          const fresh = await getSelectedImagesData();
-          if (fresh.every(img => img.isHighResReady !== false)) {
-            clearTimeout(timeout);
-            // 用最新数据替换
-            allImageData.length = 0;
-            fresh.forEach(img => allImageData.push(img));
-            resolve();
-          } else {
-            setTimeout(check, 200);
-          }
-        };
-        check();
-      });
-    } catch (e) {
-      waitToast.remove();
-      showToast('图片处理失败，请重试');
-      return;
-    }
-    waitToast.remove();
-  }
+  // 【v1.9.39】仅拦截拼接预览：有图片正在后台处理时阻止
+  const hasProcessing = allImageData.some(img => img.processingState === 'processing');
+  if (hasProcessing) { showToast('图片正在处理中，请稍后再试'); return; }
 
   if (allImageData.length === 1) {
     showToast('需选择2张及以上图片才能拼接');
