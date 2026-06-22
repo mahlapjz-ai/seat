@@ -409,7 +409,8 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
    ============================================================ */
 /* 全局底色：铁灰到沙黄渐变 + 裂痕纹理 */
 /* 【v1.9.23】使用 repeating-linear-gradient 实现垂直镜像交替平铺，消除拼接痕迹 */
-html.theme-yiban{background:repeating-linear-gradient(170deg,#3c3c46 0%,#4a4540 15%,#5a5040 30%,#6a6050 50%,#5a5040 70%,#4a4540 85%,#3c3c46 100%);min-height:100%;background-size:100% 100vh}
+/* 【v1.9.24】背景改为纯垂直渐变 + repeating-linear-gradient 镜像交替平铺，消除斜向渐变拼接痕迹 */
+html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 15%,#5a5040 30%,#6a6050 50%,#5a5040 70%,#4a4540 85%,#3c3c46 100%);min-height:100%;background-size:100% 100vh}
 .theme-yiban{background:transparent;color:#c8c8c8}
 /* 锈蚀金属纹理 + 扫描线（#app::before） */
 .theme-yiban #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,255,.015) 3px,rgba(0,255,255,.015) 4px),repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(100,90,70,.06) 80px,rgba(100,90,70,.06) 81px),radial-gradient(ellipse 60% 40% at 30% 20%,rgba(0,255,255,.04) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 75% 70%,rgba(204,51,51,.03) 0%,transparent 55%)}
@@ -761,7 +762,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.23';
+const APP_VERSION = 'v1.9.24';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
