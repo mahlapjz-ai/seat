@@ -815,7 +815,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.33';
+const APP_VERSION = 'v1.9.34';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -2554,6 +2554,8 @@ let concatImageData = [];   // 当前可选的全部图片对象
 let concatSelected = [];    // 当前选中的索引（按勾选顺序）
 let concatMaxSelect = 3;    // 最多可选张数
 let concatMode = 'simple';  // 'simple'=2~3张直接选横/竖拼, 'select'=4~6张需选图片
+// 【v1.9.34】拼接选择记忆：记住同一批次的勾选状态，切换时段后重置
+let concatSelectedKey = '';  // 当前批次的标识（selectedCells 排序拼接）
 
 // 【v1.1.1】打开拼接面板
 function openConcatSheet() {
@@ -2780,12 +2782,27 @@ async function doStitch(imgObjs, direction) {
 const EXPAND_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z"/></svg>';
 
 // 【v1.1.1 改造】渲染拼接选择面板（4~6张图片时显示缩略图网格）
+// 【v1.9.34】同一批次（selectedCells 不变）记住勾选状态，切换时段后重置为默认
 function showConcatSelectModal(allImgs) {
   concatImageData = allImgs;
-  concatSelected = [];
-  concatMaxSelect = 3;
-  const defaultCount = Math.min(3, allImgs.length);
-  for (let i = 0; i < defaultCount; i++) concatSelected.push(i);
+  // 计算当前批次标识
+  const currentKey = [...state.selectedCells].sort().join(',');
+  const sameBatch = (currentKey === concatSelectedKey && concatSelected.length > 0);
+  concatSelectedKey = currentKey;
+
+  if (sameBatch) {
+    // 同一批次：恢复上次勾选（过滤掉越界索引）
+    concatSelected = concatSelected.filter(i => i < allImgs.length);
+    if (concatSelected.length === 0) {
+      const defaultCount = Math.min(3, allImgs.length);
+      for (let i = 0; i < defaultCount; i++) concatSelected.push(i);
+    }
+  } else {
+    // 新批次：重置为默认前三张
+    concatSelected = [];
+    const defaultCount = Math.min(3, allImgs.length);
+    for (let i = 0; i < defaultCount; i++) concatSelected.push(i);
+  }
 
   concatSheetTitle.textContent = '选择拼接图片（最多3张）';
   concatBtnsSimple.style.display = 'none';
@@ -4161,7 +4178,7 @@ function updateDownloadBtnText() {
 // 【v1.3.0】事件绑定：下载按钮替换原分享按钮
 document.getElementById('btn-download-separate').addEventListener('click', downloadSelectedImages);
 document.getElementById('btn-download-concat').addEventListener('click', downloadConcatenated);
-document.getElementById('btn-clear-select').addEventListener('click', () => { state.selectedCells = []; document.querySelectorAll('.ts-checkbox.checked').forEach(cb => cb.classList.remove('checked')); updateBottomBar(); });
+document.getElementById('btn-clear-select').addEventListener('click', () => { state.selectedCells = []; concatSelectedKey = ''; document.querySelectorAll('.ts-checkbox.checked').forEach(cb => cb.classList.remove('checked')); updateBottomBar(); });
 
 // ============================================================
 // 十二、事件委托
