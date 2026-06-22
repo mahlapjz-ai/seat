@@ -815,7 +815,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.34';
+const APP_VERSION = 'v1.9.35';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1518,6 +1518,9 @@ async function renderTimeSlots(sk) {
   container.innerHTML = html;
   container.querySelectorAll('img[data-thumb-src]').forEach(img => thumbObserver.observe(img));
   if (needThumbGen) generateMissingThumbnails(fid, aname, sidx);
+  // 【v1.9.35】后台预解码高清图：将同座位所有时段的高清图转为 Blob URL 缓存到内存
+  // 点击预览时可直接从缓存读取，实现秒开
+  requestAnimationFrame(() => preloadFullImages(cellDataMap));
   // 【修复问题2】更新 DOM 缓存：保存渲染结果，下次展开时直接复用
   if (timeslotDOMCache.size >= TIMESLOT_DOM_CACHE_MAX) {
     const firstKey = timeslotDOMCache.keys().next().value;
@@ -1728,6 +1731,53 @@ function clearCellBlobCache(cellKey) {
       }
     });
     memoryBlobCache.delete(cellKey);
+  }
+}
+
+// 【v1.9.35】后台预解码高清图：将 cellDataMap 中的高清图 data 字段转为 Blob URL 缓存到内存
+// 这样点击预览时可直接从 memoryBlobCache 读取，无需再从 IndexedDB 读取 + 转换
+function preloadFullImages(cellDataMap) {
+  if (!cellDataMap) return;
+  for (const [ck, cellData] of Object.entries(cellDataMap)) {
+    if (!cellData || !cellData.images || cellData.images.length === 0) continue;
+    // 已有缓存则跳过
+    if (memoryBlobCache.has(ck)) continue;
+    const arr = [];
+    let hasAny = false;
+    for (let i = 0; i < cellData.images.length; i++) {
+      const img = cellData.images[i];
+      // 优先用 _fullBlob（拍照后的 Blob），否则用 data 字段（Base64）转 Blob
+      if (img._fullBlob) {
+        const fullBlobURL = URL.createObjectURL(img._fullBlob);
+        const thumbBlobURL = img._thumbBlob ? URL.createObjectURL(img._thumbBlob) : '';
+        arr.push({ fullBlobURL, thumbBlobURL, fullBlob: img._fullBlob, thumbBlob: img._thumbBlob || null });
+        hasAny = true;
+      } else if (img.data && !img._placeholder) {
+        try {
+          const fullBlob = dataURLtoBlob(img.data);
+          const fullBlobURL = URL.createObjectURL(fullBlob);
+          let thumbBlobURL = '';
+          let thumbBlob = null;
+          if (img.thumbnail && !img.thumbnail.startsWith('blob:')) {
+            try { thumbBlob = dataURLtoBlob(img.thumbnail); thumbBlobURL = URL.createObjectURL(thumbBlob); } catch(e) {}
+          }
+          arr.push({ fullBlobURL, thumbBlobURL, fullBlob, thumbBlob });
+          hasAny = true;
+        } catch(e) {
+          arr.push(null);
+        }
+      } else {
+        arr.push(null);
+      }
+    }
+    if (hasAny) {
+      // LRU 淘汰
+      if (memoryBlobCache.size >= MEMORY_BLOB_CACHE_MAX) {
+        const firstKey = memoryBlobCache.keys().next().value;
+        clearCellBlobCache(firstKey);
+      }
+      memoryBlobCache.set(ck, arr);
+    }
   }
 }
 /** 添加水印并返回 { fullBlob, thumbBlob }，避免重复 Canvas 操作
@@ -2765,16 +2815,57 @@ async function stitchHorizontal(imgObjs) {
 
 // 【v1.1.0 新增】执行拼接并预览
 // 【v1.2.6 iOS修复】增加 try-catch，失败时提示重试
+// 【v1.9.35】拼接预览优化：超大图缩放至屏幕1.5倍显示，下载保留原版高清
 async function doStitch(imgObjs, direction) {
   try {
     showToast('正在拼接...');
     const blob = direction === 'horizontal' ? await stitchHorizontal(imgObjs) : await stitchVertical(imgObjs);
     if (!blob) { showToast('拼接失败，请重试'); return; }
-    const blobURL = URL.createObjectURL(blob);
-    showPreviewFromBlobURL(blobURL, blob, '拼接结果');
+
+    // 【v1.9.35】生成预览用缩放图：拼接后尺寸超过屏幕2倍时，缩放至屏幕1.5倍
+    const previewBlob = await createPreviewScaledBlob(blob);
+    const previewBlobURL = URL.createObjectURL(previewBlob);
+
+    // 保存：previewBlobURL 用于显示，原始 blob 用于下载
+    showPreviewFromBlobURL(previewBlobURL, blob, '拼接结果');
   } catch (err) {
     console.error('拼接预览出错:', err);
     showToast('拼接失败，请重试');
+  }
+}
+
+// 【v1.9.35】拼接预览缩放：超大图缩至屏幕1.5倍，避免浏览器低质量缩小导致模糊
+// 下载仍使用原始高清 blob，不受影响
+async function createPreviewScaledBlob(originalBlob) {
+  try {
+    const img = new Image();
+    const url = URL.createObjectURL(originalBlob);
+    await new Promise((r, j) => { img.onload = r; img.onerror = j; img.src = url; });
+    URL.revokeObjectURL(url);
+
+    const w = img.naturalWidth, h = img.naturalHeight;
+    const screenW = window.screen.width * (window.devicePixelRatio || 1);
+    const screenH = window.screen.height * (window.devicePixelRatio || 1);
+    const maxDim = Math.max(screenW, screenH);
+    const previewTarget = maxDim * 1.5;
+
+    // 如果拼接图的最大边不超过屏幕2倍，无需缩放
+    if (Math.max(w, h) <= maxDim * 2) {
+      return originalBlob;
+    }
+
+    const scale = previewTarget / Math.max(w, h);
+    const sw = Math.round(w * scale), sh = Math.round(h * scale);
+    const c = document.createElement('canvas');
+    c.width = sw; c.height = sh;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, sw, sh);
+
+    const scaledBlob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.92));
+    return scaledBlob || originalBlob;
+  } catch (e) {
+    // 缩放失败时回退到原图
+    return originalBlob;
   }
 }
 
