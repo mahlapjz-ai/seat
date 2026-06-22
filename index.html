@@ -312,7 +312,9 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
 /* 水彩纸纹 + 淡云纹理（#app::before，不遮挡固定元素） */
 .theme-normal #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(200,185,165,.03) 2px,rgba(200,185,165,.03) 4px),radial-gradient(ellipse 65% 30% at 20% 10%,rgba(255,255,255,.45) 0%,transparent 70%),radial-gradient(ellipse 50% 25% at 80% 18%,rgba(255,255,255,.35) 0%,transparent 60%),radial-gradient(ellipse 80% 28% at 50% 82%,rgba(232,242,228,.3) 0%,transparent 55%)}
 /* 交互元素提升层级（modal-box 已有 fixed 定位，不覆盖其 position） */
-.theme-normal #app,.theme-normal #bottom-bar,.theme-normal .toast{position:relative;z-index:1}
+.theme-normal #app,.theme-normal .toast{position:relative;z-index:1}
+/* 【v1.9.26】#bottom-bar 保持 fixed 定位，仅提升 z-index */
+.theme-normal #bottom-bar{z-index:100}
 /* 页面标题：衬线体 + 暗红墨水感 */
 .theme-normal .page-header{background:linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 100%);position:relative;z-index:10}
 .theme-normal .page-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#5B3A1A;letter-spacing:1.5px;text-shadow:0 1px 2px rgba(91,58,26,.08)}
@@ -423,7 +425,9 @@ html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 
 /* 锈蚀金属纹理 + 扫描线（#app::before） */
 .theme-yiban #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,255,.015) 3px,rgba(0,255,255,.015) 4px),repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(100,90,70,.06) 80px,rgba(100,90,70,.06) 81px),radial-gradient(ellipse 60% 40% at 30% 20%,rgba(0,255,255,.04) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 75% 70%,rgba(204,51,51,.03) 0%,transparent 55%)}
 /* 交互元素提升层级 */
-.theme-yiban #app,.theme-yiban #bottom-bar,.theme-yiban .toast{position:relative;z-index:1}
+.theme-yiban #app,.theme-yiban .toast{position:relative;z-index:1}
+/* 【v1.9.26】#bottom-bar 保持 fixed 定位，仅提升 z-index */
+.theme-yiban #bottom-bar{z-index:100}
 /* 页面标题：霓虹青发光 */
 .theme-yiban .page-header{background:linear-gradient(170deg,#3c3c46 0%,#4a4540 100%);position:relative;z-index:10}
 .theme-yiban .page-title{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#00ffff;text-shadow:0 0 15px rgba(0,255,255,.5),0 0 5px rgba(0,255,255,.4);letter-spacing:2px;font-weight:700}
@@ -544,8 +548,9 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel{background:transparent;color:#4a3728}
 /* 像素点阵纹理（#app::before） */
 .theme-pixel #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px),repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px)}
-/* 交互元素提升层级 */
-.theme-pixel #app,.theme-pixel #bottom-bar,.theme-pixel .toast{position:relative;z-index:1}
+/* 【v1.9.26】#bottom-bar 保持 fixed 定位，仅提升 z-index */
+.theme-pixel #app,.theme-pixel .toast{position:relative;z-index:1}
+.theme-pixel #bottom-bar{z-index:100}
 /* 页面标题：像素风 + 硬阴影 */
 .theme-pixel .page-header{background:linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 100%);position:relative;z-index:10}
 .theme-pixel .page-title{font-family:'Courier New',monospace;color:#3e2b1f;letter-spacing:1px;font-weight:900;text-shadow:2px 2px 0 #e0d7c5}
