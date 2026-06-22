@@ -753,7 +753,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.17';
+const APP_VERSION = 'v1.9.18';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1837,6 +1837,9 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         const wmTextColor = isPixelTheme ? '#2e1f0e' : (isYibanTheme ? '#00ffff' : (isNormalTheme ? '#4A3728' : '#ffffff'));
         const wmShadowColor = isPixelTheme ? 'rgba(255,255,255,0.9)' : null; // 【v1.9.12】像素主题水印白色阴影
         const r = isPixelTheme ? 0 : 8; // 像素主题直角，其他圆角
+        // 【v1.9.18】像素主题：第一行字号加大、阴影偏移拉远
+        const fs_date_draw = isPixelTheme ? Math.round(24 * scaleFactor) : fs_date;
+        const wmShadowOff = isPixelTheme ? 4 : 0;
         // 拆分北京时间
         const datePart = beijingTime.split(' ')[0];
         const timePart = beijingTime.split(' ')[1] || beijingTime;
@@ -1872,11 +1875,9 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         ctx.closePath(); ctx.fill();
         // 绘制三行文本：年月日+星期几（细体）、时分秒（粗体）、座位编号（常规）
         ctx.textBaseline = 'top'; ctx.fillStyle = wmTextColor;
-        // 【v1.9.12】像素主题水印：先绘制白色阴影层，再绘制主文字
-        const wmShadowOff = isPixelTheme ? 2 : 0;
         const textX = bgX + pad;
         let curY = bgY + vpad;
-        ctx.font = `300 ${fs_date}px ${fontFam}`;
+        ctx.font = `300 ${fs_date_draw}px ${fontFam}`;
         if (wmShadowColor) { ctx.fillStyle = wmShadowColor; ctx.fillText(datePart, textX + wmShadowOff, curY + wmShadowOff); }
         ctx.fillStyle = wmTextColor; ctx.fillText(datePart, textX, curY);
         // 【v1.5.12 新增】第一行右侧绘制星期几，右对齐且不超第二行右边缘
@@ -1888,7 +1889,7 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
             ctx.fillStyle = wmTextColor; ctx.fillText(weekDay, weekX, curY);
           }
         }
-        curY += fs_date + lineGap;
+        curY += fs_date_draw + lineGap;
         ctx.font = `700 ${fs_time}px ${fontFam}`;
         if (wmShadowColor) { ctx.fillStyle = wmShadowColor; ctx.fillText(timePart, textX + wmShadowOff, curY + wmShadowOff); }
         ctx.fillStyle = wmTextColor; ctx.fillText(timePart, textX, curY);
