@@ -753,7 +753,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.18';
+const APP_VERSION = 'v1.9.19';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1882,8 +1882,12 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         ctx.fillStyle = wmTextColor; ctx.fillText(datePart, textX, curY);
         // 【v1.5.12 新增】第一行右侧绘制星期几，右对齐且不超第二行右边缘
         if (weekDay) {
+          // 【v1.9.19】像素主题用 fs_date_draw 重新测量星期几宽度，确保右对齐精确
+          const _fsDateForWeek = isPixelTheme ? fs_date_draw : fs_date;
+          ctx.font = `300 ${_fsDateForWeek}px ${fontFam}`;
+          const _twWeek = ctx.measureText(weekDay).width;
           const line2Right = textX + tw2; // 第二行文字右边缘
-          const weekX = line2Right - twWeek;
+          const weekX = line2Right - _twWeek;
           if (weekX > textX + tw1 + Math.round(fs_date * 0.3)) {
             if (wmShadowColor) { ctx.fillStyle = wmShadowColor; ctx.fillText(weekDay, weekX + wmShadowOff, curY + wmShadowOff); }
             ctx.fillStyle = wmTextColor; ctx.fillText(weekDay, weekX, curY);
