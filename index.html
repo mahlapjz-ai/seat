@@ -312,7 +312,7 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
 /* 水彩纸纹 + 淡云纹理（#app::before，不遮挡固定元素） */
 .theme-normal #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(200,185,165,.03) 2px,rgba(200,185,165,.03) 4px),radial-gradient(ellipse 65% 30% at 20% 10%,rgba(255,255,255,.45) 0%,transparent 70%),radial-gradient(ellipse 50% 25% at 80% 18%,rgba(255,255,255,.35) 0%,transparent 60%),radial-gradient(ellipse 80% 28% at 50% 82%,rgba(232,242,228,.3) 0%,transparent 55%)}
 /* 交互元素提升层级（modal-box 已有 fixed 定位，不覆盖其 position） */
-.theme-normal #app,.theme-normal .toast{position:relative;z-index:1}
+.theme-normal #app{position:relative;z-index:1}
 /* 【v1.9.26】#bottom-bar 保持 fixed 定位，仅提升 z-index */
 .theme-normal #bottom-bar{z-index:100}
 /* 页面标题：衬线体 + 暗红墨水感 */
@@ -775,7 +775,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.27';
+const APP_VERSION = 'v1.9.28';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
