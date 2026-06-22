@@ -298,8 +298,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
    纹理：CSS 模拟水彩纸纹 + 柔和云影
    ============================================================ */
 /* 全局底色：天空蓝到草地暖绿渐变，模拟吉卜力经典天空 */
-/* 【v1.9.22】背景设在 html 上，确保画布背景覆盖整个文档，body 透明继承 */
-html.theme-normal{background:linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 40%,#f2f0e4 75%,#f8f4ec 100%);min-height:100%}
+/* 【v1.9.23】使用 repeating-linear-gradient 实现垂直镜像交替平铺，消除拼接痕迹 */
+html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 20%,#f2f0e4 37.5%,#f8f4ec 50%,#f2f0e4 62.5%,#eaf2e4 80%,#e8f0f8 100%);min-height:100%;background-size:100% 100vh}
 .theme-normal{background:transparent;color:#4A3728}
 /* 水彩纸纹 + 淡云纹理（#app::before，不遮挡固定元素） */
 .theme-normal #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(200,185,165,.03) 2px,rgba(200,185,165,.03) 4px),radial-gradient(ellipse 65% 30% at 20% 10%,rgba(255,255,255,.45) 0%,transparent 70%),radial-gradient(ellipse 50% 25% at 80% 18%,rgba(255,255,255,.35) 0%,transparent 60%),radial-gradient(ellipse 80% 28% at 50% 82%,rgba(232,242,228,.3) 0%,transparent 55%)}
@@ -408,8 +408,8 @@ html.theme-normal{background:linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 40%,#f2f0
    色彩：铁灰 + 沙黄 + 霓虹青 #00ffff + 暗红 #cc3333 + 暗橙 #e8820c
    ============================================================ */
 /* 全局底色：铁灰到沙黄渐变 + 裂痕纹理 */
-/* 【v1.9.22】背景设在 html 上，确保画布背景覆盖整个文档，body 透明继承 */
-html.theme-yiban{background:linear-gradient(170deg,#3c3c46 0%,#4a4540 30%,#5a5040 60%,#6a6050 100%);min-height:100%}
+/* 【v1.9.23】使用 repeating-linear-gradient 实现垂直镜像交替平铺，消除拼接痕迹 */
+html.theme-yiban{background:repeating-linear-gradient(170deg,#3c3c46 0%,#4a4540 15%,#5a5040 30%,#6a6050 50%,#5a5040 70%,#4a4540 85%,#3c3c46 100%);min-height:100%;background-size:100% 100vh}
 .theme-yiban{background:transparent;color:#c8c8c8}
 /* 锈蚀金属纹理 + 扫描线（#app::before） */
 .theme-yiban #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,255,.015) 3px,rgba(0,255,255,.015) 4px),repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(100,90,70,.06) 80px,rgba(100,90,70,.06) 81px),radial-gradient(ellipse 60% 40% at 30% 20%,rgba(0,255,255,.04) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 75% 70%,rgba(204,51,51,.03) 0%,transparent 55%)}
@@ -530,8 +530,8 @@ html.theme-yiban{background:linear-gradient(170deg,#3c3c46 0%,#4a4540 30%,#5a504
    悬停：像素位移按压效果 translate(2px,2px) + shadow 缩短
    ============================================================ */
 /* 全局底色：MC 天空淡蓝到草地绿渐变 + 像素点阵纹理 */
-/* 【v1.9.22】背景设在 html 上，确保画布背景覆盖整个文档，body 透明继承 */
-html.theme-pixel{background:linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 60%,#7ec850 100%);min-height:100%}
+/* 【v1.9.23】使用 repeating-linear-gradient 实现垂直镜像交替平铺，消除拼接痕迹 */
+html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 30%,#7ec850 50%,#a8d8a8 70%,#7ec8e8 100%);min-height:100%;background-size:100% 100vh}
 .theme-pixel{background:transparent;color:#4a3728}
 /* 像素点阵纹理（#app::before） */
 .theme-pixel #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px),repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px)}
@@ -761,7 +761,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.22';
+const APP_VERSION = 'v1.9.23';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
