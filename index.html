@@ -3,10 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<!-- 【v1.11.0】粉色主题字体：ZCOOL XiaoWei（纤细圆润）+ Satisfy（英文手写），font-display:swap 确保不阻塞渲染 -->
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Satisfy&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="seat-icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="seat-icon.png">
@@ -638,131 +634,12 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .theme-pixel .theme-list-item.active{background:#7ec850;border:2px solid #5a8a30}
 .theme-pixel .theme-list-item .theme-check{border-radius:0;border:2px solid #5a3d2b}
 .theme-pixel .theme-list-item.active .theme-check{background:#7ec850;border-color:#5a8a30}
-
-/* ============================================================
-   【v1.11.0 新增】"粉色"主题 - 马卡龙幻彩柔雾色系
-   基于插画视觉提取：低饱和马卡龙色 + 镭射偏光 + 柔光漫反射
-   色彩：裸粉 #f0d4dc / 薰衣草紫 #d4c0e8 / 冰蓝 #c8d8f0 / 蜜桃橘 #f0c8b0 / 鎏金 #e8d0a0
-   质感：柔雾磨砂 + 珍珠光泽 + 水彩渐变融边
-   字体：纤细圆润无衬线软黑体（ZCOOL XiaoWei + 系统圆体回退）
-   ============================================================ */
-/* 全局底色：冷调柔粉→薰衣草→冰蓝多段渐变，模拟镭射偏光底色 */
-.theme-pink{background:linear-gradient(160deg,#faf5f8 0%,#f5eef8 25%,#eef2f8 50%,#f8f0f2 75%,#faf5f8 100%);color:#6b4c6e}
-/* 柔光漫反射纹理：珍珠白水光 + 薰衣草柔光 + 冰蓝反光 + 鎏金星点（#app::before） */
-.theme-pink #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 55% 28% at 18% 8%,rgba(255,255,255,.48) 0%,transparent 60%),radial-gradient(ellipse 40% 20% at 78% 12%,rgba(220,210,240,.28) 0%,transparent 55%),radial-gradient(ellipse 60% 28% at 50% 82%,rgba(248,228,240,.22) 0%,transparent 50%),radial-gradient(ellipse 30% 15% at 88% 72%,rgba(200,218,245,.18) 0%,transparent 50%),radial-gradient(ellipse 25% 12% at 10% 65%,rgba(240,210,170,.1) 0%,transparent 50%)}
-/* 交互元素提升层级 */
-.theme-pink #app,.theme-pink #bottom-bar,.theme-pink .toast{position:relative;z-index:1}
-/* 页面标题：纤细圆体 + 薰衣草柔光晕 */
-.theme-pink .page-header{background:linear-gradient(160deg,#faf5f8 0%,#f5eef8 100%);position:relative;z-index:10}
-.theme-pink .page-title{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif;color:#7a4a82;letter-spacing:2px;font-weight:400;text-shadow:0 0 18px rgba(180,140,200,.3),0 0 6px rgba(200,160,220,.15),0 1px 2px rgba(122,74,130,.08)}
-.theme-pink .page-title small{color:#b088b8!important}
-/* 菜单按钮：裸粉→薰衣草渐变 + 珍珠光泽 */
-.theme-pink .header-btn{background:linear-gradient(135deg,#e8c4d8,#d4b0cc);border:1px solid rgba(200,170,210,.3);border-radius:20px;box-shadow:0 2px 10px rgba(180,140,200,.2),inset 0 1px 0 rgba(255,255,255,.4);color:#fff;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif;text-shadow:0 1px 2px rgba(120,80,140,.15)}
-.theme-pink .header-btn:active{opacity:.85;transform:scale(.96)}
-/* 楼层卡片：柔雾半透明 + 珍珠内发光 + 柔和阴影 */
-.theme-pink .floor-btn{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif;color:#6b4c6e;border:1px solid rgba(210,185,215,.35);border-radius:16px;box-shadow:0 4px 16px rgba(180,140,200,.1),inset 0 1px 0 rgba(255,255,255,.5);transition:transform .2s ease,box-shadow .25s ease,border-color .2s}
-.theme-pink .floor-1{background:linear-gradient(135deg,rgba(255,252,255,.9),rgba(250,245,252,.9))}
-.theme-pink .floor-2{background:linear-gradient(135deg,rgba(252,250,255,.9),rgba(248,244,254,.9))}
-.theme-pink .floor-3{background:linear-gradient(135deg,rgba(250,252,255,.9),rgba(245,248,254,.9))}
-.theme-pink .floor-4{background:linear-gradient(135deg,rgba(255,250,252,.9),rgba(252,246,250,.9))}
-.theme-pink .floor-5{background:linear-gradient(135deg,rgba(252,248,255,.9),rgba(248,244,252,.9))}
-.theme-pink .floor-btn:hover{border-color:rgba(190,150,210,.5);box-shadow:0 6px 24px rgba(180,140,200,.16),0 0 16px rgba(200,180,240,.08),inset 0 1px 0 rgba(255,255,255,.5);transform:translateY(-1px)}
-.theme-pink .floor-btn:active{transform:scale(.98)}
-/* 区域按钮：马卡龙渐变 + 糖果光泽 */
-.theme-pink .area-btn{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif;background:linear-gradient(135deg,rgba(248,228,240,.9),rgba(240,225,248,.9));border:1px solid rgba(210,185,215,.3);color:#6b4c6e;box-shadow:0 2px 10px rgba(180,140,200,.08);transition:background .15s,border-color .15s,box-shadow .2s}
-.theme-pink .area-btn:hover{background:linear-gradient(135deg,rgba(240,210,230,.92),rgba(228,200,240,.92));border-color:rgba(190,150,210,.5);box-shadow:0 3px 14px rgba(180,140,200,.15),0 0 8px rgba(200,180,240,.08)}
-.theme-pink .area-btn:active{transform:scale(.96)}
-.theme-pink .area-btn .area-count{color:#a080b0}
-.theme-pink .area-btn.expanded{border-color:rgba(180,140,200,.55);background:linear-gradient(135deg,rgba(240,210,230,.92),rgba(228,200,240,.92))}
-.theme-pink .area-btn.has-images{border-color:#c8a0d0;background:linear-gradient(135deg,rgba(232,200,228,.9),rgba(218,185,230,.9));color:#5a3868}
-.theme-pink .area-btn.has-images.expanded{border-color:rgba(180,140,200,.55);background:linear-gradient(135deg,rgba(232,200,228,.9),rgba(218,185,230,.9));color:#5a3868}
-/* 座位编号按钮：柔雾米白 + 淡紫边框 */
-.theme-pink .seat-btn{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif;background:rgba(255,252,255,.94);border:1px solid rgba(210,195,220,.28);color:#7a5a82;font-size:12px;transition:background .12s,border-color .12s,box-shadow .15s}
-.theme-pink .seat-btn:hover{background:rgba(250,242,250,.94);border-color:rgba(200,170,215,.4);box-shadow:0 0 8px rgba(200,170,230,.12)}
-.theme-pink .seat-btn:active{background:rgba(245,235,248,.94)}
-.theme-pink .seat-btn.expanded{border:2px solid rgba(180,140,200,.55);background:rgba(255,252,255,.94)}
-/* 座位提示色：冰蓝 / 蜜桃橘 / 薄荷绿（冷暖交融） */
-.theme-pink .seat-btn.has-images-1{border-color:#a0c0e0;background:linear-gradient(135deg,rgba(200,218,248,.88),rgba(185,208,242,.88));color:#3a5a8a;font-weight:700;box-shadow:0 0 10px rgba(160,192,224,.2)}
-.theme-pink .seat-btn.has-images-2{border-color:#e0b898;background:linear-gradient(135deg,rgba(248,218,188,.88),rgba(242,200,168,.88));color:#8a5a30;font-weight:700;box-shadow:0 0 10px rgba(224,184,152,.2)}
-.theme-pink .seat-btn.has-images-1.expanded{border:2px solid rgba(180,140,200,.55);background:linear-gradient(135deg,rgba(200,218,248,.88),rgba(185,208,242,.88));color:#3a5a8a}
-.theme-pink .seat-btn.has-images-2.expanded{border:2px solid rgba(180,140,200,.55);background:linear-gradient(135deg,rgba(248,218,188,.88),rgba(242,200,168,.88));color:#8a5a30}
-/* 座位名称 */
-.theme-pink .seat-name-text{color:#a080b0;border-bottom-color:rgba(210,185,215,.4)}
-.theme-pink .seat-name-edit-input{color:#6b4c6e;border-bottom-color:rgba(210,185,215,.4)}
-.theme-pink .seat-header-label{color:#a080b0}
-.theme-pink .hidden-ts-hint{color:#9a6898}
-/* 时段卡片：柔雾半透明 */
-.theme-pink .timeslot-card{background:rgba(255,252,255,.94);border:1px solid rgba(210,195,220,.15);box-shadow:0 2px 10px rgba(180,140,200,.06)}
-.theme-pink .ts-time{color:#6b4c6e;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif}
-/* 拍照/上传按钮 */
-.theme-pink .ts-btn-capture{background:linear-gradient(135deg,#c8a0d0,#b088c0);border-radius:20px;box-shadow:0 2px 8px rgba(180,140,200,.2)}
-.theme-pink .ts-btn-upload{background:linear-gradient(135deg,#e8d0a0,#d4b888);color:#7a6030;border-radius:20px;box-shadow:0 2px 8px rgba(200,170,120,.15)}
-/* 菜单面板：磨砂柔光 + 薰衣草阴影 */
-.theme-pink .func-panel{background:rgba(255,250,255,.97);border-radius:20px 20px 0 0;box-shadow:0 -4px 24px rgba(180,140,200,.12)}
-.theme-pink .func-panel-header{border-bottom:1px dashed rgba(210,185,215,.35)}
-.theme-pink .func-panel-title{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif;color:#7a4a82}
-.theme-pink .func-panel-close{background:rgba(230,210,235,.5);color:#9a70a8;border-radius:12px}
-.theme-pink .func-item{border-bottom:1px dashed rgba(210,185,215,.25)}
-.theme-pink .func-item:active{background:rgba(230,210,240,.15);border-radius:10px}
-.theme-pink .func-item-label{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif;color:#6b4c6e}
-.theme-pink .func-item-label .func-item-desc{color:#a890b0}
-/* 开关按钮 */
-.theme-pink .func-toggle{background:#d8c8d0;border-radius:12px}
-.theme-pink .func-toggle.on{background:linear-gradient(135deg,#c8a0d0,#b088c0);box-shadow:0 0 10px rgba(180,140,200,.25)}
-/* 筛选面板 */
-.theme-pink .filter-sheet{background:rgba(255,250,255,.97);box-shadow:0 -4px 24px rgba(180,140,200,.12)}
-.theme-pink .filter-sheet-header{border-bottom:1px dashed rgba(210,185,215,.35)}
-.theme-pink .filter-sheet-title{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif;color:#7a4a82}
-.theme-pink .filter-sheet-close{background:rgba(230,210,235,.5);color:#9a70a8;border-radius:12px}
-.theme-pink .filter-sheet-actions{border-bottom:1px dashed rgba(210,185,215,.25)}
-.theme-pink .filter-action-btn{border-color:rgba(210,185,215,.35);color:#6b4c6e;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif;border-radius:16px}
-.theme-pink .filter-action-btn.primary{border-color:rgba(180,140,200,.5);color:#7a4a82;background:rgba(230,210,240,.15)}
-.theme-pink .filter-slot-item{border-bottom:1px dashed rgba(210,185,215,.25)}
-.theme-pink .filter-slot-label{color:#6b4c6e;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif}
-/* 底部栏 */
-.theme-pink #bottom-bar{background:rgba(255,250,255,.97);box-shadow:0 -2px 12px rgba(180,140,200,.08)}
-.theme-pink #selected-count{color:#a080b0}
-.theme-pink #btn-clear-select{border-color:rgba(210,185,215,.35);color:#9a70a8;background:rgba(255,250,255,.8);border-radius:16px}
-.theme-pink #btn-download-separate{background:linear-gradient(135deg,#c8a0d0,#b088c0);border-radius:20px;box-shadow:0 2px 8px rgba(180,140,200,.2)}
-.theme-pink #btn-download-concat{background:linear-gradient(135deg,#e8d0a0,#d4b888);color:#7a6030;border-radius:20px;box-shadow:0 2px 8px rgba(200,170,120,.15)}
-/* 弹窗 */
-.theme-pink .modal-box{background:rgba(255,250,255,.97);border:1px solid rgba(210,185,215,.3);border-radius:16px;box-shadow:0 4px 24px rgba(180,140,200,.15)}
-.theme-pink .modal-box h3{font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif;color:#7a4a82}
-.theme-pink .modal-cancel{background:rgba(230,210,235,.5);color:#6b4c6e;border-radius:20px}
-.theme-pink .modal-confirm{background:linear-gradient(135deg,#c8a0d0,#b088c0);border-radius:20px;box-shadow:0 2px 8px rgba(180,140,200,.2)}
-/* 批量下载弹窗 */
-.theme-pink .batch-chip{border-color:rgba(210,185,215,.35);color:#6b4c6e;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif;border-radius:16px}
-.theme-pink .batch-chip.checked{background:linear-gradient(135deg,#c8a0d0,#b088c0);color:#fff;border-color:rgba(180,140,200,.5)}
-.theme-pink .batch-select-all{border-color:rgba(180,140,200,.5);color:#7a4a82;border-radius:16px}
-/* 拼接面板 */
-.theme-pink #concat-sheet{background:rgba(255,250,255,.97)}
-.theme-pink .concat-h{background:linear-gradient(135deg,#c8a0d0,#b088c0);border-radius:16px}
-.theme-pink .concat-v{background:linear-gradient(135deg,#e8d0a0,#d4b888);color:#7a6030;border-radius:16px}
-/* 缩略图 */
-.theme-pink .thumb-wrap{border-color:rgba(210,185,215,.3)}
-/* 新增/删除座位 */
-.theme-pink .add-seat-btn{border-color:rgba(210,185,215,.3);color:#a890b0;background:rgba(255,250,255,.6);border-radius:12px}
-.theme-pink .add-seat-btn:active{background:rgba(230,210,240,.3);border-color:rgba(180,140,200,.5);color:#7a4a82}
-.theme-pink .btn-delete-seat{border-color:#c89898;color:#c89898}
-/* Toast */
-.theme-pink .toast{background:rgba(107,76,110,.85);border-radius:20px}
-/* 更新提示条 */
-.theme-pink .update-bar{background:linear-gradient(135deg,#c8a0d0,#e8d0a0)}
-/* 清理弹窗按钮 */
-.theme-pink .cleanup-cancel{background:rgba(230,210,235,.5);color:#6b4c6e;border-radius:20px}
-.theme-pink .cleanup-exec{background:linear-gradient(135deg,#c8a0d0,#b088c0);border-radius:20px}
-/* 主题选择列表：柔雾风 */
-.theme-pink .theme-list-item{color:#6b4c6e;font-family:'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif}
-.theme-pink .theme-list-item:active{background:rgba(210,185,215,.15)}
-.theme-pink .theme-list-item.active{background:rgba(210,185,215,.2)}
-.theme-pink .theme-list-item .theme-check{border-color:rgba(210,185,215,.4)}
-.theme-pink .theme-list-item.active .theme-check{background:#c8a0d0;border-color:#c8a0d0}
 </style>
 </head>
 <body>
 <div class="update-bar" id="update-bar">有新版本可用，点击刷新</div>
 <!-- 【修复文字消失】page-header 移出 app，作为静态 DOM，不会被 renderMain 重建 -->
-<div class="page-header" id="page-header"><span class="page-title" onclick="handleTitleClick()" style="pointer-events:auto!important;position:relative;z-index:99;cursor:pointer">座位图片管理 <small style="font-size:12px;font-weight:400;color:#999;letter-spacing:0" id="header-version"></small></span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">菜单</button></div>
+<div class="page-header" id="page-header"><span class="page-title" data-action="check-update" onclick="handleTitleClick()">座位图片管理 <small style="font-size:12px;font-weight:400;color:#999;letter-spacing:0" id="header-version"></small></span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">菜单</button></div>
 <div id="app"></div>
 <div id="bottom-bar">
   <span id="selected-count">已选 0 个时段</span>
@@ -876,7 +753,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.11.0';
+const APP_VERSION = 'v1.9.19';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1190,7 +1067,7 @@ function loadThemeState() {
   try {
     let t = localStorage.getItem('app_theme');
     // 【v1.6.2】如果存储的是已删除的主题，重置为默认
-    if (t && t !== 'default' && t !== 'normal' && t !== 'yiban' && t !== 'pixel' && t !== 'pink') {
+    if (t && t !== 'default' && t !== 'normal' && t !== 'yiban' && t !== 'pixel') {
       t = 'default';
       state.currentTheme = 'default';
       localStorage.setItem('app_theme', 'default');
@@ -1199,12 +1076,11 @@ function loadThemeState() {
   } catch (e) {}
 }
 function applyTheme(theme) {
-  // 【v1.9.0】支持"像素"主题；【v1.10.0】支持"粉红"主题
+  // 【v1.9.0】支持"像素"主题
   document.body.className = '';
   if (theme === 'normal') document.body.classList.add('theme-normal');
   if (theme === 'yiban') document.body.classList.add('theme-yiban');
   if (theme === 'pixel') document.body.classList.add('theme-pixel');
-  if (theme === 'pink') document.body.classList.add('theme-pink');
 }
 
 // 【v1.3.18 修复】筛选状态 localStorage 键名（隔离旧键名，避免被旧数据污染）
@@ -1956,11 +1832,10 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         const isNormalTheme = document.body.classList.contains('theme-normal');
         const isYibanTheme = document.body.classList.contains('theme-yiban');
         const isPixelTheme = document.body.classList.contains('theme-pixel');
-        const isPinkTheme = document.body.classList.contains('theme-pink');
-        const fontFam = isPixelTheme ? "'Courier New',monospace" : (isYibanTheme ? "'Segoe UI','Helvetica Neue',sans-serif" : (isNormalTheme ? "Georgia,'KaiTi','STKaiti',serif" : (isPinkTheme ? "'ZCOOL XiaoWei','PingFang SC','Microsoft YaHei UI',sans-serif" : '-apple-system, sans-serif')));
-        const wmBgColor = isPixelTheme ? 'rgba(200,169,110,0.6)' : (isYibanTheme ? 'rgba(50,50,60,0.7)' : (isPinkTheme ? 'rgba(248,235,245,0.45)' : (isNormalTheme ? 'rgba(255,248,240,0.4)' : 'rgba(0,0,0,0.55)')));
-        const wmTextColor = isPixelTheme ? '#2e1f0e' : (isYibanTheme ? '#00ffff' : (isPinkTheme ? '#6b4c6e' : (isNormalTheme ? '#4A3728' : '#ffffff')));
-        const wmShadowColor = isPixelTheme ? 'rgba(255,255,255,0.9)' : (isPinkTheme ? 'rgba(255,255,255,0.6)' : null); // 【v1.9.12】像素主题水印白色阴影
+        const fontFam = isPixelTheme ? "'Courier New',monospace" : (isYibanTheme ? "'Segoe UI','Helvetica Neue',sans-serif" : (isNormalTheme ? "Georgia,'KaiTi','STKaiti',serif" : '-apple-system, sans-serif'));
+        const wmBgColor = isPixelTheme ? 'rgba(200,169,110,0.6)' : (isYibanTheme ? 'rgba(50,50,60,0.7)' : (isNormalTheme ? 'rgba(255,248,240,0.4)' : 'rgba(0,0,0,0.55)'));
+        const wmTextColor = isPixelTheme ? '#2e1f0e' : (isYibanTheme ? '#00ffff' : (isNormalTheme ? '#4A3728' : '#ffffff'));
+        const wmShadowColor = isPixelTheme ? 'rgba(255,255,255,0.9)' : null; // 【v1.9.12】像素主题水印白色阴影
         const r = isPixelTheme ? 0 : 8; // 像素主题直角，其他圆角
         // 【v1.9.18】像素主题：第一行字号加大、阴影偏移拉远
         const fs_date_draw = isPixelTheme ? Math.round(24 * scaleFactor) : fs_date;
@@ -4334,34 +4209,26 @@ document.addEventListener('click', async (e) => {
 });
 
 // ============================================================
-// 十二-A、标题点击检查更新（纯内联事件，最原始最稳固方案）
-// 【v1.9.20】彻底修复：非默认主题下标题点击失效
-//   - 仅使用内联 onclick="handleTitleClick()"，删除所有 addEventListener
-//   - 行内样式 pointer-events:auto!important; z-index:99 防遮挡
-//   - 防抖存储在 window.__updateCheckTimer，3秒内不允许重复触发
-//   - 若点击受阻，控制台输出诊断信息
+// 十二-A、标题点击检查更新（内联事件兜底 + 事件委托双保险）
+// 【v1.9.16】彻底修复：非默认主题下标题点击失效
+//   - 内联 onclick="handleTitleClick()" 最高优先级，不受 CSS/DOM/冒泡影响
+//   - document.body 事件委托作为备份
+//   - 防抖存储在 window.__updateCheckDebounce，全局唯一
 // ============================================================
-window.__updateCheckTimer = false;
+window.__updateCheckDebounce = false;
 function handleTitleClick() {
-  if (window.__updateCheckTimer) return;
-  window.__updateCheckTimer = true;
-  setTimeout(function() { window.__updateCheckTimer = false; }, 3000);
+  if (window.__updateCheckDebounce) return;
+  window.__updateCheckDebounce = true;
+  setTimeout(() => { window.__updateCheckDebounce = false; }, 3000);
   try {
-    var el = document.querySelector('.page-title');
-    if (!el) { console.warn('标题点击受阻，请检查元素覆盖情况'); return; }
-    var cs = window.getComputedStyle(el);
-    if (cs.pointerEvents === 'none') {
-      console.warn('标题点击受阻，请检查元素覆盖情况');
-      return;
-    }
     if (swRegistration && swRegistration.waiting) {
       try { saveFilterState(); } catch(ex) {}
       swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      navigator.serviceWorker.addEventListener('controllerchange', function() {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
         try { saveFilterState(); } catch(ex) {}
         window.location.reload();
       });
-      setTimeout(function() {
+      setTimeout(() => {
         try { saveFilterState(); } catch(ex) {}
         window.location.reload();
       }, 1000);
@@ -4370,6 +4237,11 @@ function handleTitleClick() {
     }
   } catch(ex) { console.warn('检查更新失败:', ex); }
 }
+// 事件委托备份：通过 data-action="check-update" 匹配，调用同一个 handleTitleClick
+document.body.addEventListener('click', function(e) {
+  if (!e.target.closest('[data-action="check-update"]')) return;
+  handleTitleClick();
+}, true);
 
 // ============================================================
 // 十二-B、时段筛选面板
@@ -4592,7 +4464,6 @@ function renderFuncPanelBody() {
       <div class="theme-list-item${state.currentTheme === 'normal' ? ' active' : ''}" data-theme="normal"><span>护眼</span><span class="theme-check"></span></div>
       <div class="theme-list-item${state.currentTheme === 'yiban' ? ' active' : ''}" data-theme="yiban"><span>蓝色</span><span class="theme-check"></span></div>
       <div class="theme-list-item${state.currentTheme === 'pixel' ? ' active' : ''}" data-theme="pixel"><span>怀旧</span><span class="theme-check"></span></div>
-      <div class="theme-list-item${state.currentTheme === 'pink' ? ' active' : ''}" data-theme="pink"><span>粉色</span><span class="theme-check"></span></div>
     </div>
     <div class="func-item" data-func="toggle-auto-share">
       <div class="func-item-label">拍照后下载<div class="func-item-desc">拍照完成后提示下载图片</div></div>
