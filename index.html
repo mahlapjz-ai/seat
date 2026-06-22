@@ -775,7 +775,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.25';
+const APP_VERSION = 'v1.9.27';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1403,6 +1403,12 @@ async function renderTimeSlots(sk) {
     container.querySelectorAll('img[data-thumb-src]').forEach(img => thumbObserver.observe(img));
     // 【修复Bug1】复用缓存时也要应用筛选显隐
     applyTimeslotFilter(container);
+    // 【v1.9.27】复用缓存时同步勾选状态：缓存 HTML 是快照，不含最新的选中状态
+    container.querySelectorAll('.ts-checkbox').forEach(cb => {
+      const ck = cb.dataset.cellKey;
+      if (state.selectedCells.includes(ck)) cb.classList.add('checked');
+      else cb.classList.remove('checked');
+    });
     return;
   }
 
