@@ -424,8 +424,8 @@ html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 
 .theme-yiban{background:transparent;color:#c8c8c8}
 /* 锈蚀金属纹理 + 扫描线（#app::before） */
 .theme-yiban #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,255,.015) 3px,rgba(0,255,255,.015) 4px),repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(100,90,70,.06) 80px,rgba(100,90,70,.06) 81px),radial-gradient(ellipse 60% 40% at 30% 20%,rgba(0,255,255,.04) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 75% 70%,rgba(204,51,51,.03) 0%,transparent 55%)}
-/* 交互元素提升层级 */
-.theme-yiban #app,.theme-yiban .toast{position:relative;z-index:1}
+/* 【v1.9.29】.toast 保持 fixed 定位，仅 #app 提升 z-index */
+.theme-yiban #app{position:relative;z-index:1}
 /* 【v1.9.26】#bottom-bar 保持 fixed 定位，仅提升 z-index */
 .theme-yiban #bottom-bar{z-index:100}
 /* 页面标题：霓虹青发光 */
@@ -548,8 +548,8 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel{background:transparent;color:#4a3728}
 /* 像素点阵纹理（#app::before） */
 .theme-pixel #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px),repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px)}
-/* 【v1.9.26】#bottom-bar 保持 fixed 定位，仅提升 z-index */
-.theme-pixel #app,.theme-pixel .toast{position:relative;z-index:1}
+/* 【v1.9.29】.toast 保持 fixed 定位，仅 #app 提升 z-index */
+.theme-pixel #app{position:relative;z-index:1}
 .theme-pixel #bottom-bar{z-index:100}
 /* 页面标题：像素风 + 硬阴影 */
 .theme-pixel .page-header{background:linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 100%);position:relative;z-index:10}
@@ -775,7 +775,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.28';
+const APP_VERSION = 'v1.9.29';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
