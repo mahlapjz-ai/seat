@@ -815,7 +815,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.36';
+const APP_VERSION = 'v1.9.37';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -2240,6 +2240,7 @@ captureInput.addEventListener('change', async (e) => {
       createdAt: Date.now(),
       seatName: sName,
       beijingTime: bTime,
+      isHighResReady: true,  // 【v1.9.37】拍照同步生成高清 Blob，立即可用
       // 【关键】Blob 缓存，预览和拼接直接使用，不依赖 IndexedDB
       _fullBlob: fullBlob,
       _thumbBlob: thumbBlob,
@@ -2334,6 +2335,7 @@ uploadInput.addEventListener('change', async (e) => {
       createdAt: Date.now(),
       seatName: sName,
       beijingTime: bTime,
+      isHighResReady: false, // 【v1.9.37】上传占位图，高清源尚未就绪
       _placeholder: true
     };
     images.push(placeholderImg);
@@ -2395,7 +2397,7 @@ uploadInput.addEventListener('change', async (e) => {
           const cd = await getCellData(ck);
           if (cd && cd.images && cd.images.length > 0) {
             const lastIdx = cd.images.length - 1;
-            cd.images[lastIdx] = { data: watermarked, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime };
+            cd.images[lastIdx] = { data: watermarked, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime, isHighResReady: true };
             await saveCellData(ck, cd.images);
             invalidateTimeslotCache(sk);
             await renderTimeSlots(sk);
@@ -2409,7 +2411,7 @@ uploadInput.addEventListener('change', async (e) => {
           const cd = await getCellData(ck);
           if (cd && cd.images && cd.images.length > 0) {
             const lastIdx = cd.images.length - 1;
-            cd.images[lastIdx] = { data: original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime };
+            cd.images[lastIdx] = { data: original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime, isHighResReady: true };
             await saveCellData(ck, cd.images);
             invalidateTimeslotCache(sk);
             await renderTimeSlots(sk);
@@ -2921,8 +2923,9 @@ async function downloadConcatenated() {
   try {
   const allImageData = await getSelectedImagesData();
   if (allImageData.length === 0) { showToast('无图片可拼接'); return; }
-  // 【v1.9.35】门禁：检查所有图片高清源是否就绪
-  const notReady = allImageData.some(img => !img._fullBlob && !img._fullBlobURL && !img.data);
+  // 【v1.9.37】门禁：检查所有图片高清源是否就绪（isHighResReady 标记）
+  // 兼容旧数据：isHighResReady 为 undefined 时，回退检查 data 是否非空
+  const notReady = allImageData.some(img => img.isHighResReady === false);
   if (notReady) { showToast('图片正在处理中，请稍后再试'); return; }
 
   if (allImageData.length === 1) {
