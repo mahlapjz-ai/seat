@@ -639,7 +639,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 <body>
 <div class="update-bar" id="update-bar">有新版本可用，点击刷新</div>
 <!-- 【修复文字消失】page-header 移出 app，作为静态 DOM，不会被 renderMain 重建 -->
-<div class="page-header" id="page-header"><span class="page-title" data-action="check-update">座位图片管理 <small style="font-size:12px;font-weight:400;color:#999;letter-spacing:0" id="header-version"></small></span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">菜单</button></div>
+<div class="page-header" id="page-header"><span class="page-title" data-action="check-update" onclick="handleTitleClick()">座位图片管理 <small style="font-size:12px;font-weight:400;color:#999;letter-spacing:0" id="header-version"></small></span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">菜单</button></div>
 <div id="app"></div>
 <div id="bottom-bar">
   <span id="selected-count">已选 0 个时段</span>
@@ -753,7 +753,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.15';
+const APP_VERSION = 'v1.9.17';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1833,8 +1833,8 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         const isYibanTheme = document.body.classList.contains('theme-yiban');
         const isPixelTheme = document.body.classList.contains('theme-pixel');
         const fontFam = isPixelTheme ? "'Courier New',monospace" : (isYibanTheme ? "'Segoe UI','Helvetica Neue',sans-serif" : (isNormalTheme ? "Georgia,'KaiTi','STKaiti',serif" : '-apple-system, sans-serif'));
-        const wmBgColor = isPixelTheme ? 'rgba(200,169,110,0.4)' : (isYibanTheme ? 'rgba(50,50,60,0.7)' : (isNormalTheme ? 'rgba(255,248,240,0.4)' : 'rgba(0,0,0,0.55)'));
-        const wmTextColor = isPixelTheme ? '#4a3728' : (isYibanTheme ? '#00ffff' : (isNormalTheme ? '#4A3728' : '#ffffff'));
+        const wmBgColor = isPixelTheme ? 'rgba(200,169,110,0.6)' : (isYibanTheme ? 'rgba(50,50,60,0.7)' : (isNormalTheme ? 'rgba(255,248,240,0.4)' : 'rgba(0,0,0,0.55)'));
+        const wmTextColor = isPixelTheme ? '#2e1f0e' : (isYibanTheme ? '#00ffff' : (isNormalTheme ? '#4A3728' : '#ffffff'));
         const wmShadowColor = isPixelTheme ? 'rgba(255,255,255,0.9)' : null; // 【v1.9.12】像素主题水印白色阴影
         const r = isPixelTheme ? 0 : 8; // 像素主题直角，其他圆角
         // 拆分北京时间
@@ -4204,40 +4204,39 @@ document.addEventListener('click', async (e) => {
 });
 
 // ============================================================
-// 十二-A、标题点击检查更新（独立事件委托，capture 阶段捕获）
-// 【v1.9.15】彻底修复：非默认主题下标题点击失效
-//   - 独立于全局事件委托，注册在 document.body 上
-//   - 使用 capture 阶段确保最先捕获点击
-//   - 通过 data-action="check-update" 匹配标题
-//   - 防抖 3 秒，不依赖主题或全局变量初始化顺序
+// 十二-A、标题点击检查更新（内联事件兜底 + 事件委托双保险）
+// 【v1.9.16】彻底修复：非默认主题下标题点击失效
+//   - 内联 onclick="handleTitleClick()" 最高优先级，不受 CSS/DOM/冒泡影响
+//   - document.body 事件委托作为备份
+//   - 防抖存储在 window.__updateCheckDebounce，全局唯一
 // ============================================================
-(function() {
-  let _checkUpdateLock = false;
-  document.body.addEventListener('click', function(e) {
-    const el = e.target.closest('[data-action="check-update"]');
-    if (!el) return;
-    console.log('[check-update] 标题被点击'); // 临时调试，上线前移除
-    if (_checkUpdateLock) return;
-    _checkUpdateLock = true;
-    setTimeout(() => { _checkUpdateLock = false; }, 3000);
-    try {
-      if (swRegistration && swRegistration.waiting) {
+window.__updateCheckDebounce = false;
+function handleTitleClick() {
+  if (window.__updateCheckDebounce) return;
+  window.__updateCheckDebounce = true;
+  setTimeout(() => { window.__updateCheckDebounce = false; }, 3000);
+  try {
+    if (swRegistration && swRegistration.waiting) {
+      try { saveFilterState(); } catch(ex) {}
+      swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
         try { saveFilterState(); } catch(ex) {}
-        swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          try { saveFilterState(); } catch(ex) {}
-          window.location.reload();
-        });
-        setTimeout(() => {
-          try { saveFilterState(); } catch(ex) {}
-          window.location.reload();
-        }, 1000);
-      } else {
-        showToast('已是最新版本');
-      }
-    } catch(ex) { console.warn('检查更新失败:', ex); }
-  }, true); // capture = true，确保在冒泡阶段之前捕获
-})();
+        window.location.reload();
+      });
+      setTimeout(() => {
+        try { saveFilterState(); } catch(ex) {}
+        window.location.reload();
+      }, 1000);
+    } else {
+      showToast('已是最新版本');
+    }
+  } catch(ex) { console.warn('检查更新失败:', ex); }
+}
+// 事件委托备份：通过 data-action="check-update" 匹配，调用同一个 handleTitleClick
+document.body.addEventListener('click', function(e) {
+  if (!e.target.closest('[data-action="check-update"]')) return;
+  handleTitleClick();
+}, true);
 
 // ============================================================
 // 十二-B、时段筛选面板
