@@ -639,7 +639,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 <body>
 <div class="update-bar" id="update-bar">有新版本可用，点击刷新</div>
 <!-- 【修复文字消失】page-header 移出 app，作为静态 DOM，不会被 renderMain 重建 -->
-<div class="page-header" id="page-header"><span class="page-title" data-action="check-update" onclick="handleTitleClick()">座位图片管理 <small style="font-size:12px;font-weight:400;color:#999;letter-spacing:0" id="header-version"></small></span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">菜单</button></div>
+<div class="page-header" id="page-header"><span class="page-title" onclick="handleTitleClick()" style="pointer-events:auto!important;position:relative;z-index:99;cursor:pointer">座位图片管理 <small style="font-size:12px;font-weight:400;color:#999;letter-spacing:0" id="header-version"></small></span><button id="func-btn" class="header-btn btn-batch-dl" data-action="open-func-panel" style="font-size:14px;padding:8px 16px">菜单</button></div>
 <div id="app"></div>
 <div id="bottom-bar">
   <span id="selected-count">已选 0 个时段</span>
@@ -753,7 +753,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.19';
+const APP_VERSION = 'v1.9.20';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -4209,26 +4209,34 @@ document.addEventListener('click', async (e) => {
 });
 
 // ============================================================
-// 十二-A、标题点击检查更新（内联事件兜底 + 事件委托双保险）
-// 【v1.9.16】彻底修复：非默认主题下标题点击失效
-//   - 内联 onclick="handleTitleClick()" 最高优先级，不受 CSS/DOM/冒泡影响
-//   - document.body 事件委托作为备份
-//   - 防抖存储在 window.__updateCheckDebounce，全局唯一
+// 十二-A、标题点击检查更新（纯内联事件，最原始最稳固方案）
+// 【v1.9.20】彻底修复：非默认主题下标题点击失效
+//   - 仅使用内联 onclick="handleTitleClick()"，删除所有 addEventListener
+//   - 行内样式 pointer-events:auto!important; z-index:99 防遮挡
+//   - 防抖存储在 window.__updateCheckTimer，3秒内不允许重复触发
+//   - 若点击受阻，控制台输出诊断信息
 // ============================================================
-window.__updateCheckDebounce = false;
+window.__updateCheckTimer = false;
 function handleTitleClick() {
-  if (window.__updateCheckDebounce) return;
-  window.__updateCheckDebounce = true;
-  setTimeout(() => { window.__updateCheckDebounce = false; }, 3000);
+  if (window.__updateCheckTimer) return;
+  window.__updateCheckTimer = true;
+  setTimeout(function() { window.__updateCheckTimer = false; }, 3000);
   try {
+    var el = document.querySelector('.page-title');
+    if (!el) { console.warn('标题点击受阻，请检查元素覆盖情况'); return; }
+    var cs = window.getComputedStyle(el);
+    if (cs.pointerEvents === 'none') {
+      console.warn('标题点击受阻，请检查元素覆盖情况');
+      return;
+    }
     if (swRegistration && swRegistration.waiting) {
       try { saveFilterState(); } catch(ex) {}
       swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
         try { saveFilterState(); } catch(ex) {}
         window.location.reload();
       });
-      setTimeout(() => {
+      setTimeout(function() {
         try { saveFilterState(); } catch(ex) {}
         window.location.reload();
       }, 1000);
@@ -4237,11 +4245,6 @@ function handleTitleClick() {
     }
   } catch(ex) { console.warn('检查更新失败:', ex); }
 }
-// 事件委托备份：通过 data-action="check-update" 匹配，调用同一个 handleTitleClick
-document.body.addEventListener('click', function(e) {
-  if (!e.target.closest('[data-action="check-update"]')) return;
-  handleTitleClick();
-}, true);
 
 // ============================================================
 // 十二-B、时段筛选面板
