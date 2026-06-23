@@ -815,7 +815,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.9.40';
+const APP_VERSION = 'v1.9.41';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -2573,6 +2573,10 @@ async function getProcessedData(imgObj, fid, aname, sidx) {
 }
 
 // 【v1.3.0 统一下载逻辑】替换原 Web Share API 分享，统一为下载/打包下载
+// 【v1.9.41】分批打包：最多50张/100MB每批，超阈值自动分批，进度反馈+错误捕获
+const ZIP_BATCH_MAX_COUNT = 50;
+const ZIP_BATCH_MAX_SIZE = 100 * 1024 * 1024; // 100MB
+
 async function downloadSelectedImages() {
   if (state.selectedCells.length === 0) return;
   const cellDataMap = await getCellDataBatch(state.selectedCells);
@@ -2613,22 +2617,57 @@ async function downloadSelectedImages() {
   // 【v1.3.0】单张直接下载，多张打包 ZIP
   if (items.length === 1) {
     downloadBlob(items[0].blob, items[0].filename);
-    // 【v1.3.5】提示语修正：下载已提交，等待浏览器确认
     showToast('下载已提交');
-  } else {
-    showToast('正在打包...');
+    return;
+  }
+
+  // 【v1.9.41】分批打包：按数量和大小拆分
+  const batches = [];
+  let currentBatch = [];
+  let currentSize = 0;
+  for (const item of items) {
+    const itemSize = item.blob.size || 0;
+    if ((currentBatch.length >= ZIP_BATCH_MAX_COUNT || currentSize + itemSize > ZIP_BATCH_MAX_SIZE) && currentBatch.length > 0) {
+      batches.push(currentBatch);
+      currentBatch = [];
+      currentSize = 0;
+    }
+    currentBatch.push(item);
+    currentSize += itemSize;
+  }
+  if (currentBatch.length > 0) batches.push(currentBatch);
+
+  const totalBatches = batches.length;
+  const ts = Date.now();
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let b = 0; b < totalBatches; b++) {
+    showToast(`正在打包第 ${b + 1}/${totalBatches} 批...`);
+    // 批次间延迟 0.5 秒（第一批不延迟）
+    if (b > 0) await new Promise(r => setTimeout(r, 500));
     try {
       const zip = new JSZip();
       // 【v1.3.11】ZIP 文件时间戳统一为 2024-01-01 12:00:00（秒数取偶数），提升兼容性
       const fileDate = new Date('2024-01-01T12:00:00');
-      items.forEach(it => {
+      batches[b].forEach(it => {
         zip.file(it.filename, it.blob, { date: fileDate });
       });
       const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-      downloadBlob(zipBlob, `图片导出_${Date.now()}.zip`);
-      // 【v1.3.5】提示语修正：打包完成已提交下载，等待浏览器确认
-      showToast(`已打包 ${items.length} 张图片，等待下载确认`);
-    } catch (err) { console.error('打包出错:', err); showToast('打包出错'); }
+      const batchName = totalBatches === 1 ? `图片导出_${ts}.zip` : `图片导出_第${b + 1}批_${ts}.zip`;
+      downloadBlob(zipBlob, batchName);
+      successCount++;
+    } catch (err) {
+      console.error(`第 ${b + 1} 批打包出错:`, err);
+      failCount++;
+      showToast('打包失败，请减少选择的图片数量或分批下载');
+    }
+  }
+
+  if (successCount > 0 && failCount === 0) {
+    showToast(`${successCount} 个文件已开始下载`);
+  } else if (successCount > 0 && failCount > 0) {
+    showToast(`${successCount} 个文件已下载，${failCount} 批失败`);
   }
 }
 
