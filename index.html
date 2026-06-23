@@ -253,6 +253,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .cleanup-btns button:active{opacity:.8}
 .cleanup-cancel{background:#f0f0f0;color:#333}
 .cleanup-exec{background:#ff4d4f;color:#fff}
+.cleanup-exec[disabled]{opacity:.5;cursor:not-allowed}
 /* 【v1.5.11 新增】清理进度 spinner */
 .cleanup-spinner{width:36px;height:36px;margin:0 auto;border:3px solid #e8e8e8;border-top-color:#1890ff;border-radius:50%;animation:cleanup-spin .8s linear infinite}
 @keyframes cleanup-spin{to{transform:rotate(360deg)}}
@@ -724,17 +725,13 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
     <div class="modal-btns"><button class="modal-cancel" id="batch-cancel">取消</button><button class="modal-confirm" id="batch-exec">打包下载(ZIP)</button></div>
   </div>
 </div>
-<!-- 【v1.10.0 改造】清除全部图片 → 清除图片（选择性清除界面） -->
-<div class="filter-sheet-overlay" id="cleanup-select-overlay"></div>
-<div class="filter-sheet" id="cleanup-select-sheet">
-  <div class="filter-sheet-header"><span class="filter-sheet-title">选择要清除的区域和时段</span><button class="filter-sheet-close" id="cleanup-select-close">&times;</button></div>
-  <div class="filter-sheet-actions">
-    <button class="filter-action-btn primary" id="cleanup-select-all">全选</button>
-    <button class="filter-action-btn" id="cleanup-select-clear">取消全选</button>
-  </div>
-  <div class="filter-sheet-body" id="cleanup-select-body"></div>
-  <div style="padding:12px 16px;border-top:1px solid #eee">
-    <button class="cleanup-exec" id="cleanup-confirm-btn" style="width:100%;padding:12px;font-size:16px;border-radius:8px;border:none;cursor:pointer;opacity:0.5" disabled>确认清除</button>
+<!-- 【v1.10.4 改造】清除图片：复用批量下载的modal-overlay+batch-chip样式 -->
+<div class="modal-overlay" id="cleanup-modal">
+  <div class="modal-box">
+    <h3>清除图片</h3>
+    <div class="batch-section"><h4>选择区域 <button class="batch-select-all" data-target="cleanup-area">全选/取消</button></h4><div class="batch-grid" id="cleanup-areas"></div></div>
+    <div class="batch-section"><h4>选择时段 <button class="batch-select-all" data-target="cleanup-time">全选/取消</button></h4><div class="batch-grid" id="cleanup-times"></div></div>
+    <div class="modal-btns"><button class="modal-cancel" id="cleanup-cancel">取消</button><button class="cleanup-exec" id="cleanup-exec" disabled>清除图片</button></div>
   </div>
 </div>
 <!-- 清除确认弹窗 -->
@@ -828,7 +825,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.10.3';
+const APP_VERSION = 'v1.10.4';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -4276,191 +4273,81 @@ previewSaveBtn.addEventListener('click', (e) => {
 });
 
 // ============================================================
-// 十、清除图片（v1.10.0 改造：选择性清除界面 + 分批异步删除 + 进度提示）
+// 十、清除图片（v1.10.4 改造：复用批量下载的modal+batch-chip样式，区域+时段选择）
 // ============================================================
-const cleanupSelectOverlay = document.getElementById('cleanup-select-overlay');
-const cleanupSelectSheet = document.getElementById('cleanup-select-sheet');
-const cleanupSelectBody = document.getElementById('cleanup-select-body');
-const cleanupConfirmBtn = document.getElementById('cleanup-confirm-btn');
+const cleanupModal = document.getElementById('cleanup-modal');
+const cleanupAreasDiv = document.getElementById('cleanup-areas');
+const cleanupTimesDiv = document.getElementById('cleanup-times');
+const cleanupExecBtn = document.getElementById('cleanup-exec');
 const cleanupConfirmModal = document.getElementById('cleanup-confirm-modal');
 const cleanupLoadingModal = document.getElementById('cleanup-loading-modal');
 const cleanupLoadingText = document.getElementById('cleanup-loading-text');
+let cleanupSelectedAreas = new Set(), cleanupSelectedTimes = new Set();
 
-// 清除选择状态
-let cleanupSelectedCells = new Set();
-
-// 打开清除选择面板
-function openCleanupSelect() {
-  cleanupSelectedCells.clear();
-  cleanupConfirmBtn.disabled = true;
-  cleanupConfirmBtn.style.opacity = '0.5';
-  cleanupConfirmBtn.style.cursor = 'not-allowed';
-  buildCleanupSelectList();
-  cleanupSelectOverlay.classList.add('show');
-  cleanupSelectSheet.classList.add('show');
-}
-
-// 关闭清除选择面板
-function closeCleanupSelect() {
-  cleanupSelectOverlay.classList.remove('show');
-  cleanupSelectSheet.classList.remove('show');
-}
-
-// 构建清除选择列表：显示所有有图片的区域和时段
-async function buildCleanupSelectList() {
-  cleanupSelectBody.innerHTML = '';
-  await buildSeatHasImages();
-  let hasAny = false;
-  for (const floor of FLOORS) {
-    for (const area of floor.areas) {
-      const areaSeats = [];
-      for (let i = 0; i < area.count; i++) {
-        const sNum = area.start + i;
-        const sk = `${floor.id}-${area.name}-${i}`;
-        if (state.seatHasImages.has(sk)) {
-          const sName = getSeatNameSync(floor.id, area.name, i);
-          areaSeats.push({ sk, sName, sIdx: i });
-        }
-      }
-      if (areaSeats.length === 0) continue;
-      hasAny = true;
-      // 区域分组
-      const areaDiv = document.createElement('div');
-      areaDiv.className = 'filter-slot-group';
-      const areaHeader = document.createElement('div');
-      areaHeader.className = 'filter-slot-group-title';
-      areaHeader.innerHTML = `<label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" class="cleanup-area-cb" data-floor="${floor.id}" data-area="${area.name}"><span>${floor.name} - ${area.name}</span></label>`;
-      areaDiv.appendChild(areaHeader);
-      // 座位列表（可展开）
-      const seatList = document.createElement('div');
-      seatList.className = 'filter-slot-items';
-      seatList.style.display = 'none';
-      for (const seat of areaSeats) {
-        // 查找该座位下有图片的时段
-        const timeSlotsHtml = [];
-        for (let t = 0; t < TIME_SLOTS.length; t++) {
-          const ck = `${floor.id}-${area.name}-${seat.sIdx}-${t}`;
-          const imgCount = imageCountCache.get(ck);
-          if (imgCount && imgCount > 0) {
-            timeSlotsHtml.push(`<label style="display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;font-size:13px"><input type="checkbox" class="cleanup-time-cb" data-cell-key="${ck}"><span>${TIME_SLOTS[t]} (${imgCount}张)</span></label>`);
-          }
-        }
-        if (timeSlotsHtml.length > 0) {
-          const seatDiv = document.createElement('div');
-          seatDiv.style.cssText = 'margin-left:12px';
-          const seatHeader = document.createElement('div');
-          seatHeader.className = 'filter-slot-group-title';
-          seatHeader.innerHTML = `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px"><input type="checkbox" class="cleanup-seat-cb" data-floor="${floor.id}" data-area="${area.name}" data-sidx="${seat.sIdx}"><span>${seat.sName}</span></label>`;
-          seatDiv.appendChild(seatHeader);
-          const timeList = document.createElement('div');
-          timeList.className = 'filter-slot-items';
-          timeList.style.display = 'none';
-          timeList.innerHTML = timeSlotsHtml.join('');
-          seatHeader.addEventListener('click', (e) => {
-            if (e.target.type === 'checkbox') return;
-            timeList.style.display = timeList.style.display === 'none' ? 'block' : 'none';
-          });
-          seatDiv.appendChild(timeList);
-          seatList.appendChild(seatDiv);
-        }
-      }
-      areaHeader.addEventListener('click', (e) => {
-        if (e.target.type === 'checkbox') return;
-        seatList.style.display = seatList.style.display === 'none' ? 'block' : 'none';
-      });
-      areaDiv.appendChild(seatList);
-      cleanupSelectBody.appendChild(areaDiv);
+// 【v1.10.4】初始化清除图片弹窗（与批量下载initBatchModal结构一致）
+function initCleanupModal() {
+  cleanupSelectedAreas = new Set(); cleanupSelectedTimes = new Set();
+  cleanupExecBtn.disabled = true;
+  // 从计数缓存扫描有图片的区域和时段
+  const areasWithImages = new Set();
+  const timesWithImages = new Set();
+  imageCountCache.forEach((cnt, key) => {
+    if (cnt > 0) {
+      const p = key.split('-');
+      areasWithImages.add(`${p[0]}-${p[1]}`);
+      timesWithImages.add(parseInt(p[3]));
     }
-  }
-  if (!hasAny) {
-    cleanupSelectBody.innerHTML = '<p style="text-align:center;color:#999;padding:20px">暂无图片数据</p>';
-  }
-  // 绑定复选框联动
-  bindCleanupCheckboxes();
-}
-
-// 复选框联动：区域→座位→时段
-function bindCleanupCheckboxes() {
-  // 时段复选框变化
-  cleanupSelectBody.addEventListener('change', (e) => {
-    const cb = e.target;
-    if (cb.classList.contains('cleanup-time-cb')) {
-      const ck = cb.dataset.cellKey;
-      if (cb.checked) cleanupSelectedCells.add(ck); else cleanupSelectedCells.delete(ck);
-      updateCleanupSeatAreaState(cb);
-    } else if (cb.classList.contains('cleanup-seat-cb')) {
-      const { floor, area, sidx } = cb.dataset;
-      const timeCbs = cleanupSelectBody.querySelectorAll(`.cleanup-time-cb[data-cell-key^="${floor}-${area}-${sidx}-"]`);
-      timeCbs.forEach(tcb => {
-        const ck = tcb.dataset.cellKey;
-        tcb.checked = cb.checked;
-        if (cb.checked) cleanupSelectedCells.add(ck); else cleanupSelectedCells.delete(ck);
-      });
-      updateCleanupAreaState(cb);
-    } else if (cb.classList.contains('cleanup-area-cb')) {
-      const { floor, area } = cb.dataset;
-      const seatCbs = cleanupSelectBody.querySelectorAll(`.cleanup-seat-cb[data-floor="${floor}"][data-area="${area}"]`);
-      seatCbs.forEach(scb => {
-        scb.checked = cb.checked;
-        scb.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-    }
-    updateCleanupConfirmBtn();
   });
+  let ahtml = '';
+  FLOORS.forEach(floor => {
+    floor.areas.forEach(area => {
+      const ak = areaKey(floor.id, area.name);
+      if (!areasWithImages.has(ak)) return;
+      ahtml += `<div class="batch-chip" data-ak="${ak}">${floor.name}${area.name}</div>`;
+    });
+  });
+  cleanupAreasDiv.innerHTML = ahtml;
+  let thtml = '';
+  TIME_SLOTS.forEach((ts, idx) => {
+    if (!timesWithImages.has(idx)) return;
+    thtml += `<div class="batch-chip" data-tidx="${idx}">${ts}</div>`;
+  });
+  cleanupTimesDiv.innerHTML = thtml;
 }
 
-function updateCleanupSeatAreaState(cb) {
-  // 更新座位复选框状态
-  const seatLabel = cb.closest('.filter-slot-items').previousElementSibling;
-  if (!seatLabel) return;
-  const seatCb = seatLabel.querySelector('.cleanup-seat-cb');
-  if (!seatCb) return;
-  const floor = seatCb.dataset.floor, area = seatCb.dataset.area, sidx = seatCb.dataset.sidx;
-  const timeCbs = cleanupSelectBody.querySelectorAll(`.cleanup-time-cb[data-cell-key^="${floor}-${area}-${sidx}-"]`);
-  const allChecked = [...timeCbs].every(t => t.checked);
-  const someChecked = [...timeCbs].some(t => t.checked);
-  seatCb.checked = allChecked;
-  seatCb.indeterminate = !allChecked && someChecked;
-  updateCleanupAreaState(seatCb);
-}
-
-function updateCleanupAreaState(cb) {
-  const areaLabel = cb.closest('.filter-slot-items')?.parentElement?.querySelector('.filter-slot-group-title');
-  if (!areaLabel) return;
-  const areaCb = areaLabel.querySelector('.cleanup-area-cb');
-  if (!areaCb) return;
-  const { floor, area } = areaCb.dataset;
-  const seatCbs = cleanupSelectBody.querySelectorAll(`.cleanup-seat-cb[data-floor="${floor}"][data-area="${area}"]`);
-  const allChecked = [...seatCbs].every(s => s.checked);
-  const someChecked = [...seatCbs].some(s => s.checked || s.indeterminate);
-  areaCb.checked = allChecked;
-  areaCb.indeterminate = !allChecked && someChecked;
-}
-
-function updateCleanupConfirmBtn() {
-  const hasSelection = cleanupSelectedCells.size > 0;
-  cleanupConfirmBtn.disabled = !hasSelection;
-  cleanupConfirmBtn.style.opacity = hasSelection ? '1' : '0.5';
-  cleanupConfirmBtn.style.cursor = hasSelection ? 'pointer' : 'not-allowed';
-}
-
-// 全选/取消全选
-document.getElementById('cleanup-select-all').addEventListener('click', () => {
-  cleanupSelectBody.querySelectorAll('.cleanup-area-cb').forEach(cb => { cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); });
-});
-document.getElementById('cleanup-select-clear').addEventListener('click', () => {
-  cleanupSelectBody.querySelectorAll('.cleanup-area-cb, .cleanup-seat-cb, .cleanup-time-cb').forEach(cb => { cb.checked = false; cb.indeterminate = false; });
-  cleanupSelectedCells.clear();
-  updateCleanupConfirmBtn();
+// 【v1.10.4】清除弹窗内chip点击+全选/取消（与批量下载逻辑一致）
+cleanupModal.addEventListener('click', (e) => {
+  const chip = e.target.closest('.batch-chip');
+  if (chip) {
+    chip.classList.toggle('checked');
+    if (chip.dataset.ak) { chip.classList.contains('checked') ? cleanupSelectedAreas.add(chip.dataset.ak) : cleanupSelectedAreas.delete(chip.dataset.ak); }
+    if (chip.dataset.tidx !== undefined) { const ti = chip.dataset.tidx; chip.classList.contains('checked') ? cleanupSelectedTimes.add(ti) : cleanupSelectedTimes.delete(ti); }
+    // 更新按钮状态
+    const hasSelection = cleanupSelectedAreas.size > 0 && cleanupSelectedTimes.size > 0;
+    cleanupExecBtn.disabled = !hasSelection;
+    return;
+  }
+  const selAll = e.target.closest('.batch-select-all');
+  if (selAll) {
+    const target = selAll.dataset.target;
+    const container = target === 'cleanup-area' ? cleanupAreasDiv : cleanupTimesDiv;
+    const chips = container.querySelectorAll('.batch-chip');
+    const allChecked = [...chips].every(c => c.classList.contains('checked'));
+    chips.forEach(c => {
+      if (allChecked) { c.classList.remove('checked'); if (c.dataset.ak) cleanupSelectedAreas.delete(c.dataset.ak); if (c.dataset.tidx !== undefined) cleanupSelectedTimes.delete(c.dataset.tidx); }
+      else { c.classList.add('checked'); if (c.dataset.ak) cleanupSelectedAreas.add(c.dataset.ak); if (c.dataset.tidx !== undefined) cleanupSelectedTimes.add(c.dataset.tidx); }
+    });
+    const hasSelection = cleanupSelectedAreas.size > 0 && cleanupSelectedTimes.size > 0;
+    cleanupExecBtn.disabled = !hasSelection;
+  }
 });
 
-// 关闭按钮
-document.getElementById('cleanup-select-close').addEventListener('click', closeCleanupSelect);
-cleanupSelectOverlay.addEventListener('click', closeCleanupSelect);
+// 取消按钮
+document.getElementById('cleanup-cancel').addEventListener('click', () => cleanupModal.classList.remove('show'));
 
-// 确认清除按钮 → 弹出二次确认
-cleanupConfirmBtn.addEventListener('click', () => {
-  if (cleanupSelectedCells.size === 0) return;
+// 清除图片按钮 → 弹出二次确认
+cleanupExecBtn.addEventListener('click', () => {
+  if (cleanupSelectedAreas.size === 0 || cleanupSelectedTimes.size === 0) return;
   cleanupConfirmModal.classList.add('show');
 });
 
@@ -4468,13 +4355,27 @@ cleanupConfirmBtn.addEventListener('click', () => {
 document.getElementById('cleanup-confirm-cancel').addEventListener('click', () => cleanupConfirmModal.classList.remove('show'));
 document.getElementById('cleanup-confirm-exec').addEventListener('click', async () => {
   cleanupConfirmModal.classList.remove('show');
-  closeCleanupSelect();
+  cleanupModal.classList.remove('show');
 
   // 显示不可关闭的 loading 弹窗
   cleanupLoadingText.textContent = '正在清理图片...';
   cleanupLoadingModal.classList.add('show');
 
-  const cellsToDelete = [...cleanupSelectedCells];
+  // 收集需要删除的 cellKey
+  const cellsToDelete = [];
+  for (const ak of cleanupSelectedAreas) {
+    const parts = ak.split('-'), fid = parseInt(parts[0]), aname = parts[1];
+    const seatCount = getAreaSeatCount(fid, aname);
+    for (const tidx of cleanupSelectedTimes) {
+      const tIdx = parseInt(tidx);
+      for (let sidx = 0; sidx < seatCount; sidx++) {
+        const sk = seatKey(fid, aname, sidx);
+        if (state.deletedSeats.has(sk)) continue;
+        cellsToDelete.push(cellKey(fid, aname, sidx, tIdx));
+      }
+    }
+  }
+
   let totalDeleted = 0;
   let hasError = false;
 
@@ -4535,7 +4436,8 @@ document.getElementById('cleanup-confirm-exec').addEventListener('click', async 
     } else {
       showToast(`已清除 ${totalDeleted} 张图片`);
     }
-    cleanupSelectedCells.clear();
+    cleanupSelectedAreas.clear();
+    cleanupSelectedTimes.clear();
   }
 });
 
@@ -4677,7 +4579,7 @@ document.addEventListener('click', async (e) => {
   const nameEl = target.closest('[data-action="edit-seat-name"]');
   if (nameEl) { const sk = nameEl.dataset.seatKey, curName = nameEl.textContent; const input = document.createElement('input'); input.type = 'text'; input.value = curName; input.className = 'seat-name-edit-input'; const doSave = async () => { const newName = input.value.trim() || curName; if (newName === curName) { const sp = document.createElement('span'); sp.className = 'seat-name-text'; sp.dataset.action = 'edit-seat-name'; sp.dataset.seatKey = sk; sp.textContent = newName; if (input.parentNode) input.replaceWith(sp); return; } state.seatNames[sk] = newName; await saveSeatName(sk, newName); const sp = document.createElement('span'); sp.className = 'seat-name-text'; sp.dataset.action = 'edit-seat-name'; sp.dataset.seatKey = sk; sp.textContent = newName; if (input.parentNode) input.replaceWith(sp); updateSeatButtonText(sk, newName); await regenerateWatermarksForSeat(sk); }; input.addEventListener('blur', doSave); input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') input.blur(); }); nameEl.replaceWith(input); input.focus(); input.select(); return; }
   const cleanupBtn = target.closest('[data-action="open-cleanup"]');
-  if (cleanupBtn) { openCleanupSelect(); return; }
+  if (cleanupBtn) { initCleanupModal(); cleanupModal.classList.add('show'); return; }
   const batchDlBtn = target.closest('[data-action="open-batch-dl"]');
   if (batchDlBtn) { initBatchModal(); batchModal.classList.add('show'); return; }
   const filterBtn = target.closest('[data-action="open-filter"]');
@@ -5038,7 +4940,7 @@ funcPanelBody.addEventListener('click', (e) => {
   const func = item.dataset.func;
   if (func === 'open-filter') { closeFuncPanel(); setTimeout(() => openFilterSheet(), 300); }
   else if (func === 'open-batch-dl') { closeFuncPanel(); setTimeout(() => { initBatchModal(); batchModal.classList.add('show'); }, 300); }
-  else if (func === 'open-cleanup') { closeFuncPanel(); setTimeout(() => { openCleanupSelect(); }, 300); }
+  else if (func === 'open-cleanup') { closeFuncPanel(); setTimeout(() => { initCleanupModal(); cleanupModal.classList.add('show'); }, 300); }
   // 【v1.6.0】主题选择：展开/收起主题列表，不关闭菜单
   else if (func === 'toggle-theme') {
     const list = document.getElementById('theme-list');
