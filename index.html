@@ -828,7 +828,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.10.0';
+const APP_VERSION = 'v1.10.1';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -2586,9 +2586,11 @@ async function getProcessedData(imgObj, fid, aname, sidx) {
 }
 
 // 【v1.3.0 统一下载逻辑】替换原 Web Share API 分享，统一为下载/打包下载
-// 【v1.10.0】分批打包：20张/60MB每批，1.5秒间隔，Blob URL保留60秒，进度反馈+错误捕获
+// 【v1.10.0】分批打包：20张/60MB每批，Blob URL保留60秒，进度反馈+错误捕获
+// 【v1.10.1】串行下载队列：逐批等待用户确认后再处理下一批，避免确认框互相覆盖
 const ZIP_BATCH_MAX_COUNT = 20;
 const ZIP_BATCH_MAX_SIZE = 60 * 1024 * 1024; // 60MB
+const ZIP_BATCH_INTERVAL = 3000; // 【v1.10.1】批次间安全延迟3秒，确保用户有时间操作下载确认框
 
 async function downloadSelectedImages() {
   if (state.selectedCells.length === 0) return;
@@ -2652,13 +2654,11 @@ async function downloadSelectedImages() {
   const ts = Date.now();
   let successCount = 0;
   let failCount = 0;
-  const blobURLs = []; // 【v1.10.0】记录所有 Blob URL，60秒后统一回收
+  const blobURLs = []; // 记录所有 Blob URL，60秒后统一回收
 
+  // 【v1.10.1】串行下载队列：逐批打包→触发下载→等待安全延迟→下一批
   for (let b = 0; b < totalBatches; b++) {
-    // 持续显示进度提示（不自动消失）
-    showPersistentToast(`正在打包第 ${b + 1}/${totalBatches} 批...`);
-    // 批次间延迟 1.5 秒（第一批不延迟）
-    if (b > 0) await new Promise(r => setTimeout(r, 1500));
+    showPersistentToast(`正在处理第 ${b + 1}/${totalBatches} 批（共 ${totalBatches} 批），请在弹出的下载框中确认...`);
     try {
       const zip = new JSZip();
       const fileDate = new Date('2024-01-01T12:00:00');
@@ -2667,29 +2667,37 @@ async function downloadSelectedImages() {
       });
       const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
       const batchName = totalBatches === 1 ? `图片导出_${ts}.zip` : `图片导出_第${b + 1}批_${ts}.zip`;
-      // 【v1.10.0】使用带 Blob URL 保留机制的下载
       const url = downloadBlobWithRetention(zipBlob, batchName);
-      if (url) blobURLs.push(url);
-      successCount++;
+      if (url) {
+        blobURLs.push(url);
+        successCount++;
+      } else {
+        failCount++;
+      }
     } catch (err) {
       console.error(`第 ${b + 1} 批打包出错:`, err);
       failCount++;
       showToast('打包失败，请减少选择的图片数量或分批下载');
+    }
+    // 【v1.10.1】每批下载触发后等待安全延迟，确保用户有时间操作确认框
+    if (b < totalBatches - 1) {
+      await new Promise(r => setTimeout(r, ZIP_BATCH_INTERVAL));
     }
   }
 
   // 移除进度提示
   removePersistentToast();
 
-  // 【v1.10.0】60秒后统一回收 Blob URL
+  // 60秒后统一回收 Blob URL
   if (blobURLs.length > 0) {
     setTimeout(() => { blobURLs.forEach(u => { try { URL.revokeObjectURL(u); } catch(e) {} }); }, 60000);
   }
 
-  if (successCount > 0 && failCount === 0) {
-    showToast(`${successCount} 个文件已开始下载`);
-  } else if (successCount > 0 && failCount > 0) {
-    showToast(`${successCount} 个文件已下载，${failCount} 批失败`);
+  // 【v1.10.1】全队列处理完毕提示
+  if (failCount === 0) {
+    showToast('全部下载任务已发起');
+  } else {
+    showToast(`${successCount} 批已下载，${failCount} 批失败`);
   }
 }
 
