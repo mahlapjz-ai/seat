@@ -165,12 +165,10 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 /* 【v1.3.1 Bug1修复】拼接预览按钮文字适配，防止安卓端溢出 */
 .bar-btn{padding:12px 8px;font-size:13px;font-weight:600;border:none;border-radius:8px;cursor:pointer;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-footer{text-align:center;padding:12px 0 16px;max-width:480px;margin:0 auto}
-.app-footer .footer-title{font-size:12px;color:#999;font-weight:700;text-align:center;margin-bottom:4px}
+.app-footer .footer-title{font-size:12px;color:#999;font-weight:700;text-align:left;margin-bottom:4px}
 .app-footer .update-log{font-size:10px;color:#999;line-height:1.5;text-align:left;padding:0 16px;margin-bottom:8px}
 .app-footer .update-log .log-item{margin-bottom:1px}
-.app-footer .update-log .log-old{display:none}
-.app-footer .update-log.expanded .log-old{display:block}
-.app-footer .update-log .log-toggle{font-size:10px;color:#aaa;cursor:pointer;margin-top:2px;text-align:center}
+.app-footer .update-log .log-ellipsis{color:#aaa;text-align:center;margin-top:2px;font-size:10px}
 .app-footer .usage-guide{font-size:10px;color:#999;line-height:1.5;text-align:left;padding:0 16px;margin-bottom:6px}
 .app-footer .disclaimer{font-size:10px;color:#999}
 .app-footer .contact{font-size:9px;color:#999;margin-top:2px;transition:opacity .5s ease}
@@ -831,16 +829,15 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.10.13';
-// 【v1.10.13】更新日志数据：每条格式 { date, text }，最新在前
+const APP_VERSION = 'v1.10.16';
+// 【v1.10.14】更新日志：只记录次版本号/主版本号变更，最多保留3条，更早的移除
 const UPDATE_LOG = [
-  { date: '6月23日', text: '增强标题检查更新功能，绕过缓存探测 index.html 变化；菜单改名为设置' },
   { date: '6月23日', text: '修复批量下载分批弹窗问题；清除图片改为选择性界面；新增22时段勾选限制' },
-  { date: '6月23日', text: '修复怀旧主题保存按钮偏移、时段筛选偶发重置等问题' },
   { date: '6月22日', text: '修复拼接预览高清重绘中断、全屏滑动失灵、后台重绘失败自动恢复' },
   { date: '6月22日', text: '新增护眼、蓝色、怀旧主题；标题点击检查更新；像素主题改名怀旧' },
 ];
-const UPDATE_LOG_VISIBLE = 3; // 默认展示最近3条
+UPDATE_LOG.__hasOlder = true; // 历史上曾有更早记录已移除
+const UPDATE_LOG_MAX = 3; // 最多保留3条
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -1323,30 +1320,20 @@ async function renderMain() {
   // 【v1.10.13】底部信息：更新日志 + 使用说明 + 免责声明 + 联系小字
   const lastVer = localStorage.getItem('lastShownVersion');
   const showContact = lastVer !== APP_VERSION;
-  const logExpanded = localStorage.getItem('updateLogExpanded') === '1';
   let logHtml = '';
-  UPDATE_LOG.forEach((item, idx) => {
-    const isOld = idx >= UPDATE_LOG_VISIBLE;
-    logHtml += `<div class="log-item${isOld ? ' log-old' : ''}">·${item.date}：${item.text}</div>`;
+  const visibleLog = UPDATE_LOG.slice(0, UPDATE_LOG_MAX);
+  visibleLog.forEach(item => {
+    logHtml += `<div class="log-item">·${item.date}：${item.text}</div>`;
   });
-  const hasOld = UPDATE_LOG.length > UPDATE_LOG_VISIBLE;
+  // 如果历史上曾有更早记录（被移除），显示省略号
+  const hasOlder = UPDATE_LOG.__hasOlder || false;
+  if (hasOlder) logHtml += `<div class="log-ellipsis">……</div>`;
   html += `<div class="app-footer">`
     + `<div class="footer-title">更新日志</div>`
-    + `<div class="update-log${logExpanded ? ' expanded' : ''}" id="update-log">${logHtml}${hasOld ? `<div class="log-toggle" id="log-toggle">${logExpanded ? '收起' : '展开更早更新记录'}</div>` : ''}</div>`
+    + `<div class="update-log">${logHtml}</div>`
     + `<div class="footer-title">使用说明</div>`
     + `<div class="usage-guide">·座位如有单张图片且当前时段未隐藏，座位显示蓝色；若时段隐藏，则不显示颜色<br>·座位的同一时段有多张图片且未隐藏，座位显示橙色；若时段隐藏，则不显示颜色<br>·隐藏时段内若存在图片，座位按钮左上角显示"闭眼"图标<br>·若区域存在图片，区域按钮显示绿色<br>·通过"时段筛选"选定某一时段后，若该时段有图片，座位按钮右上角显示"图片"图标</div><div class="disclaimer">内部参考工具，功能尚不完善，数据可能丢失，不承担准确性与隐私责任</div><div class="contact${showContact ? '' : ' hidden'}">如有使用建议可联系老范尝试优化。</div></div>`;
   app.innerHTML = html;
-  // 【v1.10.13】更新日志折叠/展开
-  const logToggle = document.getElementById('log-toggle');
-  if (logToggle) {
-    logToggle.addEventListener('click', function() {
-      const logEl = document.getElementById('update-log');
-      if (!logEl) return;
-      const isExpanded = logEl.classList.toggle('expanded');
-      logToggle.textContent = isExpanded ? '收起' : '展开更早更新记录';
-      localStorage.setItem('updateLogExpanded', isExpanded ? '1' : '0');
-    });
-  }
   // 【v1.2.5】联系小字：版本更新后显示2秒再淡出
   if (showContact) {
     localStorage.setItem('lastShownVersion', APP_VERSION);
@@ -2013,15 +2000,15 @@ function addWatermarkBlob(imageSource, seatName, beijingTime, orientation) {
         ctx.font = `400 ${fs_seat}px ${fontFam}`;
         if (wmShadowColor) { ctx.fillStyle = wmShadowColor; ctx.fillText(seatName, textX + wmShadowOff, curY + wmShadowOff); }
         ctx.fillStyle = wmTextColor; ctx.fillText(seatName, textX, curY);
-        // 【v1.3.4 Bug2修复】LOGO 绘制在文字水印正上方，文字位置不受影响
+        // 【v1.10.16】LOGO 绘制在图片左上角，宽度为文字水印宽度的80%
         if (state.showLogo) {
           const logoAspect = 913 / 2662; // LOGO 原始宽高比
-          const logoH = Math.round(bgW * logoAspect);
-          const logoGap = Math.round(fs_time * 0.15);
+          const logoW = Math.round(bgW * 0.8);
+          const logoH = Math.round(logoW * logoAspect);
           const logoImg = await getLogoImage();
           if (logoImg) {
             ctx.globalAlpha = 1;
-            ctx.drawImage(logoImg, bgX, bgY - logoH - logoGap, bgW, logoH);
+            ctx.drawImage(logoImg, 24, 24, logoW, logoH);
           }
         }
         // 一次 Canvas 绘制，同时导出原图 Blob 和缩略图 Blob
