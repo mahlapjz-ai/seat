@@ -825,7 +825,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.10.4';
+const APP_VERSION = 'v1.10.5';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -2583,24 +2583,33 @@ async function getProcessedData(imgObj, fid, aname, sidx) {
 }
 
 // 【v1.3.0 统一下载逻辑】替换原 Web Share API 分享，统一为下载/打包下载
-// 【v1.10.0】分批打包：20张/60MB每批，Blob URL保留60秒，进度反馈+错误捕获
-// 【v1.10.1】串行下载队列：逐批等待用户确认后再处理下一批，避免确认框互相覆盖
-// 【v1.10.2】下载会话机制：每次点击强制新建会话，清除旧会话残留状态，防止重复点击失效
+// 【v1.10.5】彻底重写队列状态控制：每次点击强制重置→轮询间隔推进→异常自愈→锁必释放
 const ZIP_BATCH_MAX_COUNT = 20;
 const ZIP_BATCH_MAX_SIZE = 60 * 1024 * 1024; // 60MB
-const ZIP_BATCH_INTERVAL = 3000; // 批次间安全延迟3秒
-let _dlSessionId = 0; // 【v1.10.2】下载会话ID，每次点击递增，旧会话自动失效
+const ZIP_BATCH_INTERVAL = 2500; // 【v1.10.5】批次间安全间隔2.5秒
+let _dlSessionId = 0; // 下载会话ID，每次点击递增，旧会话自动失效
+let _dlBlobURLs = []; // 当前会话的 Blob URL 列表，用于重置时立即回收
+
+// 【v1.10.5】强制重置下载状态：清除旧会话的 Blob URL、提示、锁
+function _resetDlState() {
+  _dlSessionId++; // 递增使所有旧会话失效
+  // 立即回收旧会话遗留的 Blob URL
+  if (_dlBlobURLs.length > 0) {
+    _dlBlobURLs.forEach(u => { try { URL.revokeObjectURL(u); } catch(e) {} });
+    _dlBlobURLs = [];
+  }
+  removePersistentToast();
+}
 
 async function downloadSelectedImages() {
   if (state.selectedCells.length === 0) return;
 
-  // 【v1.10.2】每次点击强制新建下载会话，清除旧会话残留状态
-  _dlSessionId++;
+  // 【v1.10.5】每次点击强制重置，清除所有残留状态
+  _resetDlState();
   const mySession = _dlSessionId;
-  removePersistentToast(); // 清除旧提示
 
   const cellDataMap = await getCellDataBatch(state.selectedCells);
-  // 【v1.10.2】会话检查：如果期间用户再次点击，放弃本次
+  // 会话检查：如果期间用户再次点击，放弃本次（新会话已接管）
   if (_dlSessionId !== mySession) return;
 
   const allImgs = [];
@@ -2629,8 +2638,7 @@ async function downloadSelectedImages() {
       const safeTimeSlot = timeSlot.replace(/:/g, '');
       const safeName = sName.replace(/[^\w]/g, '_');
       const filename = `${safeName}_${safeTimeSlot}_${i + 1}.jpg`;
-      const timestamp = cellData.images[i].createdAt || cellData.images[i].timestamp || null;
-      items.push({ blob, filename, timestamp });
+      items.push({ blob, filename });
     }
   }
   if (items.length === 0) { showToast('无图片可下载'); return; }
@@ -2662,24 +2670,22 @@ async function downloadSelectedImages() {
   const ts = Date.now();
   let successCount = 0;
   let failCount = 0;
-  const blobURLs = []; // 记录所有 Blob URL，60秒后统一回收
 
-  // 串行下载队列：逐批打包→触发下载→等待安全延迟→下一批
+  // 【v1.10.5】串行队列：逐批打包→触发下载→倒计时等待→自动推进下一批
   for (let b = 0; b < totalBatches; b++) {
-    // 【v1.10.2】会话检查：如果期间用户再次点击，中止旧会话
+    // 会话检查：如果期间用户再次点击，中止旧会话（不显示提示、不释放锁——新会话自己管理）
     if (_dlSessionId !== mySession) return;
-    showPersistentToast(`正在处理第 ${b + 1}/${totalBatches} 批（共 ${totalBatches} 批），请在弹出的下载框中确认...`);
+
+    showPersistentToast(`正在打包第 ${b + 1}/${totalBatches} 批...`);
     try {
       const zip = new JSZip();
       const fileDate = new Date('2024-01-01T12:00:00');
-      batches[b].forEach(it => {
-        zip.file(it.filename, it.blob, { date: fileDate });
-      });
+      batches[b].forEach(it => { zip.file(it.filename, it.blob, { date: fileDate }); });
       const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
       const batchName = totalBatches === 1 ? `图片导出_${ts}.zip` : `图片导出_第${b + 1}批_${ts}.zip`;
       const url = downloadBlobWithRetention(zipBlob, batchName);
       if (url) {
-        blobURLs.push(url);
+        _dlBlobURLs.push(url);
         successCount++;
       } else {
         failCount++;
@@ -2687,30 +2693,36 @@ async function downloadSelectedImages() {
     } catch (err) {
       console.error(`第 ${b + 1} 批打包出错:`, err);
       failCount++;
-      showToast('打包失败，请减少选择的图片数量或分批下载');
     }
-    // 每批下载触发后等待安全延迟，确保用户有时间操作确认框
+
+    // 【v1.10.5】批次间倒计时等待，确保用户有时间确认下载框
     if (b < totalBatches - 1) {
-      await new Promise(r => setTimeout(r, ZIP_BATCH_INTERVAL));
+      const waitSec = Math.ceil(ZIP_BATCH_INTERVAL / 1000);
+      for (let s = waitSec; s > 0; s--) {
+        if (_dlSessionId !== mySession) return; // 会话被接管则立即退出
+        showPersistentToast(`请在弹出的下载框中确认，${s} 秒后准备下一批（第 ${b + 2}/${totalBatches} 批）...`);
+        await new Promise(r => setTimeout(r, 1000));
+      }
     }
   }
 
-  // 【v1.10.2】最终会话检查：如果期间用户再次点击，不显示旧会话的完成提示
+  // 最终会话检查
   if (_dlSessionId !== mySession) return;
 
-  // 移除进度提示
   removePersistentToast();
 
   // 60秒后统一回收 Blob URL
-  if (blobURLs.length > 0) {
-    setTimeout(() => { blobURLs.forEach(u => { try { URL.revokeObjectURL(u); } catch(e) {} }); }, 60000);
+  const urlsToRevoke = [..._dlBlobURLs];
+  _dlBlobURLs = [];
+  if (urlsToRevoke.length > 0) {
+    setTimeout(() => { urlsToRevoke.forEach(u => { try { URL.revokeObjectURL(u); } catch(e) {} }); }, 60000);
   }
 
-  // 全队列处理完毕提示
+  // 【v1.10.5】完成提示
   if (failCount === 0) {
-    showToast('全部下载任务已发起');
+    showToast(`下载完成，成功 ${successCount} 批`);
   } else {
-    showToast(`${successCount} 批已下载，${failCount} 批失败`);
+    showToast(`下载完成，成功 ${successCount} 批，失败 ${failCount} 批`);
   }
 }
 
