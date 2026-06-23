@@ -825,7 +825,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.10.7';
+const APP_VERSION = 'v1.10.8';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -2583,16 +2583,18 @@ async function getProcessedData(imgObj, fid, aname, sidx) {
 }
 
 // 【v1.3.0 统一下载逻辑】替换原 Web Share API 分享，统一为下载/打包下载
-// 【v1.10.7】最简串行弹窗：每次点击从头开始，固定3秒间隔，无锁无事件监听
+// 【v1.10.8】下载事件驱动+固定间隔兜底：visibilitychange检测下载开始，2秒兜底
 const ZIP_BATCH_MAX_COUNT = 20;
 const ZIP_BATCH_MAX_SIZE = 60 * 1024 * 1024; // 60MB
-const ZIP_BATCH_INTERVAL = 3000; // 固定3秒间隔
+const ZIP_BATCH_FALLBACK_WAIT = 2000; // 兜底固定等待2秒
 let _dlTimer = null;   // 当前下载定时器
 let _dlBlobURLs = [];  // 当前下载的 Blob URL 列表
+let _dlVisHandler = null; // visibilitychange 事件处理器
 
-// 【v1.10.7】清除旧下载状态：定时器、Blob URL、提示
+// 【v1.10.8】清除旧下载状态：定时器、事件监听、Blob URL、提示
 function _clearDlState() {
   if (_dlTimer) { clearTimeout(_dlTimer); _dlTimer = null; }
+  if (_dlVisHandler) { document.removeEventListener('visibilitychange', _dlVisHandler); _dlVisHandler = null; }
   if (_dlBlobURLs.length > 0) {
     _dlBlobURLs.forEach(u => { try { URL.revokeObjectURL(u); } catch(e) {} });
     _dlBlobURLs = [];
@@ -2600,7 +2602,7 @@ function _clearDlState() {
   removePersistentToast();
 }
 
-// 【v1.10.7】触发单个下载：创建 a 标签 click 后移除，URL 保留供后续回收
+// 【v1.10.8】触发单个下载
 function _triggerDownload(blob, filename) {
   try {
     const url = URL.createObjectURL(blob);
@@ -2615,10 +2617,29 @@ function _triggerDownload(blob, filename) {
   }
 }
 
+// 【v1.10.8】等待下载开始或超时：visibilitychange 检测 + 2秒兜底
+function _waitForDownloadStart() {
+  return new Promise(resolve => {
+    let resolved = false;
+    const done = () => {
+      if (resolved) return;
+      resolved = true;
+      if (_dlTimer) { clearTimeout(_dlTimer); _dlTimer = null; }
+      if (_dlVisHandler) { document.removeEventListener('visibilitychange', _dlVisHandler); _dlVisHandler = null; }
+      resolve();
+    };
+    // 优先方案：监听 visibilitychange（浏览器处理下载时可能切换可见性）
+    _dlVisHandler = () => { if (document.hidden) done(); };
+    document.addEventListener('visibilitychange', _dlVisHandler);
+    // 兜底方案：2秒后无论如何都推进
+    _dlTimer = setTimeout(done, ZIP_BATCH_FALLBACK_WAIT);
+  });
+}
+
 async function downloadSelectedImages() {
   if (state.selectedCells.length === 0) return;
 
-  // 【v1.10.7】每次点击从头开始：清除所有旧状态
+  // 【v1.10.8】每次点击从头开始：清除所有旧状态
   _clearDlState();
 
   const cellDataMap = await getCellDataBatch(state.selectedCells);
@@ -2682,7 +2703,7 @@ async function downloadSelectedImages() {
   let successCount = 0;
   let failCount = 0;
 
-  // 【v1.10.7】简单串行：逐批打包→触发下载→固定3秒等待→下一批
+  // 【v1.10.8】事件驱动串行：逐批打包→触发下载→等待下载开始或2秒兜底→下一批
   for (let b = 0; b < totalBatches; b++) {
     showPersistentToast(`正在处理第 ${b + 1}/${totalBatches} 批（共 ${totalBatches} 批），请在下载框中确认...`);
     try {
@@ -2700,10 +2721,9 @@ async function downloadSelectedImages() {
       console.error(`第 ${b + 1} 批打包出错:`, err);
       failCount++;
     }
-    // 固定3秒间隔，最后一批不等
+    // 等待下载开始或2秒兜底，最后一批不等
     if (b < totalBatches - 1) {
-      await new Promise(r => { _dlTimer = setTimeout(r, ZIP_BATCH_INTERVAL); });
-      _dlTimer = null;
+      await _waitForDownloadStart();
     }
   }
 
