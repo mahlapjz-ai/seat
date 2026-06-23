@@ -592,12 +592,18 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .header-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #2d2d2d}
 /* 楼层卡片：木板/工作台材质 + 像素描边 + 按压效果 */
 .theme-pixel .floor-btn{font-family:'Courier New',monospace;color:#4a3728;border:4px solid #5a3d2b;border-radius:0;box-shadow:4px 4px 0 #2d2d2d;font-weight:700;transition:transform .08s,box-shadow .08s}
-.theme-pixel .floor-1{background:linear-gradient(135deg,#c8a96e,#b89858);background-image:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(90,61,43,.08) 8px,rgba(90,61,43,.08) 10px),linear-gradient(135deg,#c8a96e,#b89858)}
-.theme-pixel .floor-2{background:linear-gradient(135deg,#b8a058,#a89048);background-image:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(90,61,43,.08) 8px,rgba(90,61,43,.08) 10px),linear-gradient(135deg,#b8a058,#a89048)}
-.theme-pixel .floor-3{background:linear-gradient(135deg,#c0a060,#b09050);background-image:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(90,61,43,.08) 8px,rgba(90,61,43,.08) 10px),linear-gradient(135deg,#c0a060,#b09050)}
-.theme-pixel .floor-4{background:linear-gradient(135deg,#d0b070,#c0a060);background-image:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(90,61,43,.08) 8px,rgba(90,61,43,.08) 10px),linear-gradient(135deg,#d0b070,#c0a060)}
-.theme-pixel .floor-5{background:linear-gradient(135deg,#baa060,#aa9048);background-image:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(90,61,43,.08) 8px,rgba(90,61,43,.08) 10px),linear-gradient(135deg,#baa060,#aa9048)}
-.theme-pixel .floor-btn:hover{background-color:#d8b978;box-shadow:4px 4px 0 #2d2d2d}
+/* 【v1.10.19】怀旧主题楼层卡片：五种《我的世界》原木木纹风格 */
+/* 一楼：橡木 Oak — 暖黄棕，经典木纹 */
+.theme-pixel .floor-1{background-color:#b89458;background-image:repeating-linear-gradient(0deg,transparent,transparent 6px,rgba(90,61,43,.1) 6px,rgba(90,61,43,.1) 7px),repeating-linear-gradient(90deg,transparent,transparent 12px,rgba(139,105,20,.07) 12px,rgba(139,105,20,.07) 14px),linear-gradient(180deg,#c8a96e 0%,#b89858 40%,#a88848 70%,#b89858 100%)}
+/* 二楼：白桦 Birch — 米白浅纹，清新明亮 */
+.theme-pixel .floor-2{background-color:#d8cdb8;background-image:repeating-linear-gradient(0deg,transparent,transparent 10px,rgba(160,140,110,.08) 10px,rgba(160,140,110,.08) 11px),repeating-linear-gradient(90deg,transparent,transparent 20px,rgba(120,100,70,.05) 20px,rgba(120,100,70,.05) 22px),linear-gradient(180deg,#e8ddd0 0%,#d8cdb8 40%,#c8bda8 70%,#d8cdb8 100%)}
+/* 三楼：云杉 Spruce — 深灰棕，沉稳厚重 */
+.theme-pixel .floor-3{background-color:#6b5240;background-image:repeating-linear-gradient(0deg,transparent,transparent 5px,rgba(40,25,15,.12) 5px,rgba(40,25,15,.12) 6px),repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(80,50,30,.08) 8px,rgba(80,50,30,.08) 10px),linear-gradient(180deg,#7a6252 0%,#6b5240 40%,#5a4232 70%,#6b5240 100%)}
+/* 四楼：金合欢 Acacia — 橙灰调，独特硬朗 */
+.theme-pixel .floor-4{background-color:#a07850;background-image:repeating-linear-gradient(0deg,transparent,transparent 7px,rgba(120,60,20,.1) 7px,rgba(120,60,20,.1) 8px),repeating-linear-gradient(90deg,transparent,transparent 14px,rgba(100,50,15,.06) 14px,rgba(100,50,15,.06) 16px),linear-gradient(180deg,#b08860 0%,#a07850 40%,#906840 70%,#a07850 100%)}
+/* 五楼：樱花 Cherry — 粉紫调，柔和梦幻 */
+.theme-pixel .floor-5{background-color:#b89090;background-image:repeating-linear-gradient(0deg,transparent,transparent 6px,rgba(140,70,90,.1) 6px,rgba(140,70,90,.1) 7px),repeating-linear-gradient(90deg,transparent,transparent 10px,rgba(160,80,100,.06) 10px,rgba(160,80,100,.06) 12px),linear-gradient(180deg,#c8a0a0 0%,#b89090 40%,#a88080 70%,#b89090 100%)}
+.theme-pixel .floor-btn:hover{filter:brightness(1.08);box-shadow:4px 4px 0 #2d2d2d}
 .theme-pixel .floor-btn:active,.theme-pixel .floor-btn._pressing{transform:translate(2px,2px);box-shadow:2px 2px 0 #2d2d2d}
 /* 区域按钮：石材材质 + 像素描边 */
 .theme-pixel .area-btn{font-family:'Courier New',monospace;background:#aaa;border:3px solid #555;border-radius:0;box-shadow:3px 3px 0 #2d2d2d;color:#3a3a3a;font-weight:700;transition:transform .08s,box-shadow .08s}
@@ -829,7 +835,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.10.18';
+const APP_VERSION = 'v1.10.19';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月23日', text: '修复批量下载分批弹窗问题；清除图片改为选择性界面；新增22时段勾选限制' },
