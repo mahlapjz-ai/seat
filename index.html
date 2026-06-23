@@ -825,7 +825,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.10.11';
+const APP_VERSION = 'v1.10.12';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -4632,6 +4632,7 @@ document.addEventListener('click', async (e) => {
 //   - 仅使用内联 onclick="handleTitleClick()"
 //   - 行内样式 pointer-events:auto!important; z-index:99 防遮挡
 //   - 防抖存储在 window.__updateCheckTimer，3秒内不允许重复触发
+// 【v1.10.12】增加绕过缓存的强制探测，检测 index.html 内容变化
 // ============================================================
 window.__updateCheckTimer = false;
 function handleTitleClick() {
@@ -4639,6 +4640,7 @@ function handleTitleClick() {
   window.__updateCheckTimer = true;
   setTimeout(function() { window.__updateCheckTimer = false; }, 3000);
   try {
+    // 优先：如果 SW 已有 waiting worker，直接激活
     if (swRegistration && swRegistration.waiting) {
       try { saveFilterState(); } catch(ex) {}
       swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -4650,10 +4652,67 @@ function handleTitleClick() {
         try { saveFilterState(); } catch(ex) {}
         window.location.reload();
       }, 1000);
-    } else {
-      showToast('已是最新版本');
+      return;
     }
+    // 【v1.10.12】绕过缓存强制探测 index.html 是否有更新
+    showToast('正在检查更新...');
+    fetch('/index.html', { cache: 'no-cache' })
+      .then(function(resp) {
+        var newEtag = resp.headers.get('ETag');
+        var newModified = resp.headers.get('Last-Modified');
+        var cachedEtag = window.__cachedEtag || null;
+        var cachedModified = window.__cachedModified || null;
+        // 优先用 ETag/Last-Modified 头判断
+        if (newEtag && cachedEtag && newEtag !== cachedEtag) { forceUpdate(); return; }
+        if (newModified && cachedModified && newModified !== cachedModified) { forceUpdate(); return; }
+        // 无头信息或头相同，回退到内容比对（取前 2000 字符的简易哈希）
+        return resp.text().then(function(text) {
+          var hash = simpleHash(text.substring(0, 2000));
+          var cachedHash = window.__cachedPageHash || null;
+          if (!cachedHash) {
+            // 首次加载时记录当前页面哈希
+            window.__cachedPageHash = hash;
+            window.__cachedEtag = newEtag;
+            window.__cachedModified = newModified;
+            showToast('已是最新版本');
+            return;
+          }
+          if (hash !== cachedHash) { forceUpdate(); }
+          else { showToast('已是最新版本'); }
+        });
+      })
+      .catch(function(err) {
+        console.warn('检查更新失败:', err);
+        showToast('检查更新失败，请稍后重试');
+      });
   } catch(ex) { console.warn('检查更新失败:', ex); }
+}
+
+// 【v1.10.12】简易哈希函数：将字符串转为数字哈希
+function simpleHash(str) {
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) {
+    var ch = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + ch;
+    hash = hash & hash;
+  }
+  return hash.toString(16);
+}
+
+// 【v1.10.12】强制更新：尝试更新 SW → skipWaiting → 刷新
+function forceUpdate() {
+  showToast('发现新版本，正在更新...');
+  try { saveFilterState(); } catch(ex) {}
+  if (swRegistration) {
+    swRegistration.update().then(function() {
+      if (swRegistration.waiting) { swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' }); }
+      setTimeout(function() { window.location.reload(); }, 800);
+    }).catch(function() {
+      setTimeout(function() { window.location.reload(); }, 800);
+    });
+  } else {
+    setTimeout(function() { window.location.reload(); }, 800);
+  }
 }
 
 // ============================================================
