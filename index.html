@@ -828,7 +828,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.10.1';
+const APP_VERSION = 'v1.10.3';
 const DB_NAME = 'SeatImageDB';
 const DB_VERSION = 4;
 // 【v1.3.2 Bug1修复】将平台检测移到顶部，确保拼接函数可正确访问
@@ -2588,13 +2588,24 @@ async function getProcessedData(imgObj, fid, aname, sidx) {
 // 【v1.3.0 统一下载逻辑】替换原 Web Share API 分享，统一为下载/打包下载
 // 【v1.10.0】分批打包：20张/60MB每批，Blob URL保留60秒，进度反馈+错误捕获
 // 【v1.10.1】串行下载队列：逐批等待用户确认后再处理下一批，避免确认框互相覆盖
+// 【v1.10.2】下载会话机制：每次点击强制新建会话，清除旧会话残留状态，防止重复点击失效
 const ZIP_BATCH_MAX_COUNT = 20;
 const ZIP_BATCH_MAX_SIZE = 60 * 1024 * 1024; // 60MB
-const ZIP_BATCH_INTERVAL = 3000; // 【v1.10.1】批次间安全延迟3秒，确保用户有时间操作下载确认框
+const ZIP_BATCH_INTERVAL = 3000; // 批次间安全延迟3秒
+let _dlSessionId = 0; // 【v1.10.2】下载会话ID，每次点击递增，旧会话自动失效
 
 async function downloadSelectedImages() {
   if (state.selectedCells.length === 0) return;
+
+  // 【v1.10.2】每次点击强制新建下载会话，清除旧会话残留状态
+  _dlSessionId++;
+  const mySession = _dlSessionId;
+  removePersistentToast(); // 清除旧提示
+
   const cellDataMap = await getCellDataBatch(state.selectedCells);
+  // 【v1.10.2】会话检查：如果期间用户再次点击，放弃本次
+  if (_dlSessionId !== mySession) return;
+
   const allImgs = [];
   for (const ck of state.selectedCells) {
     const cellData = cellDataMap[ck];
@@ -2634,7 +2645,7 @@ async function downloadSelectedImages() {
     return;
   }
 
-  // 【v1.10.0】分批打包：按数量和大小拆分
+  // 分批打包：按数量和大小拆分
   const batches = [];
   let currentBatch = [];
   let currentSize = 0;
@@ -2656,8 +2667,10 @@ async function downloadSelectedImages() {
   let failCount = 0;
   const blobURLs = []; // 记录所有 Blob URL，60秒后统一回收
 
-  // 【v1.10.1】串行下载队列：逐批打包→触发下载→等待安全延迟→下一批
+  // 串行下载队列：逐批打包→触发下载→等待安全延迟→下一批
   for (let b = 0; b < totalBatches; b++) {
+    // 【v1.10.2】会话检查：如果期间用户再次点击，中止旧会话
+    if (_dlSessionId !== mySession) return;
     showPersistentToast(`正在处理第 ${b + 1}/${totalBatches} 批（共 ${totalBatches} 批），请在弹出的下载框中确认...`);
     try {
       const zip = new JSZip();
@@ -2679,11 +2692,14 @@ async function downloadSelectedImages() {
       failCount++;
       showToast('打包失败，请减少选择的图片数量或分批下载');
     }
-    // 【v1.10.1】每批下载触发后等待安全延迟，确保用户有时间操作确认框
+    // 每批下载触发后等待安全延迟，确保用户有时间操作确认框
     if (b < totalBatches - 1) {
       await new Promise(r => setTimeout(r, ZIP_BATCH_INTERVAL));
     }
   }
+
+  // 【v1.10.2】最终会话检查：如果期间用户再次点击，不显示旧会话的完成提示
+  if (_dlSessionId !== mySession) return;
 
   // 移除进度提示
   removePersistentToast();
@@ -2693,7 +2709,7 @@ async function downloadSelectedImages() {
     setTimeout(() => { blobURLs.forEach(u => { try { URL.revokeObjectURL(u); } catch(e) {} }); }, 60000);
   }
 
-  // 【v1.10.1】全队列处理完毕提示
+  // 全队列处理完毕提示
   if (failCount === 0) {
     showToast('全部下载任务已发起');
   } else {
@@ -5022,7 +5038,7 @@ funcPanelBody.addEventListener('click', (e) => {
   const func = item.dataset.func;
   if (func === 'open-filter') { closeFuncPanel(); setTimeout(() => openFilterSheet(), 300); }
   else if (func === 'open-batch-dl') { closeFuncPanel(); setTimeout(() => { initBatchModal(); batchModal.classList.add('show'); }, 300); }
-  else if (func === 'open-cleanup') { closeFuncPanel(); setTimeout(() => { cleanupModal.classList.add('show'); }, 300); }
+  else if (func === 'open-cleanup') { closeFuncPanel(); setTimeout(() => { openCleanupSelect(); }, 300); }
   // 【v1.6.0】主题选择：展开/收起主题列表，不关闭菜单
   else if (func === 'toggle-theme') {
     const list = document.getElementById('theme-list');
