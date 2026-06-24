@@ -21,10 +21,11 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:15px;color:#333;background:#f0f2f5;-webkit-tap-highlight-color:transparent}
 /* 【v1.2.0 iOS兼容】所有可点击元素统一 cursor:pointer，iOS 不做悬停效果 */
-button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-slot-item,.floor-btn,.area-btn{cursor:pointer;-webkit-user-select:none;user-select:none}
+button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-slot-item,.floor-btn,.area-btn,.record-time-btn{cursor:pointer;-webkit-user-select:none;user-select:none}
 /* 【v1.9.25】按压视觉反馈：:active + ._pressing 双重匹配，移动端 touchstart 立即触发 */
 .floor-btn:active,.floor-btn._pressing{transition:transform .1s ease}
 .area-btn:active,.area-btn._pressing{transition:transform .1s ease}
+.record-time-btn:active,.record-time-btn._pressing{transition:background .1s ease,transform .1s ease}
 .seat-btn:active,.seat-btn._pressing{transition:background .1s ease,transform .1s ease}
 .func-item:active,.func-item._pressing{transition:background .1s ease}
 .header-btn:active,.header-btn._pressing{transition:opacity .1s ease,transform .1s ease}
@@ -104,6 +105,14 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .area-btn.expanded{background:#fff;border-color:#ff4d4f;box-shadow:none}
 .area-btn.has-images{border:2px solid #52c41a;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
 .area-btn.has-images.expanded{border-color:#ff4d4f;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
+/* 【v1.11.0】记录完成时间按钮：圆角胶囊形 */
+.record-time-btn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:6px 16px;margin:5px 4px;font-size:13px;font-weight:500;border:1.5px solid #d9d9d9;border-radius:20px;background:#f5f5f5;color:#666;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s;-webkit-user-select:none;user-select:none}
+.record-time-btn:active,.record-time-btn._pressing{transform:scale(.95);background:#e8e8e8}
+/* 【v1.11.0】楼层卡片完成时间显示 */
+.floor-completion{display:inline-block;font-size:12px;font-weight:400;color:rgba(255,255,255,.85);margin:0 8px;vertical-align:middle;text-align:center;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.floor-completion.sm{font-size:10px}
+.floor-completion.xs{font-size:9px}
+.floor-completion.fixed{font-size:11px;white-space:normal;word-break:break-all;line-height:1.3}
 
 .seat-container{display:none;padding:8px 0}
 .seat-container.show{display:block}
@@ -345,6 +354,12 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
 .theme-normal .area-btn.expanded{border-color:#7a9a5a;background:rgba(248,255,240,.92)}
 .theme-normal .area-btn.has-images{border-color:#6a9a4a;background:linear-gradient(135deg,rgba(235,250,228,.92),rgba(210,240,195,.92));color:#3a6a1a}
 .theme-normal .area-btn.has-images.expanded{border-color:#7a9a5a;background:linear-gradient(135deg,rgba(235,250,228,.92),rgba(210,240,195,.92));color:#3a6a1a}
+/* 【v1.11.0】记录完成时间按钮：暖色胶囊 */
+.theme-normal .record-time-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(255,248,230,.92);border:1.5px solid #c8bca8;color:#8B7355;box-shadow:0 1px 4px rgba(120,100,70,.08)}
+.theme-normal .record-time-btn:active,.theme-normal .record-time-btn._pressing{transform:scale(.95);background:rgba(255,240,215,.96)}
+/* 【v1.11.0】楼层卡片完成时间：暖棕色文字 */
+.theme-normal .floor-completion{color:rgba(74,55,40,.7)}
+.theme-normal .floor-completion.fixed{color:#8B7355}
 /* 座位编号按钮：米白底，暖棕边框 */
 .theme-normal .seat-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(255,253,248,.96);border:1px solid #c8bca8;color:#4A3728;font-size:12px;transition:background .12s,border-color .12s}
 .theme-normal .seat-btn:hover{background:rgba(255,248,232,.96)}
@@ -471,6 +486,12 @@ html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 
 .theme-yiban .area-btn.expanded{border-color:#00ffff;background:rgba(60,60,68,.92);box-shadow:0 0 10px rgba(0,255,255,.25)}
 .theme-yiban .area-btn.has-images{border-color:#00cccc;background:linear-gradient(135deg,rgba(0,80,80,.35),rgba(55,55,62,.88));color:#00ffff}
 .theme-yiban .area-btn.has-images.expanded{border-color:#00ffff;background:linear-gradient(135deg,rgba(0,80,80,.35),rgba(55,55,62,.88));color:#00ffff}
+/* 【v1.11.0】记录完成时间按钮：霓虹橙胶囊 */
+.theme-yiban .record-time-btn{font-family:'Segoe UI','Helvetica Neue',sans-serif;background:rgba(55,55,62,.88);border:1px solid rgba(232,130,12,.5);color:#e8820c;box-shadow:0 0 4px rgba(232,130,12,.15),inset 0 1px 3px rgba(0,0,0,.3);border-radius:20px}
+.theme-yiban .record-time-btn:active,.theme-yiban .record-time-btn._pressing{transform:scale(.95);border-color:#00ffff;box-shadow:0 0 8px rgba(0,255,255,.25),inset 0 1px 3px rgba(0,0,0,.3)}
+/* 【v1.11.0】楼层卡片完成时间：霓虹青文字 */
+.theme-yiban .floor-completion{color:rgba(0,255,255,.7);text-shadow:0 0 4px rgba(0,255,255,.2)}
+.theme-yiban .floor-completion.fixed{color:#e8820c;text-shadow:0 0 6px rgba(232,130,12,.3)}
 /* 座位编号按钮：暗灰 + 全息网格 + 暗青边框 */
 .theme-yiban .seat-btn{font-family:'Segoe UI','Helvetica Neue',sans-serif;background:rgba(45,45,52,.92);border:1px solid rgba(0,255,255,.2);color:#a0a8b0;font-size:12px;transition:background .1s,border-color .1s,box-shadow .1s}
 .theme-yiban .seat-btn:hover{background:rgba(55,55,62,.92);border-color:rgba(0,255,255,.4)}
@@ -607,6 +628,12 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .area-btn.expanded{border-color:#5a3d2b;background:#b8b8b8}
 .theme-pixel .area-btn.has-images{border-color:#7ec850;background:linear-gradient(135deg,#8dd850,#7ec850);color:#3a5a1a}
 .theme-pixel .area-btn.has-images.expanded{border-color:#5a3d2b;background:linear-gradient(135deg,#8dd850,#7ec850);color:#3a5a1a}
+/* 【v1.11.0】记录完成时间按钮：像素风药丸 */
+.theme-pixel .record-time-btn{font-family:'Courier New',monospace;background:#d8d8d8;border:2px solid #888;border-radius:0;box-shadow:2px 2px 0 #2d2d2d;color:#3a3a3a;font-weight:700}
+.theme-pixel .record-time-btn:active,.theme-pixel .record-time-btn._pressing{transform:translate(2px,2px);box-shadow:1px 1px 0 #2d2d2d}
+/* 【v1.11.0】楼层卡片完成时间：像素风深色文字 */
+.theme-pixel .floor-completion{color:rgba(74,55,40,.8)}
+.theme-pixel .floor-completion.fixed{color:#5a3d2b}
 /* 座位编号按钮：铁块/石英材质 + 像素描边 */
 .theme-pixel .seat-btn{font-family:'Courier New',monospace;background:#d8d8d8;border:2px solid #888;border-radius:0;box-shadow:2px 2px 0 #2d2d2d;color:#3a3a3a;font-size:12px;font-weight:700;transition:transform .08s,box-shadow .08s}
 .theme-pixel .seat-btn:hover{background:#e0e0e0}
@@ -829,12 +856,12 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.10.21';
+const APP_VERSION = 'v1.11.0';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
+  { date: '6月25日', text: '新增"记录完成时间"功能：区域按钮旁计时按钮，楼层卡片显示下轮参考时间' },
   { date: '6月23日', text: '修复批量下载分批弹窗问题；清除图片改为选择性界面；新增22时段勾选限制' },
   { date: '6月22日', text: '修复拼接预览高清重绘中断、全屏滑动失灵、后台重绘失败自动恢复' },
-  { date: '6月22日', text: '新增护眼、蓝色、怀旧主题；标题点击检查更新；像素主题改名怀旧' },
 ];
 UPDATE_LOG.__hasOlder = true; // 历史上曾有更早记录已移除
 const UPDATE_LOG_MAX = 3; // 最多保留3条
@@ -964,6 +991,8 @@ const state = {
   showLogo: false, // 【v1.3.2 新功能3】深业运营 LOGO 水印开关，默认关闭
   uploadWatermark: false, // 【v1.3.9 新功能1】上传图片加水印开关，默认关闭
   currentTheme: 'default', // 【v1.6.0】当前主题，默认为 'default'
+  // 【v1.11.0】记录完成时间：每楼层存储区域记录或固定文案，仅会话内保留
+  completionRecords: {}, // { floorId: { records: [{area, time}], fixedText: '' } }
 };
 
 /** 生成区域 key */
@@ -1017,6 +1046,43 @@ function getBeijingTime() {
   const parts = new Intl.DateTimeFormat('zh-CN', opts).formatToParts(now);
   const get = (type) => parts.find(p => p.type === type).value;
   return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
+}
+
+// 【v1.11.0】记录完成时间：根据北京时间判断时段，计算下轮参考时间
+// 返回 { type: 'time'|'fixed', time: 'HH:MM:SS', fixedText: '' } 或 { type: 'fixed', fixedText: '...' }
+function calcCompletionTime() {
+  const now = new Date();
+  const bjOpts = { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+  const bjParts = new Intl.DateTimeFormat('zh-CN', bjOpts).formatToParts(now);
+  const bjGet = (type) => bjParts.find(p => p.type === type).value;
+  const h = parseInt(bjGet('hour')), m = parseInt(bjGet('minute')), s = parseInt(bjGet('second'));
+  const mins = h * 60 + m; // 当天分钟数
+
+  // 情况四：21:16–21:59
+  if (h === 21 && m >= 16) return { type: 'fixed', fixedText: '(💢｀Д´)我chovy你们都干嘛呢还不下班' };
+  // 情况五：22:00–01:00
+  if ((h >= 22) || (h <= 1 && (h < 1 || m <= 0))) return { type: 'fixed', fixedText: '晚安玛卡巴卡ﾍ(=^･ω･^=)ﾉ' };
+  // 情况六：01:01–08:29
+  if ((h === 1 && m >= 1) || (h >= 2 && h <= 7) || (h === 8 && m <= 29)) return { type: 'fixed', fixedText: '本页面还没睡醒' };
+
+  // 情况三：13:01–13:29 → 固定 14:00:01
+  if (h === 13 && m >= 1 && m <= 29) return { type: 'time', time: '14:00:01' };
+
+  // 情况二：11:30–13:00、16:30–18:30 → +60分01秒
+  const isCase2 = (h === 11 && m >= 30) || (h === 12) || (h === 13 && m === 0)
+               || (h === 16 && m >= 30) || (h >= 17 && h <= 18 && (h < 18 || m <= 30));
+  if (isCase2) {
+    const target = new Date(now.getTime() + (60 * 60 + 1) * 1000);
+    const tParts = new Intl.DateTimeFormat('zh-CN', bjOpts).formatToParts(target);
+    const tGet = (type) => tParts.find(p => p.type === type).value;
+    return { type: 'time', time: `${tGet('hour')}:${tGet('minute')}:${tGet('second')}` };
+  }
+
+  // 情况一：08:30–11:29、13:30–16:29、18:31–21:15 → +30分01秒
+  const target = new Date(now.getTime() + (30 * 60 + 1) * 1000);
+  const tParts = new Intl.DateTimeFormat('zh-CN', bjOpts).formatToParts(target);
+  const tGet = (type) => tParts.find(p => p.type === type).value;
+  return { type: 'time', time: `${tGet('hour')}:${tGet('minute')}:${tGet('second')}` };
 }
 
 // 【v1.3.13 微调】座位图片统计：{ totalCount, hasSlotWithMulti, visibleTotalCount, visibleHasSlotWithMulti, visibleCount, hiddenHasImages, visibleHasImages }
@@ -1302,7 +1368,18 @@ async function renderMain() {
     // 计算楼层总座位数
     let floorTotal = 0;
     floor.areas.forEach(area => { floorTotal += getAreaSeatCount(fid, area.name) - (deletedCountMap[areaKey(fid, area.name)] || 0); });
-    html += `<button class="floor-btn floor-${fid} ${expanded ? 'expanded' : ''}" data-action="toggle-floor" data-floor="${fid}">${floor.name}<span class="floor-count">${floorTotal}座</span><span class="arrow">▶</span></button>`;
+    // 【v1.11.0】楼层卡片中间显示完成时间记录或固定文案
+    const rec = state.completionRecords[fid];
+    let completionHtml = '';
+    if (rec && rec.fixedText) {
+      completionHtml = `<span class="floor-completion fixed">${rec.fixedText}</span>`;
+    } else if (rec && rec.records && rec.records.length > 0) {
+      const recordCount = rec.records.length;
+      const sizeClass = recordCount >= 6 ? 'xs' : recordCount >= 4 ? 'sm' : '';
+      const parts = rec.records.map(r => `${r.area}${r.time}`).join('、');
+      completionHtml = `<span class="floor-completion ${sizeClass}">${parts}</span>`;
+    }
+    html += `<button class="floor-btn floor-${fid} ${expanded ? 'expanded' : ''}" data-action="toggle-floor" data-floor="${fid}">${floor.name}${completionHtml}<span class="floor-count">${floorTotal}座</span><span class="arrow">▶</span></button>`;
     html += `<div class="area-container ${expanded ? 'show' : ''}" id="areas-${fid}">`;
     floor.areas.forEach(area => {
       const aname = area.name, ak = areaKey(fid, aname), aExp = state.expandedAreas.has(ak);
@@ -1313,6 +1390,10 @@ async function renderMain() {
         if (state.seatHasImages.has(seatKey(fid, aname, si))) { areaHasImages = true; break; }
       }
       html += `<button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow">▶</span></span><span class="area-count">${areaTotal}座</span></button>`;
+      // 【v1.11.0】区域展开时，在区域按钮右侧显示"记录完成时间"按钮
+      if (aExp) {
+        html += `<button class="record-time-btn" data-action="record-time" data-floor="${fid}" data-area="${aname}">⏱️记录完成时间</button>`;
+      }
       html += `<div class="seat-container ${aExp ? 'show' : ''}" id="seats-${ak}">${renderSeatFlow(fid, aname)}</div>`;
     });
     html += '</div>';
@@ -4525,6 +4606,27 @@ document.addEventListener('click', async (e) => {
   const areaBtn = target.closest('[data-action="toggle-area"]');
   // 【v1.9.21】手风琴模式：同楼层只能展开一个区域，展开新区域时自动收起同楼层其他区域
   if (areaBtn) { const fid = parseInt(areaBtn.dataset.floor), aname = areaBtn.dataset.area, ak = areaKey(fid, aname); if (state.expandedAreas.has(ak)) { state.expandedAreas.delete(ak); } else { state.expandedAreas.add(ak); for (const k of [...state.expandedAreas]) { if (k !== ak && k.startsWith(fid + '-')) state.expandedAreas.delete(k); } } saveUIState(); renderMain(); return; }
+  // 【v1.11.0】记录完成时间按钮
+  const recordBtn = target.closest('[data-action="record-time"]');
+  if (recordBtn) {
+    const fid = parseInt(recordBtn.dataset.floor), aname = recordBtn.dataset.area;
+    const result = calcCompletionTime();
+    if (result.type === 'fixed') {
+      // 情况四/五/六：清空该楼层所有区域记录，仅显示固定文案
+      state.completionRecords[fid] = { records: [], fixedText: result.fixedText };
+    } else {
+      // 情况一/二/三：添加该区域的记录
+      if (!state.completionRecords[fid]) state.completionRecords[fid] = { records: [], fixedText: '' };
+      const rec = state.completionRecords[fid];
+      rec.fixedText = ''; // 清除固定文案
+      // 如果该区域已有记录则更新，否则新增
+      const existing = rec.records.find(r => r.area === aname);
+      if (existing) { existing.time = result.time; }
+      else { rec.records.push({ area: aname, time: result.time }); }
+    }
+    renderMain();
+    return;
+  }
   const seatBtn = target.closest('[data-action="toggle-seat"]');
   if (seatBtn) { const fid = parseInt(seatBtn.dataset.floor), aname = seatBtn.dataset.area, sidx = parseInt(seatBtn.dataset.seat), sk = seatKey(fid, aname, sidx); const prev = [...state.expandedSeats]; state.expandedSeats.clear(); if (!prev.includes(sk)) state.expandedSeats.add(sk); saveUIState(); renderMain(); return; }
   const addBtn = target.closest('[data-action="add-seat"]');
@@ -4635,7 +4737,7 @@ document.addEventListener('click', async (e) => {
 // 不调用 preventDefault()，保留系统长按行为（复制、选择等）
 // ============================================================
 (function(){
-  var cls='_pressing',sel='.floor-btn,.area-btn,.seat-btn,.header-btn,.btn-delete-seat,.func-item,.update-bar';
+  var cls='_pressing',sel='.floor-btn,.area-btn,.record-time-btn,.seat-btn,.header-btn,.btn-delete-seat,.func-item,.update-bar';
   document.addEventListener('touchstart',function(e){
     var t=e.target.closest(sel);
     if(t) t.classList.add(cls);
