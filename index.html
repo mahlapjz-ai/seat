@@ -739,7 +739,7 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .theme-list-item.active .theme-check{background:#7ec850;border-color:#5a8a30}
 /* 【v1.12.0】骨架屏加载动画 */
 @keyframes skeleton-shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-.skeleton-screen{padding:0 16px;animation:skeleton-fadein .2s ease}
+.skeleton-screen{position:fixed;top:0;left:0;right:0;bottom:0;padding:0 16px;background:#f0f2f5;z-index:500;animation:skeleton-fadein .2s ease;overflow-y:auto}
 @keyframes skeleton-fadein{from{opacity:0}to{opacity:1}}
 .skeleton-header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;margin-bottom:8px}
 .skeleton-header-title{width:140px;height:22px;border-radius:4px;background:linear-gradient(90deg,#e8e8e8 25%,#f5f5f5 50%,#e8e8e8 75%);background-size:200% 100%;animation:skeleton-shimmer 1.5s infinite}
@@ -888,7 +888,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.12.2';
+const APP_VERSION = 'v1.12.3';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
