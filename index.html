@@ -423,6 +423,11 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
 .theme-normal .modal-box h3{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
 .theme-normal .modal-cancel{background:#f0e8d8;color:#4A3728}
 .theme-normal .modal-confirm{background:#6a9a4a}
+/* 【v1.12.5】记录完成时间确认弹窗 */
+.theme-normal .record-confirm-box{background:rgba(255,252,245,.97);box-shadow:0 4px 18px rgba(120,100,70,.12);border:1.5px solid #c8bca8}
+.theme-normal .record-confirm-text{font-family:Georgia,'KaiTi','STKaiti',serif;color:#4A3728}
+.theme-normal .record-confirm-cancel{background:#f0e8d8;color:#4A3728;border-radius:8px}
+.theme-normal .record-confirm-ok{background:#6a9a4a;border-radius:8px}
 /* 批量下载弹窗 */
 .theme-normal .batch-chip{border-color:#c8bca8;color:#4A3728;font-family:Georgia,'KaiTi','STKaiti',serif}
 .theme-normal .batch-chip.checked{background:#6a9a4a;color:#fff;border-color:#6a9a4a}
@@ -555,6 +560,11 @@ html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 
 .theme-yiban .modal-box h3{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#00ffff;text-shadow:0 0 8px rgba(0,255,255,.3)}
 .theme-yiban .modal-cancel{background:rgba(80,80,88,.8);color:#c8c8c8}
 .theme-yiban .modal-confirm{background:#00888a;box-shadow:0 0 6px rgba(0,255,255,.2)}
+/* 【v1.12.5】记录完成时间确认弹窗 */
+.theme-yiban .record-confirm-box{background:rgba(45,45,52,.97);border:1px solid rgba(0,255,255,.2);box-shadow:0 4px 20px rgba(0,0,0,.4),0 0 12px rgba(0,255,255,.1)}
+.theme-yiban .record-confirm-text{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#e0d0b8}
+.theme-yiban .record-confirm-cancel{background:rgba(80,80,88,.8);color:#c8c8c8;border:1px solid rgba(0,255,255,.15);border-radius:4px}
+.theme-yiban .record-confirm-ok{background:#00888a;box-shadow:0 0 6px rgba(0,255,255,.2);border-radius:4px}
 /* 【v1.9.10 修复】蓝色主题下重置/清理进度弹窗文字不可见 */
 .theme-yiban #cleanup-loading-text{color:#00ffff!important}
 /* 批量下载弹窗 */
@@ -697,6 +707,11 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .modal-box h3{font-family:'Courier New',monospace;color:#4a3728;font-weight:900}
 .theme-pixel .modal-cancel{background:#aaa;border:2px solid #555;border-radius:0;color:#3a3a3a}
 .theme-pixel .modal-confirm{background:#7ec850;border:2px solid #5a8a30;border-radius:0;color:#3a5a1a}
+/* 【v1.12.5】记录完成时间确认弹窗 */
+.theme-pixel .record-confirm-box{background:#c8a96e;border:4px solid #5a3d2b;border-radius:0;box-shadow:6px 6px 0 #2d2d2d}
+.theme-pixel .record-confirm-text{font-family:'Courier New',monospace;color:#4a3728;font-weight:700}
+.theme-pixel .record-confirm-cancel{background:#aaa;border:2px solid #555;border-radius:0;color:#3a3a3a;font-weight:700}
+.theme-pixel .record-confirm-ok{background:#7ec850;border:2px solid #5a8a30;border-radius:0;color:#3a5a1a;font-weight:700}
 /* 批量下载弹窗 */
 .theme-pixel .batch-chip{border:2px solid #8b7355;border-radius:0;color:#4a3728;font-family:'Courier New',monospace}
 .theme-pixel .batch-chip.checked{background:#7ec850;color:#3a5a1a;border-color:#5a8a30}
@@ -888,7 +903,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.12.3';
+const APP_VERSION = 'v1.12.5';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -5370,7 +5385,7 @@ async function init() {
   // 【v1.12.2】骨架屏：最小显示 0.4 秒，确保刷新时也能看到动画
   if (skeletonEl) {
     const elapsed = Date.now() - initStart;
-    const minDelay = Math.max(0, 400 - elapsed);
+    const minDelay = Math.max(0, 200 - elapsed);
     const pageHeader = document.getElementById('page-header');
     const reveal = () => { if (pageHeader) pageHeader.style.opacity = '1'; };
     setTimeout(() => {
