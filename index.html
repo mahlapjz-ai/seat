@@ -109,10 +109,11 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .record-time-btn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:6px 16px;margin:5px 4px;font-size:13px;font-weight:500;border:1.5px solid #d9d9d9;border-radius:20px;background:#f5f5f5;color:#666;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s;-webkit-user-select:none;user-select:none}
 .record-time-btn:active,.record-time-btn._pressing{transform:scale(.95);background:#e8e8e8}
 /* 【v1.11.0】楼层卡片完成时间显示 */
-.floor-completion{display:inline-block;font-size:12px;font-weight:400;color:rgba(255,255,255,.85);margin:0 8px;vertical-align:middle;text-align:center;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.floor-completion.sm{font-size:10px}
-.floor-completion.xs{font-size:9px}
-.floor-completion.fixed{font-size:11px;white-space:normal;word-break:break-all;line-height:1.3}
+.floor-completion{display:inline-block;font-weight:400;color:rgba(255,255,255,.85);margin:0 8px;vertical-align:middle;text-align:center;max-width:60%;line-height:1.4}
+.floor-completion.s1{font-size:14px}
+.floor-completion.s2{font-size:12px}
+.floor-completion.s3{font-size:10px}
+.floor-completion.fixed{font-size:11px;word-break:break-all;line-height:1.3}
 /* 【v1.12.0】记录完成时间二次确认弹窗 */
 .record-confirm-box{background:#fff;border-radius:12px;padding:24px 20px 18px;width:280px;max-width:85vw;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.15)}
 .record-confirm-text{font-size:15px;color:#333;margin-bottom:20px;line-height:1.5}
@@ -184,9 +185,11 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .bar-btn{padding:12px 8px;font-size:13px;font-weight:600;border:none;border-radius:8px;cursor:pointer;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-footer{text-align:center;padding:12px 0 16px;max-width:480px;margin:0 auto}
 .app-footer .footer-title{font-size:12px;color:#999;font-weight:700;text-align:left;margin-bottom:4px;padding-left:16px}
-.app-footer .update-log{font-size:10px;color:#999;line-height:1.5;text-align:left;padding:0 16px;margin-bottom:8px}
-.app-footer .update-log .log-item{margin-bottom:1px}
-.app-footer .update-log .log-ellipsis{color:#aaa;text-align:center;margin-top:2px;font-size:10px}
+.app-footer .footer-collapsible{font-size:12px;color:#999;font-weight:700;text-align:left;margin-bottom:4px;padding-left:16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding-right:16px;min-height:44px;-webkit-user-select:none;user-select:none}
+.app-footer .footer-collapsible .collapse-arrow{font-size:10px;transition:transform .2s}
+.app-footer .footer-collapsible.expanded .collapse-arrow{transform:rotate(180deg)}
+.app-footer .footer-collapsible-body{font-size:10px;color:#999;line-height:1.5;text-align:left;padding:0 16px;margin-bottom:6px;display:none}
+.app-footer .footer-collapsible-body.show{display:block}
 .app-footer .usage-guide{font-size:10px;color:#999;line-height:1.5;text-align:left;padding:0 16px;margin-bottom:6px}
 .app-footer .disclaimer{font-size:10px;color:#999}
 .app-footer .contact{font-size:9px;color:#999;margin-top:2px;transition:opacity .5s ease}
@@ -903,7 +906,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.12.5';
+const APP_VERSION = 'v1.12.7';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1038,9 +1041,12 @@ const state = {
   showLogo: false, // 【v1.3.2 新功能3】深业运营 LOGO 水印开关，默认关闭
   uploadWatermark: false, // 【v1.3.9 新功能1】上传图片加水印开关，默认关闭
   currentTheme: 'default', // 【v1.6.0】当前主题，默认为 'default'
-  // 【v1.11.0】记录完成时间：每楼层存储区域记录或固定文案，仅会话内保留
+  // 【v1.11.0】记录完成时间：每楼层存储区域记录或固定文案
   completionRecords: {}, // { floorId: { records: [{area, time}], fixedText: '' } }
 };
+// 【v1.12.7】记录完成时间持久化：保存到 localStorage
+function saveCompletionRecords() { try { localStorage.setItem('completionRecords', JSON.stringify(state.completionRecords)); } catch(e) {} }
+function loadCompletionRecords() { try { const d = localStorage.getItem('completionRecords'); if (d) state.completionRecords = JSON.parse(d); } catch(e) {} }
 
 /** 生成区域 key */
 function areaKey(fid, aname) { return `${fid}-${aname}`; }
@@ -1157,6 +1163,7 @@ function showRecordConfirm(fid, aname) {
       if (existing) { existing.time = result.time; }
       else { rec.records.push({ area: aname, time: result.time }); }
     }
+    saveCompletionRecords();
     renderMain();
   };
 }
@@ -1444,16 +1451,22 @@ async function renderMain() {
     // 计算楼层总座位数
     let floorTotal = 0;
     floor.areas.forEach(area => { floorTotal += getAreaSeatCount(fid, area.name) - (deletedCountMap[areaKey(fid, area.name)] || 0); });
-    // 【v1.11.0】楼层卡片中间显示完成时间记录或固定文案
+    // 【v1.12.7】楼层卡片中间显示完成时间记录或固定文案
     const rec = state.completionRecords[fid];
     let completionHtml = '';
     if (rec && rec.fixedText) {
       completionHtml = `<span class="floor-completion fixed">${rec.fixedText}</span>`;
     } else if (rec && rec.records && rec.records.length > 0) {
-      const recordCount = rec.records.length;
-      const sizeClass = recordCount >= 6 ? 'xs' : recordCount >= 4 ? 'sm' : '';
-      const parts = rec.records.map(r => `${r.area}${r.time}`).join('、');
-      completionHtml = `<span class="floor-completion ${sizeClass}">${parts}</span>`;
+      const n = rec.records.length;
+      const sizeClass = n <= 2 ? 's1' : n <= 4 ? 's2' : 's3';
+      // 最多显示6个区域，每行2个，空格分隔
+      const shown = rec.records.slice(0, 6);
+      const lines = [];
+      for (let i = 0; i < shown.length; i += 2) {
+        const pair = shown.slice(i, i + 2).map(r => `${r.area}${r.time}`);
+        lines.push(pair.join('&emsp;'));
+      }
+      completionHtml = `<span class="floor-completion ${sizeClass}">${lines.join('<br>')}</span>`;
     }
     html += `<button class="floor-btn floor-${fid} ${expanded ? 'expanded' : ''}" data-action="toggle-floor" data-floor="${fid}">${floor.name}${completionHtml}<span class="floor-count">${floorTotal}座</span><span class="arrow">▶</span></button>`;
     html += `<div class="area-container ${expanded ? 'show' : ''}" id="areas-${fid}">`;
@@ -1474,22 +1487,18 @@ async function renderMain() {
     });
     html += '</div>';
   });
-  // 【v1.10.13】底部信息：更新日志 + 使用说明 + 免责声明 + 联系小字
+  // 【v1.12.6】底部信息：使用说明 + 近期优化记录 + 致谢 + 免责声明 + 联系小字
   const lastVer = localStorage.getItem('lastShownVersion');
   const showContact = lastVer !== APP_VERSION;
-  let logHtml = '';
-  const visibleLog = UPDATE_LOG.slice(0, UPDATE_LOG_MAX);
-  visibleLog.forEach(item => {
-    logHtml += `<div class="log-item">·${item.date}：${item.text}</div>`;
-  });
-  // 如果历史上曾有更早记录（被移除），显示省略号
-  const hasOlder = UPDATE_LOG.__hasOlder || false;
-  if (hasOlder) logHtml += `<div class="log-ellipsis">……</div>`;
+  const optExpanded = localStorage.getItem('footer-opt-expanded') === '1';
+  const thxExpanded = localStorage.getItem('footer-thx-expanded') === '1';
   html += `<div class="app-footer">`
     + `<div class="footer-title">使用说明</div>`
     + `<div class="usage-guide">·座位如有单张图片且当前时段未隐藏，座位显示蓝色；若时段隐藏，则不显示颜色<br>·座位的同一时段有多张图片且未隐藏，座位显示橙色；若时段隐藏，则不显示颜色<br>·隐藏时段内若存在图片，座位按钮左上角显示"闭眼"图标<br>·若区域存在图片，区域按钮显示绿色<br>·通过"时段筛选"选定某一时段后，若该时段有图片，座位按钮右上角显示"图片"图标</div>`
-    + `<div class="footer-title">更新日志</div>`
-    + `<div class="update-log">${logHtml}</div>`
+    + `<div class="footer-collapsible${optExpanded ? ' expanded' : ''}" data-action="toggle-footer-opt">近期优化记录<span class="collapse-arrow">▼</span></div>`
+    + `<div class="footer-collapsible-body${optExpanded ? ' show' : ''}" id="footer-opt-body">·圳组建议的纸质登记辅助功能已简单实现：时段筛选设为当前拍照时段后，蓝底且带图标的座位可对应纸质表打"❌"（06.18更新）。<br>·圳组、乔组建议增设占座倒计时：目前仅增设"记录完成时间"功能来辅助判断（06.25更新），真正的倒计时提醒待馆方自研系统实现。<br>·赖组反馈批量清理原功能易致页面崩溃：已修复功能为"清除图片"（06.21更新）。<br>·环总、馨同志建议数据互通：资金实力不足，待馆方自研系统实现。</div>`
+    + `<div class="footer-collapsible${thxExpanded ? ' expanded' : ''}" data-action="toggle-footer-thx">致谢<span class="collapse-arrow">▼</span></div>`
+    + `<div class="footer-collapsible-body${thxExpanded ? ' show' : ''}" id="footer-thx-body">感谢以下大佬的建议与使用体验反馈（排名不分先后）：<br>环总、何总、圳组、赖组、州组、乔组、伟同志、垚同志、馨同志、瑜同志、伦同志、元同志、彦同志、灵同志、琪同志……</div>`
     + `<div class="disclaimer">内部参考工具，功能尚不完善，数据可能丢失，不承担准确性与隐私责任</div><div class="contact${showContact ? '' : ' hidden'}">如有使用建议可联系老范尝试优化。</div></div>`;
   app.innerHTML = html;
   // 【v1.2.5】联系小字：版本更新后显示2秒再淡出
@@ -4677,6 +4686,11 @@ document.getElementById('btn-clear-select').addEventListener('click', () => { st
 // 【修复文字消失】事件委托改为 document，因为 page-header 已移出 app
 document.addEventListener('click', async (e) => {
   const target = e.target;
+  // 【v1.12.6】底部折叠区域切换
+  const footerOpt = target.closest('[data-action="toggle-footer-opt"]');
+  if (footerOpt) { const key = 'footer-opt-expanded', cur = localStorage.getItem(key) === '1'; localStorage.setItem(key, cur ? '0' : '1'); renderMain(); return; }
+  const footerThx = target.closest('[data-action="toggle-footer-thx"]');
+  if (footerThx) { const key = 'footer-thx-expanded', cur = localStorage.getItem(key) === '1'; localStorage.setItem(key, cur ? '0' : '1'); renderMain(); return; }
   const floorBtn = target.closest('[data-action="toggle-floor"]');
   if (floorBtn) { const fid = parseInt(floorBtn.dataset.floor); state.expandedFloors.has(fid) ? state.expandedFloors.delete(fid) : state.expandedFloors.add(fid); saveUIState(); renderMain(); return; }
   const areaBtn = target.closest('[data-action="toggle-area"]');
@@ -5373,6 +5387,7 @@ async function init() {
     loadShowLogoState(); // 【v1.3.2 新功能3】加载 LOGO 水印开关状态
     loadUploadWatermarkState(); // 【v1.3.9 新功能1】加载上传加水印开关状态
     loadThemeState(); // 【v1.6.0】加载主题状态
+    loadCompletionRecords(); // 【v1.12.7】加载记录完成时间数据
     ensureFuncBtnText();
     startFuncBtnObserver();
     await renderMain();
