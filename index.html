@@ -911,7 +911,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.13.4';
+const APP_VERSION = 'v1.13.5';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1045,6 +1045,7 @@ const state = {
   allowDeleteSeat: false, // 【修改1】允许删除座位开关，默认关闭
   showLogo: false, // 【v1.3.2 新功能3】深业运营 LOGO 水印开关，默认关闭
   uploadWatermark: false, // 【v1.3.9 新功能1】上传图片加水印开关，默认关闭
+  deleteProtection: false, // 【v1.13.5】删除保护开关，默认关闭
   currentTheme: 'default', // 【v1.6.0】当前主题，默认为 'default'
   // 【v1.11.0】记录完成时间：每楼层存储区域记录或固定文案
   completionRecords: {}, // { floorId: { records: [{area, time}], fixedText: '' } }
@@ -1293,6 +1294,9 @@ function loadAutoShareState() { try { state.autoShare = localStorage.getItem('se
 // 【修改1】允许删除座位开关状态持久化
 function saveAllowDeleteState() { try { localStorage.setItem('seat_allow_delete', state.allowDeleteSeat ? '1' : '0'); } catch (e) {} }
 function loadAllowDeleteState() { try { state.allowDeleteSeat = localStorage.getItem('seat_allow_delete') === '1'; } catch (e) {} }
+// 【v1.13.5】删除保护开关状态持久化
+function saveDeleteProtectionState() { try { localStorage.setItem('seat_delete_protection', state.deleteProtection ? '1' : '0'); } catch (e) {} }
+function loadDeleteProtectionState() { try { state.deleteProtection = localStorage.getItem('seat_delete_protection') === '1'; } catch (e) {} }
 // 【v1.3.2 新功能3】深业运营 LOGO 水印开关状态持久化
 function saveShowLogoState() { try { localStorage.setItem('seat_show_logo', state.showLogo ? '1' : '0'); } catch (e) {} }
 function loadShowLogoState() { try { state.showLogo = localStorage.getItem('seat_show_logo') === '1'; } catch (e) {} }
@@ -4657,7 +4661,7 @@ document.getElementById('cleanup-confirm-exec').addEventListener('click', async 
 // ============================================================
 // 十一、提示与底部栏
 // ============================================================
-function showToast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2100); }
+function showToast(msg, duration) { const d = duration || 2100; const t = document.createElement('div'); t.className = 'toast'; t.style.animationDuration = (d / 1000) + 's'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), d + 100); }
 const bottomBar = document.getElementById('bottom-bar'), selectedCount = document.getElementById('selected-count');
 function updateBottomBar() {
   if (state.selectedCells.length > 0) {
@@ -4756,6 +4760,11 @@ document.addEventListener('click', async (e) => {
   // iOS 中 await 后调用 click() 会被系统阻止，必须在用户交互同步栈中触发
   if (uploadBtn) { const ck = uploadBtn.dataset.cellKey; currentUploadCellKey = ck; uploadInput.value = ''; uploadInput.click(); return; }
   const delBtn = target.closest('[data-action="delete-img"]');
+  // 【v1.13.5】删除保护：开启后禁止删除缩略图，显示 toast 提示
+  if (delBtn && state.deleteProtection) {
+    showToast('已开启删除保护，请关闭后重试', 1500);
+    return;
+  }
   // 【修改2】删除图片后，若该时段图片清零则自动取消勾选并更新UI
   if (delBtn) {
     const ck = delBtn.dataset.cellKey, imgIdx = parseInt(delBtn.dataset.imgIdx);
@@ -5153,6 +5162,11 @@ function renderFuncPanelBody() {
       <div class="theme-list-item${state.currentTheme === 'yiban' ? ' active' : ''}" data-theme="yiban"><span>蓝色</span><span class="theme-check"></span></div>
       <div class="theme-list-item${state.currentTheme === 'pixel' ? ' active' : ''}" data-theme="pixel"><span>怀旧</span><span class="theme-check"></span></div>
     </div>
+    <!-- 【v1.13.5】删除保护开关 -->
+    <div class="func-item" data-func="toggle-delete-protection">
+      <div class="func-item-label">删除保护<div class="func-item-desc">开启后禁止删除缩略图图片</div></div>
+      <div class="func-toggle ${state.deleteProtection ? 'on' : ''}" id="func-toggle-del-protect"></div>
+    </div>
     <div class="func-item" data-func="toggle-auto-share">
       <div class="func-item-label">拍照后下载<div class="func-item-desc">拍照完成后提示下载图片</div></div>
       <div class="func-toggle ${state.autoShare ? 'on' : ''}" id="func-toggle-share"></div>
@@ -5265,6 +5279,13 @@ funcPanelBody.addEventListener('click', (e) => {
     // 【修复Bug2】清除 DOM 缓存并刷新已展开座位（确保新渲染的 HTML 包含正确按钮状态）
     invalidateAllTimeslotCache();
     state.expandedSeats.forEach(sk => renderTimeSlots(sk));
+  }
+  // 【v1.13.5】删除保护开关
+  else if (func === 'toggle-delete-protection') {
+    state.deleteProtection = !state.deleteProtection;
+    saveDeleteProtectionState();
+    const toggle = document.getElementById('func-toggle-del-protect');
+    if (toggle) toggle.classList.toggle('on', state.deleteProtection);
   }
   // 【v1.3.2 新功能3】深业运营 LOGO 水印开关
   else if (func === 'toggle-show-logo') {
@@ -5396,6 +5417,7 @@ async function init() {
     loadAllowDeleteState();
     loadShowLogoState(); // 【v1.3.2 新功能3】加载 LOGO 水印开关状态
     loadUploadWatermarkState(); // 【v1.3.9 新功能1】加载上传加水印开关状态
+    loadDeleteProtectionState(); // 【v1.13.5】加载删除保护开关状态
     loadThemeState(); // 【v1.6.0】加载主题状态
     loadCompletionRecords(); // 【v1.12.7】加载记录完成时间数据
     ensureFuncBtnText();
