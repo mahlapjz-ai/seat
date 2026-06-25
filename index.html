@@ -1118,7 +1118,7 @@ function calcCompletionTime() {
   const mins = h * 60 + m; // 当天分钟数
 
   // 情况四：21:16–21:59
-  if (h === 21 && m >= 16) return { type: 'fixed', fixedText: '(?｀Д?)我chovy<br>你们都干嘛呢还在做座位管理' };
+  if (h === 21 && m >= 16) return { type: 'fixed', fixedText: '(?｀Д?)我chovy你们都干嘛呢还在做' };
   // 情况五：22:00–01:00
   if ((h >= 22) || (h <= 1 && (h < 1 || m <= 0))) return { type: 'fixed', fixedText: '晚安玛卡巴卡ﾍ(=^･ω･^=)ﾉ' };
   // 情况六：01:01–08:29
