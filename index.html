@@ -83,11 +83,12 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #preview-save-btn:active{opacity:.8}
 #preview-save-btn.faded{opacity:.1}
 
-.floor-btn{display:block;width:100%;padding:16px 20px;margin:8px 0;font-size:18px;font-weight:600;border:none;border-radius:10px;color:#fff;cursor:pointer;text-align:left;transition:transform .1s}
+.floor-btn{display:flex;align-items:center;width:100%;padding:16px 20px;margin:8px 0;font-size:18px;font-weight:600;border:none;border-radius:10px;color:#fff;cursor:pointer;text-align:left;transition:transform .1s}
 .floor-btn:active,.floor-btn._pressing{transform:scale(.97)}
-.floor-btn .arrow{float:right;font-size:14px;transition:transform .25s;display:inline-block}
+.floor-btn .floor-name{flex-shrink:0}
+.floor-btn .arrow{flex-shrink:0;font-size:14px;transition:transform .25s;display:inline-block}
 .floor-btn.expanded .arrow{transform:rotate(90deg)}
-.floor-btn .floor-count{float:right;font-size:13px;font-weight:400;margin-right:8px;opacity:.85}
+.floor-btn .floor-count{flex-shrink:0;font-size:13px;font-weight:400;margin-left:8px;opacity:.85}
 .floor-1{background:linear-gradient(135deg,#667eea,#764ba2)}
 .floor-2{background:linear-gradient(135deg,#f093fb,#f5576c)}
 .floor-3{background:linear-gradient(135deg,#4facfe,#00f2fe)}
@@ -108,14 +109,15 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 /* 【v1.12.1】记录完成时间按钮：圆角胶囊形 */
 .record-time-btn{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:6px 16px;margin:5px 4px;font-size:13px;font-weight:500;border:1.5px solid #d9d9d9;border-radius:20px;background:#f5f5f5;color:#666;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s;-webkit-user-select:none;user-select:none}
 .record-time-btn:active,.record-time-btn._pressing{transform:scale(.95);background:#e8e8e8}
-/* 【v1.13.0】楼层卡片完成时间显示：多行布局，每行左右对齐 */
-.floor-completion{display:inline-flex;flex-direction:column;font-weight:400;color:rgba(255,255,255,.85);margin:0 8px;vertical-align:middle;text-align:left;max-width:60%;line-height:1.4}
+/* 【v1.13.1】楼层卡片完成时间显示：flex填充中间空间 */
+.floor-completion{display:flex;flex-direction:column;flex:1;min-width:0;font-weight:400;color:rgba(255,255,255,.85);line-height:1.4}
 .floor-completion .fc-row{display:flex;justify-content:space-between;white-space:nowrap}
+.floor-completion .fc-row.fc-single{justify-content:center}
 .floor-completion .fc-row>span{white-space:nowrap}
 .floor-completion.s1{font-size:14px}
 .floor-completion.s2{font-size:12px}
 .floor-completion.s3{font-size:10px}
-.floor-completion.fixed{font-size:11px;word-break:break-all;line-height:1.3;display:inline}
+.floor-completion.fixed{font-size:11px;word-break:break-all;line-height:1.3;display:inline;flex:none}
 /* 【v1.12.0】记录完成时间二次确认弹窗 */
 .record-confirm-box{background:#fff;border-radius:12px;padding:24px 20px 18px;width:280px;max-width:85vw;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.15)}
 .record-confirm-text{font-size:15px;color:#333;margin-bottom:20px;line-height:1.5}
@@ -908,7 +910,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.13.0';
+const APP_VERSION = 'v1.13.2';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1453,7 +1455,7 @@ async function renderMain() {
     // 计算楼层总座位数
     let floorTotal = 0;
     floor.areas.forEach(area => { floorTotal += getAreaSeatCount(fid, area.name) - (deletedCountMap[areaKey(fid, area.name)] || 0); });
-    // 【v1.13.0】楼层卡片中间显示完成时间记录或固定文案
+    // 【v1.13.1】楼层卡片中间显示完成时间记录或固定文案
     const rec = state.completionRecords[fid];
     let completionHtml = '';
     if (rec && rec.fixedText) {
@@ -1466,11 +1468,12 @@ async function renderMain() {
       for (let i = 0; i < shown.length; i += 2) {
         const left = `<span>${shown[i].area}${shown[i].time}</span>`;
         const right = shown[i + 1] ? `<span>${shown[i + 1].area}${shown[i + 1].time}</span>` : '';
-        rows.push(`<div class="fc-row">${left}${right}</div>`);
+        const singleClass = !shown[i + 1] ? ' fc-single' : '';
+        rows.push(`<div class="fc-row${singleClass}">${left}${right}</div>`);
       }
       completionHtml = `<span class="floor-completion ${sizeClass}">${rows.join('')}</span>`;
     }
-    html += `<button class="floor-btn floor-${fid} ${expanded ? 'expanded' : ''}" data-action="toggle-floor" data-floor="${fid}">${floor.name}${completionHtml}<span class="floor-count">${floorTotal}座</span><span class="arrow">▶</span></button>`;
+    html += `<button class="floor-btn floor-${fid} ${expanded ? 'expanded' : ''}" data-action="toggle-floor" data-floor="${fid}"><span class="floor-name">${floor.name}</span>${completionHtml}<span class="floor-count">${floorTotal}座</span><span class="arrow">▶</span></button>`;
     html += `<div class="area-container ${expanded ? 'show' : ''}" id="areas-${fid}">`;
     floor.areas.forEach(area => {
       const aname = area.name, ak = areaKey(fid, aname), aExp = state.expandedAreas.has(ak);
@@ -1499,8 +1502,8 @@ async function renderMain() {
     + `<div class="usage-guide">·座位如有单张图片且当前时段未隐藏，座位显示蓝色；若时段隐藏，则不显示颜色<br>·座位的同一时段有多张图片且未隐藏，座位显示橙色；若时段隐藏，则不显示颜色<br>·隐藏时段内若存在图片，座位按钮左上角显示"闭眼"图标<br>·若区域存在图片，区域按钮显示绿色<br>·通过"时段筛选"选定某一时段后，若该时段有图片，座位按钮右上角显示"图片"图标</div>`
     + `<div class="footer-collapsible" data-action="toggle-footer-opt">近期优化记录</div>`
     + `<div class="footer-collapsible-body ${optExpanded ? 'expanded' : 'collapsed'}" data-action="expand-footer-opt">·圳组建议的纸质登记辅助功能已简单实现：时段筛选设为当前拍照时段后，蓝底且带图标的座位可对应纸质表打"❌"（06.18更新）。<br>·圳组、乔组建议增设占座倒计时：目前仅增设"记录完成时间"功能来辅助判断（06.25更新），真正的倒计时提醒待馆方自研系统实现。<br>·赖组反馈批量清理原功能易致页面崩溃：已修复功能为"清除图片"（06.21更新）。<br>·环总、馨同志建议数据互通：资金实力不足，待馆方自研系统实现。</div>`
-    + `<div class="footer-collapsible" data-action="toggle-footer-thx">致谢</div>`
-    + `<div class="footer-collapsible-body ${thxExpanded ? 'expanded' : 'collapsed'}" data-action="expand-footer-thx">感谢以下大佬的建议与使用体验反馈（排名不分先后）：<br>环总、何总、圳组、赖组、州组、乔组、伟同志、垚同志、馨同志、瑜同志、伦同志、元同志、彦同志、灵同志、琪同志……</div>`
+    + `<div class="footer-collapsible" data-action="toggle-footer-thx">给大佬的情书</div>`
+    + `<div class="footer-collapsible-body ${thxExpanded ? 'expanded' : 'collapsed'}" data-action="expand-footer-thx">感谢以下不愿透露姓名的大佬的建议与使用体验反馈（排名不分先后）：<br>环总、何总、圳组、赖组、州组、乔组、伟同志、垚同志、馨同志、瑜同志、伦同志、元同志、彦同志、灵同志、琪同志……</div>`
     + `<div class="disclaimer">内部参考工具，功能尚不完善，数据可能丢失，不承担准确性与隐私责任</div><div class="contact${showContact ? '' : ' hidden'}">如有使用建议可联系老范尝试优化。</div></div>`;
   app.innerHTML = html;
   // 【v1.2.5】联系小字：版本更新后显示2秒再淡出
