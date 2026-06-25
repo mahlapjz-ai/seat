@@ -193,7 +193,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .app-footer .footer-collapsible{font-size:12px;color:#999;font-weight:700;text-align:left;margin-bottom:4px;padding-left:16px;cursor:pointer;min-height:44px;display:flex;align-items:center;-webkit-user-select:none;user-select:none}
 .app-footer .footer-collapsible-body{font-size:10px;color:#999;line-height:1.5;text-align:left;padding:0 16px;margin-bottom:6px;overflow:hidden;position:relative}
 .app-footer .footer-collapsible-body.collapsed{max-height:3em}
-.app-footer .footer-collapsible-body.collapsed::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1.5em;background:linear-gradient(transparent,#f0f2f5);pointer-events:none}
+.app-footer .footer-collapsible-body.collapsed::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1.5em;background:linear-gradient(transparent,var(--footer-fade-color,#f0f2f5));pointer-events:none}
 .app-footer .footer-collapsible-body.expanded{max-height:none}
 .app-footer .usage-guide{font-size:10px;color:#999;line-height:1.5;text-align:left;padding:0 16px;margin-bottom:6px}
 .app-footer .disclaimer{font-size:10px;color:#999}
@@ -340,7 +340,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 /* 全局底色：天空蓝到草地暖绿渐变，模拟吉卜力经典天空 */
 /* 【v1.9.23】使用 repeating-linear-gradient 实现垂直镜像交替平铺，消除拼接痕迹 */
 html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 20%,#f2f0e4 37.5%,#f8f4ec 50%,#f2f0e4 62.5%,#eaf2e4 80%,#e8f0f8 100%);min-height:100%;background-size:100% 100vh}
-.theme-normal{background:transparent;color:#4A3728}
+.theme-normal{background:transparent;color:#4A3728;--footer-fade-color:#f2f0e4}
 /* 水彩纸纹 + 淡云纹理（#app::before，不遮挡固定元素） */
 .theme-normal #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(200,185,165,.03) 2px,rgba(200,185,165,.03) 4px),radial-gradient(ellipse 65% 30% at 20% 10%,rgba(255,255,255,.45) 0%,transparent 70%),radial-gradient(ellipse 50% 25% at 80% 18%,rgba(255,255,255,.35) 0%,transparent 60%),radial-gradient(ellipse 80% 28% at 50% 82%,rgba(232,242,228,.3) 0%,transparent 55%)}
 /* 交互元素提升层级（modal-box 已有 fixed 定位，不覆盖其 position） */
@@ -477,7 +477,7 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
 /* 【v1.9.23】使用 repeating-linear-gradient 实现垂直镜像交替平铺，消除拼接痕迹 */
 /* 【v1.9.24】背景改为纯垂直渐变 + repeating-linear-gradient 镜像交替平铺，消除斜向渐变拼接痕迹 */
 html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 15%,#5a5040 30%,#6a6050 50%,#5a5040 70%,#4a4540 85%,#3c3c46 100%);min-height:100%;background-size:100% 100vh}
-.theme-yiban{background:transparent;color:#c8c8c8}
+.theme-yiban{background:transparent;color:#c8c8c8;--footer-fade-color:#5a5040}
 /* 锈蚀金属纹理 + 扫描线（#app::before） */
 .theme-yiban #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,255,.015) 3px,rgba(0,255,255,.015) 4px),repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(100,90,70,.06) 80px,rgba(100,90,70,.06) 81px),radial-gradient(ellipse 60% 40% at 30% 20%,rgba(0,255,255,.04) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 75% 70%,rgba(204,51,51,.03) 0%,transparent 55%)}
 /* 【v1.9.29】.toast 保持 fixed 定位，仅 #app 提升 z-index */
@@ -625,7 +625,7 @@ html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 
 /* 全局底色：MC 天空淡蓝到草地绿渐变 + 像素点阵纹理 */
 /* 【v1.9.23】使用 repeating-linear-gradient 实现垂直镜像交替平铺，消除拼接痕迹 */
 html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 30%,#7ec850 50%,#a8d8a8 70%,#7ec8e8 100%);min-height:100%;background-size:100% 100vh}
-.theme-pixel{background:transparent;color:#4a3728}
+.theme-pixel{background:transparent;color:#4a3728;--footer-fade-color:#a8d8a8}
 /* 像素点阵纹理（#app::before） */
 .theme-pixel #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px),repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px)}
 /* 【v1.9.29】.toast 保持 fixed 定位，仅 #app 提升 z-index */
@@ -911,7 +911,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.13.3';
+const APP_VERSION = 'v1.13.4';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
