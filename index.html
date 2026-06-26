@@ -87,8 +87,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .floor-btn:active,.floor-btn._pressing{transform:scale(.97)}
 .floor-btn .floor-name{flex-shrink:0;white-space:nowrap}
 .floor-btn .floor-right{flex-shrink:0;display:flex;align-items:center;gap:8px;white-space:nowrap}
-.floor-btn .arrow{font-size:14px;transition:transform .25s;display:inline-block}
-.floor-btn.expanded .arrow{transform:rotate(90deg)}
+.floor-btn .arrow{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid currentColor;display:inline-block;vertical-align:middle;transition:transform .25s}
+.floor-btn.expanded .arrow{transform:rotate(180deg)}
 .floor-btn .floor-count{font-size:13px;font-weight:400;opacity:.85}
 .floor-1{background:linear-gradient(135deg,#667eea,#764ba2)}
 .floor-2{background:linear-gradient(135deg,#f093fb,#f5576c)}
@@ -100,9 +100,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .area-container.show{display:block}
 .area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:12px 20px;margin:5px 4px;font-size:16px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s}
 .area-btn:active,.area-btn._pressing{transform:scale(.95)}
-.area-btn .arrow{margin-left:6px;font-size:12px;transition:transform .25s;display:inline-block}
+.area-btn .arrow{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;display:inline-block;vertical-align:middle;margin-left:6px;transition:transform .25s}
 .area-btn .area-count{font-size:11px;font-weight:400;color:#999;margin-top:2px}
-.area-btn.expanded .arrow{transform:rotate(90deg)}
+.area-btn.expanded .arrow{transform:rotate(180deg)}
 /* 【v1.3.15】选中高亮改为红色描边+无背景色，避免与蓝色提示混淆 */
 .area-btn.expanded{background:#fff;border-color:#ff4d4f;box-shadow:none}
 .area-btn.has-images{border:2px solid #52c41a;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
@@ -912,7 +912,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.13.11';
+const APP_VERSION = 'v1.13.12';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1480,7 +1480,7 @@ async function renderMain() {
       }
       completionHtml = `<span class="floor-completion ${sizeClass}">${rows.join('')}</span>`;
     }
-    html += `<button class="floor-btn floor-${fid} ${expanded ? 'expanded' : ''}" data-action="toggle-floor" data-floor="${fid}"><span class="floor-name">${floor.name}</span>${completionHtml}<span class="floor-right"><span class="floor-count">${floorTotal}座</span><span class="arrow">▶</span></span></button>`;
+    html += `<button class="floor-btn floor-${fid} ${expanded ? 'expanded' : ''}" data-action="toggle-floor" data-floor="${fid}"><span class="floor-name">${floor.name}</span>${completionHtml}<span class="floor-right"><span class="floor-count">${floorTotal}座</span><span class="arrow"></span></span></button>`;
     html += `<div class="area-container ${expanded ? 'show' : ''}" id="areas-${fid}">`;
     floor.areas.forEach(area => {
       const aname = area.name, ak = areaKey(fid, aname), aExp = state.expandedAreas.has(ak);
@@ -1490,7 +1490,7 @@ async function renderMain() {
       for (let si = 0; si < getAreaSeatCount(fid, aname); si++) {
         if (state.seatHasImages.has(seatKey(fid, aname, si))) { areaHasImages = true; break; }
       }
-      html += `<button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow">▶</span></span><span class="area-count">${areaTotal}座</span></button>`;
+      html += `<button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow"></span></span><span class="area-count">${areaTotal}座</span></button>`;
       // 【v1.11.0】区域展开时，在区域按钮右侧显示"记录完成时间"按钮
       if (aExp) {
         html += `<button class="record-time-btn" data-action="record-time" data-floor="${fid}" data-area="${aname}">⏱️记录完成时间</button>`;
