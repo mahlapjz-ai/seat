@@ -114,7 +114,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .floor-completion{display:flex;flex-direction:column;flex:1;min-width:0;margin:0 8px;font-weight:400;color:rgba(255,255,255,.85);line-height:1.4;align-items:stretch;overflow:hidden}
 .floor-completion .fc-row{display:flex;justify-content:space-between;width:100%;gap:12px}
 .floor-completion .fc-row.fc-single-center{justify-content:center}
-.floor-completion .fc-row>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.floor-completion .fc-row>span{white-space:nowrap;flex:1 1 0%;min-width:0}
 .floor-completion.s1{font-size:14px}
 .floor-completion.s2{font-size:12px}
 .floor-completion.s3{font-size:11px}
@@ -915,7 +915,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.13.13';
+const APP_VERSION = 'v1.13.14';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1530,6 +1530,50 @@ async function renderMain() {
     if (_renderMainSeq !== mySeq) return; // 有更新的 renderMain 调用，当前调用终止
     await renderTimeSlots(sk);
   }
+  // 【v1.13.14】楼层卡片中间区域字号自适应：检测溢出并缩字号或分行
+  adjustFloorCompletion();
+}
+
+// 【v1.13.14】楼层卡片中间区域字号自适应
+function adjustFloorCompletion() {
+  const rows = document.querySelectorAll('.fc-row');
+  rows.forEach(row => {
+    const spans = row.querySelectorAll(':scope > span');
+    if (spans.length < 2) return; // 单条记录无需调整
+    // 重置行内样式
+    row.style.fontSize = '';
+    const container = row.closest('.floor-completion');
+    const baseSize = parseFloat(getComputedStyle(container || row).fontSize);
+    const rowWidth = row.clientWidth;
+    const GAP = 12;
+    // 检测两 span 自然宽度是否超出
+    const totalNatural = Array.from(spans).reduce((sum, s) => sum + s.scrollWidth, 0);
+    if (totalNatural + GAP <= rowWidth) return; // 空间足够
+    // 逐步缩小字号
+    const minSize = 10;
+    let fit = false;
+    for (let sz = baseSize - 1; sz >= minSize; sz--) {
+      row.style.fontSize = sz + 'px';
+      const newTotal = Array.from(spans).reduce((sum, s) => sum + s.scrollWidth, 0);
+      if (newTotal + GAP <= rowWidth) { fit = true; break; }
+    }
+    if (!fit) {
+      // 最小字号仍放不下 → 分行：每个 span 独占一行居左
+      row.style.fontSize = '';
+      const parent = container || row.parentElement;
+      if (parent) {
+        const nextSibling = row.nextSibling;
+        spans.forEach(span => {
+          const newRow = document.createElement('div');
+          newRow.className = 'fc-row';
+          row.removeChild(span);
+          newRow.appendChild(span);
+          parent.insertBefore(newRow, nextSibling);
+        });
+        row.remove();
+      }
+    }
+  });
 }
 
 // 【修复Bug3】确保"功能"按钮文字始终显示，防止异步竞态或页面恢复时文字消失
