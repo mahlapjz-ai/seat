@@ -86,7 +86,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .floor-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:16px 20px;margin:8px 0;font-size:18px;font-weight:600;border:none;border-radius:10px;color:#fff;cursor:pointer;text-align:left;transition:transform .1s}
 .floor-btn:active,.floor-btn._pressing{transform:scale(.97)}
 .floor-btn .floor-name{flex-shrink:0;white-space:nowrap}
-.floor-btn .floor-right{flex-shrink:0;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.floor-btn .floor-right{flex-shrink:0;display:flex;align-items:center;gap:8px;white-space:nowrap;min-width:52px;justify-content:flex-end}
 .floor-btn .arrow{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid currentColor;display:inline-block;vertical-align:middle;transition:transform .25s}
 .floor-btn.expanded .arrow{transform:rotate(180deg)}
 .floor-btn .floor-count{font-size:13px;font-weight:400;opacity:.85}
@@ -114,7 +114,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .floor-completion{display:flex;flex-direction:column;flex:1;min-width:0;margin:0 8px;font-weight:400;color:rgba(255,255,255,.85);line-height:1.4;align-items:stretch;overflow:hidden}
 .floor-completion .fc-row{display:flex;justify-content:space-between;width:100%;gap:12px}
 .floor-completion .fc-row.fc-single-center{justify-content:center}
-.floor-completion .fc-row>span{white-space:nowrap;flex-shrink:0}
+.floor-completion .fc-row>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .floor-completion.s1{font-size:14px}
 .floor-completion.s2{font-size:12px}
 .floor-completion.s3{font-size:11px}
@@ -662,6 +662,9 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .floor-completion{color:rgba(74,55,40,.8)}
 .theme-pixel .floor-completion.fixed{color:#5a3d2b}
 .theme-pixel .floor-completion .fc-time{font-weight:700}
+.theme-pixel .floor-completion.s1{font-size:13px}
+.theme-pixel .floor-completion.s2{font-size:11px}
+.theme-pixel .floor-completion.s3{font-size:10px}
 /* 座位编号按钮：铁块/石英材质 + 像素描边 */
 .theme-pixel .seat-btn{font-family:'Courier New',monospace;background:#d8d8d8;border:2px solid #888;border-radius:0;box-shadow:2px 2px 0 #2d2d2d;color:#3a3a3a;font-size:12px;font-weight:700;transition:transform .08s,box-shadow .08s}
 .theme-pixel .seat-btn:hover{background:#e0e0e0}
@@ -912,7 +915,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.13.12';
+const APP_VERSION = 'v1.13.13';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
