@@ -921,7 +921,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.13.17';
+const APP_VERSION = 'v1.13.18';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -2404,8 +2404,9 @@ const captureInput = document.createElement('input');
 captureInput.type = 'file'; captureInput.setAttribute('accept', 'image/*'); captureInput.setAttribute('capture', 'environment'); captureInput.style.display = 'none';
 document.body.appendChild(captureInput);
 // 【v1.13.17】上传按钮：规范 accept 为 image/*，确保不含 capture 属性以兼容小米等设备
+// 【v1.13.18】添加 multiple 属性触发现代化选择器（带预览），仅取第一张图片
 const uploadInput = document.createElement('input');
-uploadInput.type = 'file'; uploadInput.setAttribute('accept', 'image/*'); uploadInput.removeAttribute('capture'); uploadInput.style.display = 'none';
+uploadInput.type = 'file'; uploadInput.setAttribute('accept', 'image/*'); uploadInput.setAttribute('multiple', ''); uploadInput.removeAttribute('capture'); uploadInput.style.display = 'none';
 document.body.appendChild(uploadInput);
 let currentCaptureCellKey = null, currentUploadCellKey = null;
 function readFileAsDataURL(file) { return new Promise((r, j) => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.onerror = () => j(rd.error); rd.readAsDataURL(file); }); }
