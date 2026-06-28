@@ -276,7 +276,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .batch-select-all{padding:6px 12px;font-size:12px;border:1px dashed #722ed1;border-radius:6px;background:#fff;color:#722ed1;cursor:pointer}
 .batch-select-all:active{opacity:.7}
 .batch-select-all.disabled{opacity:.4;pointer-events:none}
-.batch-progress{font-size:13px;color:#722ed1;text-align:center;padding:8px 0;font-weight:500}
+.batch-progress{font-size:13px;color:#722ed1;text-align:center;padding:8px 0;font-weight:500;min-height:38px;display:flex;align-items:center;justify-content:center}
 
 .picker-row{display:flex;gap:4px;margin-bottom:16px;height:160px;position:relative;background:#f5f5f5;border-radius:8px;overflow:hidden}
 .picker-col{flex:1;height:100%;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;position:relative}
@@ -822,7 +822,7 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
     <div class="batch-section"><h4>选择区域 <button class="batch-select-all" data-target="area">全选/取消</button></h4><div class="batch-grid" id="batch-areas"></div></div>
     <div class="batch-section"><h4>选择时段 <button class="batch-select-all" data-target="time">全选/取消</button></h4><div class="batch-grid" id="batch-times"></div></div>
     <div class="modal-btns"><button class="modal-cancel" id="batch-cancel">取消</button><button class="modal-confirm" id="batch-exec">打包下载(ZIP)</button></div>
-    <div class="batch-progress" id="batch-progress" style="display:none"></div>
+    <div class="batch-progress" id="batch-progress">&nbsp;</div>
   </div>
 </div>
 <!-- 【v1.10.4 改造】清除图片：复用批量下载的modal-overlay+batch-chip样式 -->
@@ -925,7 +925,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.15.0';
+const APP_VERSION = 'v1.15.1';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -3533,11 +3533,11 @@ batchModal.addEventListener('click', (e) => {
 });
 
 document.getElementById('batch-cancel').addEventListener('click', () => {
-  if (batchPacking) { batchPacking = false; return; } // 【v1.14.0】打包中点击取消→中断打包
+  if (batchPacking) { batchPacking = false; _clearDlState(); return; } // 【v1.15.1】取消打包时也清除下载状态
   batchModal.classList.remove('show');
 });
 
-// 【v1.14.0】设置/恢复打包中的 UI 状态
+// 【v1.15.1】设置/恢复打包中的 UI 状态
 function setBatchPackingUI(packing) {
   const cancelBtn = document.getElementById('batch-cancel');
   const execBtn = document.getElementById('batch-exec');
@@ -3548,14 +3548,12 @@ function setBatchPackingUI(packing) {
     execBtn.style.display = 'none';
     chips.forEach(c => c.classList.add('disabled'));
     selAllBtns.forEach(b => b.classList.add('disabled'));
-    batchProgress.style.display = 'block';
   } else {
     cancelBtn.textContent = '取消';
     execBtn.style.display = '';
     chips.forEach(c => c.classList.remove('disabled'));
     selAllBtns.forEach(b => b.classList.remove('disabled'));
-    batchProgress.style.display = 'none';
-    batchProgress.textContent = '';
+    batchProgress.innerHTML = '&nbsp;';
   }
 }
 
@@ -3608,18 +3606,22 @@ async function collectAreaBlobs(ak, seatIndices) {
   return blobs;
 }
 
-// 【v1.14.0】将 Blob 列表打包为 ZIP 并触发下载
+// 【v1.15.1】将 Blob 列表打包为 ZIP 并触发下载
 async function packAndDownload(blobs, zipName) {
   const zip = new JSZip();
   blobs.forEach(b => zip.file(b.path, b.blob, { date: b.date }));
   const zipBlob = await zip.generateAsync({ type: 'blob' });
-  _clearDlState();
   _triggerDownload(zipBlob, zipName);
 }
 
 document.getElementById('batch-exec').addEventListener('click', async () => {
   if (batchSelectedAreas.size === 0 || batchSelectedTimes.size === 0) { showToast('请选择区域和时段'); return; }
   if (batchSelectedAreas.size > 4) { showToast('最多选择4个区域'); return; }
+
+  // 【v1.15.1】强制清除上一次下载的所有残留状态
+  _clearDlState();
+  batchPacking = false;
+  setBatchPackingUI(false);
 
   // 第一步：统计每个区域的图片数量
   const areaCounts = new Map();
@@ -3759,13 +3761,15 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
       }))];
       const zipName = `${batchAreaNames.join('_')}_${globalLabel}_${allBlobs.length}张.zip`;
       await packAndDownload(allBlobs, zipName);
-      showToast(`已打包 ${allBlobs.length} 张图片，等待下载确认`);
 
+      // 等待2.5秒后开始下一批
       if (bi < batches.length - 1 && batchPacking) {
         await new Promise(resolve => setTimeout(resolve, 2500));
       }
     }
 
+    // 【v1.15.1】打包完成后，清除所有下载状态锁
+    _clearDlState();
     batchPacking = false;
     setBatchPackingUI(false);
 
@@ -3777,18 +3781,21 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
     }
     saveBatchSelection();
 
-    // 提示文案
+    // 【v1.15.1】合并提示，只显示一条
+    const dlNames = [...downloadedAreas].map(ak => { const p = ak.split('-'); return p[1]; });
     const pendingAreas = [...batchSelectedAreas];
-    if (pendingAreas.length > 0 && downloadedAreas.size > 0) {
-      const pendingNames = pendingAreas.map(ak => { const p = ak.split('-'); return p[1]; });
-      showToast(`${pendingNames.join('、')}待下次打包`);
-    } else if (downloadedAreas.size > 0 && pendingAreas.length === 0) {
-      showToast('下载完成');
+    const pendingNames = pendingAreas.map(ak => { const p = ak.split('-'); return p[1]; });
+
+    if (downloadedAreas.size > 0 && pendingAreas.length === 0) {
+      showToast(`下载完成：${dlNames.join('、')}`);
+    } else if (downloadedAreas.size > 0 && pendingAreas.length > 0) {
+      showToast(`已提交下载：${dlNames.join('、')}，其余待下次打包`);
     }
 
   } catch (err) {
     console.error('批量下载出错:', err);
     showToast('下载出错');
+    _clearDlState();
     batchPacking = false;
     setBatchPackingUI(false);
   }
