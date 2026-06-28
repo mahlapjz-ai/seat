@@ -97,8 +97,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .floor-5{background:linear-gradient(135deg,#fa709a,#fee140)}
 
 .area-container{display:none;padding:4px 0 8px 16px}
-.area-container.show{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:6px;padding:4px 12px 8px}
-.area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:10px 14px;font-size:14px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s}
+.area-container.show{display:flex;flex-wrap:wrap;justify-content:space-evenly;gap:6px;padding:4px 12px 8px}
+.area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:10px 14px;font-size:14px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .area-btn:active,.area-btn._pressing{transform:scale(.95)}
 .area-btn .arrow{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;display:inline-block;vertical-align:middle;margin-left:6px;transition:transform .25s}
 .area-btn .area-count{font-size:10px;font-weight:400;color:#999;margin-top:2px;display:flex;justify-content:space-between;width:100%;gap:4px}
@@ -931,7 +931,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.17.2';
+const APP_VERSION = 'v1.17.3';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1665,6 +1665,7 @@ function initAreaDragReorder() {
     container.addEventListener('touchstart', (e) => {
       const btn = e.target.closest('.area-btn');
       if (!btn || btn.classList.contains('_drag-placeholder')) return;
+      e.preventDefault(); // 【v1.17.3】阻止长按触发系统复制菜单
       cleanup();
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
@@ -1693,7 +1694,7 @@ function initAreaDragReorder() {
         btn.style.zIndex = '1000';
         btn.style.pointerEvents = 'none'; // 让 elementFromPoint 穿过它
       }, 400);
-    }, { passive: true });
+    }, { passive: false });
 
     container.addEventListener('touchmove', (e) => {
       if (!dragBtn) return;
@@ -1800,6 +1801,10 @@ function toggleAreaExpand(fid, aname) {
     state.expandedAreas.delete(ak);
   } else {
     state.expandedAreas.add(ak);
+    // 【v1.17.3】手风琴规则：同楼层只允许展开一个区域
+    for (const k of [...state.expandedAreas]) {
+      if (k !== ak && k.startsWith(fid + '-')) state.expandedAreas.delete(k);
+    }
   }
   try { localStorage.setItem('expandedAreas', JSON.stringify([...state.expandedAreas])); } catch (e) {}
   renderMain();
