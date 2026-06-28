@@ -97,7 +97,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .floor-5{background:linear-gradient(135deg,#fa709a,#fee140)}
 
 .area-container{display:none;padding:4px 0 8px 16px}
-.area-container.show{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:4px 12px 8px}
+.area-container.show{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:6px;padding:4px 12px 8px}
 .area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:10px 14px;font-size:14px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s}
 .area-btn:active,.area-btn._pressing{transform:scale(.95)}
 .area-btn .arrow{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;display:inline-block;vertical-align:middle;margin-left:6px;transition:transform .25s}
@@ -105,10 +105,10 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .area-btn .area-count .ac-left{white-space:nowrap}
 .area-btn .area-count .ac-right{white-space:nowrap}
 .area-btn.expanded .arrow{transform:rotate(180deg)}
-/* 【v1.17.0】区域按钮拖动调序 */
-.area-btn._dragging{box-shadow:0 8px 24px rgba(0,0,0,.25);transform:scale(1.05);z-index:100;opacity:.85;position:relative;transition:box-shadow .15s,transform .15s,opacity .15s}
-.area-btn._drag-over{border-color:#722ed1;border-style:dashed}
-.area-btn._drag-placeholder{visibility:hidden}
+/* 【v1.17.2】区域按钮拖动调序 */
+.area-btn._dragging{box-shadow:0 8px 24px rgba(0,0,0,.25);transform:scale(1.05);z-index:100;opacity:.85;transition:box-shadow .15s,opacity .15s}
+.area-btn._drag-placeholder{visibility:hidden;border:2px dashed #722ed1;opacity:.3}
+.area-btn._drag-target{border-color:#722ed1;border-style:dashed}
 /* 【v1.3.15】选中高亮改为红色描边+无背景色，避免与蓝色提示混淆 */
 .area-btn.expanded{background:#fff;border-color:#ff4d4f;box-shadow:none}
 .area-btn.has-images{border:2px solid #52c41a;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
@@ -931,7 +931,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.17.1';
+const APP_VERSION = 'v1.17.2';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1632,7 +1632,7 @@ function applyAreaOrder(areas, savedNames) {
   return ordered;
 }
 
-// 【v1.17.1】区域按钮触摸事件处理：短按(<400ms)→点击展开，长按(≥400ms)→拖动调序
+// 【v1.17.2】区域按钮触摸事件处理：短按(<400ms)→点击展开，长按(≥400ms)→拖动调序
 // 互斥逻辑：400ms内移动>8px→取消长按（滚动/误触），400ms内未移动→进入拖动调序
 let _areaTouchHandled = false; // 防止 touch 处理后 click 再次触发
 function initAreaDragReorder() {
@@ -1641,18 +1641,23 @@ function initAreaDragReorder() {
     let dragBtn = null, longPressTimer = null, dragActive = false;
     let startX = 0, startY = 0, offsetX = 0, offsetY = 0;
     let placeholder = null;
+    let currentTarget = null; // 当前插入目标
 
     function cleanup() {
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
       if (placeholder) { placeholder.remove(); placeholder = null; }
-      container.querySelectorAll('.area-btn._drag-over').forEach(b => b.classList.remove('_drag-over'));
       if (dragBtn) {
         dragBtn.classList.remove('_dragging');
+        dragBtn.style.pointerEvents = '';
         dragBtn.style.position = '';
         dragBtn.style.left = '';
         dragBtn.style.top = '';
         dragBtn.style.width = '';
+        dragBtn.style.zIndex = '';
       }
+      if (currentTarget) { currentTarget.classList.remove('_drag-target'); currentTarget = null; }
+      // 重置所有 order
+      container.querySelectorAll('.area-btn').forEach(b => b.style.order = '');
       dragBtn = null;
       dragActive = false;
     }
@@ -1660,7 +1665,7 @@ function initAreaDragReorder() {
     container.addEventListener('touchstart', (e) => {
       const btn = e.target.closest('.area-btn');
       if (!btn || btn.classList.contains('_drag-placeholder')) return;
-      cleanup(); // 清除上一次残留状态
+      cleanup();
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       const rect = btn.getBoundingClientRect();
@@ -1668,18 +1673,25 @@ function initAreaDragReorder() {
       offsetY = e.touches[0].clientY - rect.top;
       dragBtn = btn;
       dragActive = false;
-      // 启动400ms长按计时器
+      currentTarget = null;
       longPressTimer = setTimeout(() => {
         longPressTimer = null;
         dragActive = true;
         btn.classList.add('_dragging');
-        // 创建占位符
+        // 创建占位符并插入原位置
         placeholder = document.createElement('button');
         placeholder.className = 'area-btn _drag-placeholder';
         placeholder.innerHTML = btn.innerHTML;
         placeholder.style.width = rect.width + 'px';
         placeholder.style.height = rect.height + 'px';
-        btn.parentNode.insertBefore(placeholder, btn.nextSibling);
+        btn.parentNode.insertBefore(placeholder, btn);
+        // 将拖动按钮设为 fixed，脱离流
+        btn.style.position = 'fixed';
+        btn.style.left = rect.left + 'px';
+        btn.style.top = rect.top + 'px';
+        btn.style.width = rect.width + 'px';
+        btn.style.zIndex = '1000';
+        btn.style.pointerEvents = 'none'; // 让 elementFromPoint 穿过它
       }, 400);
     }, { passive: true });
 
@@ -1690,35 +1702,45 @@ function initAreaDragReorder() {
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if (!dragActive) {
-        // 长按计时器未触发前，移动>8px则取消长按（用户在滚动或误触）
         if (dist > 8) {
           if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-          dragBtn = null; // 放弃本次触摸，让给默认行为
+          dragBtn = null;
         }
         return;
       }
-      // 拖动调序模式
       e.preventDefault();
       const touch = e.touches[0];
-      dragBtn.style.position = 'fixed';
+      // 移动拖动按钮
       dragBtn.style.left = (touch.clientX - offsetX) + 'px';
       dragBtn.style.top = (touch.clientY - offsetY) + 'px';
-      dragBtn.style.width = placeholder.offsetWidth + 'px';
 
-      // 检测手指下方的区域按钮
+      // 检测手指下方的区域按钮（拖动按钮已设 pointerEvents:none，可穿透）
       const el = document.elementFromPoint(touch.clientX, touch.clientY);
       if (!el) return;
       const target = el.closest('.area-btn');
-      container.querySelectorAll('.area-btn._drag-over').forEach(b => b.classList.remove('_drag-over'));
-      if (target && target !== dragBtn && !target.classList.contains('_drag-placeholder')) {
-        target.classList.add('_drag-over');
-        const targetRect = target.getBoundingClientRect();
-        const midX = targetRect.left + targetRect.width / 2;
-        if (touch.clientX < midX) {
-          if (placeholder.nextSibling !== target) container.insertBefore(placeholder, target);
-        } else {
-          if (placeholder !== target.nextSibling) container.insertBefore(placeholder, target.nextSibling);
-        }
+      if (!target || target === dragBtn || target.classList.contains('_drag-placeholder')) {
+        if (currentTarget) { currentTarget.classList.remove('_drag-target'); currentTarget = null; }
+        return;
+      }
+
+      // 更新视觉目标指示
+      if (currentTarget && currentTarget !== target) currentTarget.classList.remove('_drag-target');
+      target.classList.add('_drag-target');
+      currentTarget = target;
+
+      // 用 CSS order 实现重排：计算占位符和目标的 order
+      const areaBtns = [...container.querySelectorAll('.area-btn:not(._drag-placeholder)')];
+      const targetIdx = areaBtns.indexOf(target);
+      const placeholderParent = placeholder.parentNode;
+      if (targetIdx < 0) return;
+
+      // 将占位符移到目标位置附近
+      const targetRect = target.getBoundingClientRect();
+      const midX = targetRect.left + targetRect.width / 2;
+      if (touch.clientX < midX) {
+        if (placeholder.nextSibling !== target) container.insertBefore(placeholder, target);
+      } else {
+        if (placeholder !== target.nextSibling) container.insertBefore(placeholder, target.nextSibling);
       }
     }, { passive: false });
 
@@ -1734,31 +1756,35 @@ function initAreaDragReorder() {
         if (fidStr && aname) {
           toggleAreaExpand(parseInt(fidStr), aname);
         }
-        e.preventDefault(); // 阻止合成 click 事件
+        e.preventDefault();
         _areaTouchHandled = true;
         setTimeout(() => { _areaTouchHandled = false; }, 300);
         return;
       }
 
-      // 拖动调序完成：将按钮插入占位符位置
+      // 拖动完成：将拖动按钮插入到占位符位置
       if (placeholder && placeholder.parentNode) {
         container.insertBefore(dragBtn, placeholder);
         placeholder.remove();
       }
       dragBtn.classList.remove('_dragging');
+      dragBtn.style.pointerEvents = '';
       dragBtn.style.position = '';
       dragBtn.style.left = '';
       dragBtn.style.top = '';
       dragBtn.style.width = '';
-      container.querySelectorAll('.area-btn._drag-over').forEach(b => b.classList.remove('_drag-over'));
+      dragBtn.style.zIndex = '';
+      if (currentTarget) { currentTarget.classList.remove('_drag-target'); currentTarget = null; }
+
       // 保存新的区域顺序
       const names = [...container.querySelectorAll('.area-btn:not(.record-time-btn)')].map(b => b.dataset.area).filter(Boolean);
       if (names.length > 0) saveAreaOrder(fid, names);
+
       placeholder = null;
       dragBtn = null;
       dragActive = false;
       longPressTimer = null;
-      e.preventDefault(); // 阻止合成 click
+      e.preventDefault();
     }, { passive: false });
 
     container.addEventListener('touchcancel', () => {
