@@ -267,7 +267,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .modal-confirm{background:#722ed1;color:#fff}
 
 .batch-section{margin-bottom:12px}
-.batch-section h4{font-size:14px;margin-bottom:8px;color:#666}
+.batch-section h4{font-size:14px;margin-bottom:8px;color:#666;display:flex;align-items:center;justify-content:space-between}
 .batch-grid{display:flex;flex-wrap:wrap;gap:6px}
 .batch-chip{padding:6px 12px;font-size:13px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;user-select:none;transition:all .1s}
 .batch-chip.checked{background:#722ed1;color:#fff;border-color:#722ed1}
@@ -276,7 +276,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .batch-select-all{padding:6px 12px;font-size:12px;border:1px dashed #722ed1;border-radius:6px;background:#fff;color:#722ed1;cursor:pointer}
 .batch-select-all:active{opacity:.7}
 .batch-select-all.disabled{opacity:.4;pointer-events:none}
-.batch-progress{font-size:13px;color:#722ed1;text-align:center;padding:8px 0;font-weight:500;min-height:38px;display:flex;align-items:center;justify-content:center}
+.batch-progress{font-size:10px;color:#722ed1;font-weight:500;white-space:nowrap}
 
 .picker-row{display:flex;gap:4px;margin-bottom:16px;height:160px;position:relative;background:#f5f5f5;border-radius:8px;overflow:hidden}
 .picker-col{flex:1;height:100%;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;position:relative}
@@ -819,10 +819,9 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 <div class="modal-overlay" id="batch-modal">
   <div class="modal-box">
     <h3>批量下载</h3>
-    <div class="batch-section"><h4>选择区域 <button class="batch-select-all" data-target="area">全选/取消</button></h4><div class="batch-grid" id="batch-areas"></div></div>
+    <div class="batch-section"><h4>选择区域 <span class="batch-progress" id="batch-progress"></span> <button class="batch-select-all" data-target="area">全选/取消</button></h4><div class="batch-grid" id="batch-areas"></div></div>
     <div class="batch-section"><h4>选择时段 <button class="batch-select-all" data-target="time">全选/取消</button></h4><div class="batch-grid" id="batch-times"></div></div>
     <div class="modal-btns"><button class="modal-cancel" id="batch-cancel">取消</button><button class="modal-confirm" id="batch-exec">打包下载(ZIP)</button></div>
-    <div class="batch-progress" id="batch-progress">&nbsp;</div>
   </div>
 </div>
 <!-- 【v1.10.4 改造】清除图片：复用批量下载的modal-overlay+batch-chip样式 -->
@@ -925,7 +924,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.15.1';
+const APP_VERSION = 'v1.15.2';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -3553,7 +3552,7 @@ function setBatchPackingUI(packing) {
     execBtn.style.display = '';
     chips.forEach(c => c.classList.remove('disabled'));
     selAllBtns.forEach(b => b.classList.remove('disabled'));
-    batchProgress.innerHTML = '&nbsp;';
+    batchProgress.textContent = '';
   }
 }
 
