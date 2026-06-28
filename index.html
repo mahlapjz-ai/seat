@@ -936,7 +936,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.20.6';
+const APP_VERSION = 'v1.20.7';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1683,9 +1683,6 @@ function initAreaDragReorder() {
         dragWrap.style.zIndex = '';
       }
       if (currentTarget) { currentTarget.classList.remove('_drag-target'); currentTarget = null; }
-      // 【v1.20.4】拖动结束后恢复文本选择
-      document.body.style.userSelect = '';
-      document.body.style.webkitUserSelect = '';
       dragBtn = null;
       dragWrap = null;
       dragActive = false;
@@ -1696,7 +1693,8 @@ function initAreaDragReorder() {
       if (!btn || btn.classList.contains('_drag-placeholder')) return;
       // 【v1.17.4】已展开的区域按钮不触发拖动调序
       if (btn.classList.contains('expanded')) return;
-      e.preventDefault(); // 【v1.20.4】阻止文本选择和长按菜单，保证长按计时器可正常触发
+      // 【v1.20.7】不再在touchstart中preventDefault，避免阻止页面垂直滚动
+      // 文字选择和长按菜单已由全局CSS user-select:none; -webkit-touch-callout:none 禁止
       cleanup();
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
@@ -1711,11 +1709,8 @@ function initAreaDragReorder() {
         longPressTimer = null;
         dragActive = true;
         btn.classList.add('_dragging');
-        // 【v1.20.3】清除可能已产生的文本选择，防止拖动时误选中页面文字
+        // 清除可能已产生的文本选择
         try { window.getSelection().removeAllRanges(); } catch(e2) {}
-        // 【v1.20.4】拖动期间临时禁止全局文本选择
-        document.body.style.userSelect = 'none';
-        document.body.style.webkitUserSelect = 'none';
         // 创建占位符并插入原位置（在 wrapper 层级）
         placeholder = document.createElement('div');
         placeholder.className = 'area-btn-wrap _drag-placeholder-wrap';
@@ -1729,7 +1724,7 @@ function initAreaDragReorder() {
         dragWrap.style.zIndex = '1000';
         dragWrap.style.pointerEvents = 'none'; // 让 elementFromPoint 穿过它
       }, 500);
-    }, { passive: false });
+    }, { passive: true });
 
     container.addEventListener('touchmove', (e) => {
       if (!dragBtn) return;
