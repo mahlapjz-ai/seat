@@ -97,8 +97,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .floor-5{background:linear-gradient(135deg,#fa709a,#fee140)}
 
 .area-container{display:none;padding:4px 0 8px 16px}
-.area-container.show{display:flex;flex-wrap:wrap;justify-content:space-evenly;gap:6px;padding:4px 12px 8px;position:relative}
-.area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:10px 14px;font-size:14px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.area-container.show{display:flex;flex-wrap:wrap;justify-content:space-evenly;gap:6px;padding:4px 12px 8px}
+.area-btn-wrap{position:relative;display:inline-flex;align-items:center;flex-shrink:0}
+.area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:10px 14px;font-size:14px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;flex-shrink:0}
 .area-btn:active,.area-btn._pressing{transform:scale(.95)}
 .area-btn .arrow{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;display:inline-block;vertical-align:middle;margin-left:6px;transition:transform .25s}
 .area-btn .area-count{font-size:10px;font-weight:400;color:#999;margin-top:2px;display:flex;justify-content:space-between;width:100%;gap:4px}
@@ -109,12 +110,13 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .area-btn._dragging{box-shadow:0 8px 24px rgba(0,0,0,.25);transform:scale(1.05);z-index:100;opacity:.85;transition:box-shadow .15s,opacity .15s}
 .area-btn._drag-placeholder{visibility:hidden;border:2px dashed #722ed1;opacity:.3}
 .area-btn._drag-target{border-color:#722ed1;border-style:dashed}
+._drag-placeholder-wrap{visibility:hidden;border:2px dashed #722ed1;opacity:.3;border-radius:8px;box-sizing:border-box}
 /* 【v1.3.15】选中高亮改为红色描边+无背景色，避免与蓝色提示混淆 */
 .area-btn.expanded{background:#fff;border-color:#ff4d4f;box-shadow:none}
 .area-btn.has-images{border:2px solid #52c41a;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
 .area-btn.has-images.expanded{border-color:#ff4d4f;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
 /* 【v1.12.1】记录完成时间按钮：圆角胶囊形 */
-.record-time-btn{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:4px 10px;margin:0;font-size:11px;font-weight:500;border:1.5px solid #d9d9d9;border-radius:20px;background:#f5f5f5;color:#666;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s;-webkit-user-select:none;user-select:none;position:absolute;top:4px;right:8px;z-index:2}
+.record-time-btn{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:4px 10px;margin:0 0 0 6px;font-size:11px;font-weight:500;border:1.5px solid #d9d9d9;border-radius:20px;background:#f5f5f5;color:#666;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s;-webkit-user-select:none;user-select:none;position:absolute;left:100%;top:50%;transform:translateY(-50%);z-index:2}
 .record-time-btn:active,.record-time-btn._pressing{transform:scale(.95);background:#e8e8e8}
 /* 【v1.13.3】楼层卡片完成时间显示：居中填充中间空间 */
 .floor-completion{display:flex;flex-direction:column;flex:1;min-width:0;margin:0 8px;font-weight:400;color:rgba(255,255,255,.85);line-height:1.4;align-items:stretch;overflow:hidden}
@@ -931,7 +933,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.17.4';
+const APP_VERSION = 'v1.17.5';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1523,11 +1525,12 @@ async function renderMain() {
           if (stat) areaImageTotal += stat.totalCount;
         }
       }
-      html += `<button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow"></span></span><span class="area-count"><span class="ac-left">(${seatsWithImages}/${areaTotal}座)</span><span class="ac-right">共${areaImageTotal}张</span></span></button>`;
+      html += `<div class="area-btn-wrap"><button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow"></span></span><span class="area-count"><span class="ac-left">(${seatsWithImages}/${areaTotal}座)</span><span class="ac-right">共${areaImageTotal}张</span></span></button>`;
       // 【v1.11.0】区域展开时，在区域按钮右侧显示"记录完成时间"按钮
       if (aExp) {
         html += `<button class="record-time-btn" data-action="record-time" data-floor="${fid}" data-area="${aname}">⏱️记录完成时间</button>`;
       }
+      html += `</div>`;
       html += `<div class="seat-container ${aExp ? 'show' : ''}" id="seats-${ak}">${renderSeatFlow(fid, aname)}</div>`;
     });
     html += '</div>';
@@ -1638,7 +1641,7 @@ let _areaTouchHandled = false; // 防止 touch 处理后 click 再次触发
 function initAreaDragReorder() {
   document.querySelectorAll('.area-container').forEach(container => {
     const fid = container.id.replace('areas-', '');
-    let dragBtn = null, longPressTimer = null, dragActive = false;
+    let dragBtn = null, dragWrap = null, longPressTimer = null, dragActive = false;
     let startX = 0, startY = 0, offsetX = 0, offsetY = 0;
     let placeholder = null;
     let currentTarget = null; // 当前插入目标
@@ -1648,17 +1651,18 @@ function initAreaDragReorder() {
       if (placeholder) { placeholder.remove(); placeholder = null; }
       if (dragBtn) {
         dragBtn.classList.remove('_dragging');
-        dragBtn.style.pointerEvents = '';
-        dragBtn.style.position = '';
-        dragBtn.style.left = '';
-        dragBtn.style.top = '';
-        dragBtn.style.width = '';
-        dragBtn.style.zIndex = '';
+      }
+      if (dragWrap) {
+        dragWrap.style.pointerEvents = '';
+        dragWrap.style.position = '';
+        dragWrap.style.left = '';
+        dragWrap.style.top = '';
+        dragWrap.style.width = '';
+        dragWrap.style.zIndex = '';
       }
       if (currentTarget) { currentTarget.classList.remove('_drag-target'); currentTarget = null; }
-      // 重置所有 order
-      container.querySelectorAll('.area-btn').forEach(b => b.style.order = '');
       dragBtn = null;
+      dragWrap = null;
       dragActive = false;
     }
 
@@ -1675,26 +1679,26 @@ function initAreaDragReorder() {
       offsetX = e.touches[0].clientX - rect.left;
       offsetY = e.touches[0].clientY - rect.top;
       dragBtn = btn;
+      dragWrap = btn.closest('.area-btn-wrap');
       dragActive = false;
       currentTarget = null;
       longPressTimer = setTimeout(() => {
         longPressTimer = null;
         dragActive = true;
         btn.classList.add('_dragging');
-        // 创建占位符并插入原位置
-        placeholder = document.createElement('button');
-        placeholder.className = 'area-btn _drag-placeholder';
-        placeholder.innerHTML = btn.innerHTML;
+        // 创建占位符并插入原位置（在 wrapper 层级）
+        placeholder = document.createElement('div');
+        placeholder.className = 'area-btn-wrap _drag-placeholder-wrap';
         placeholder.style.width = rect.width + 'px';
         placeholder.style.height = rect.height + 'px';
-        btn.parentNode.insertBefore(placeholder, btn);
-        // 将拖动按钮设为 fixed，脱离流
-        btn.style.position = 'fixed';
-        btn.style.left = rect.left + 'px';
-        btn.style.top = rect.top + 'px';
-        btn.style.width = rect.width + 'px';
-        btn.style.zIndex = '1000';
-        btn.style.pointerEvents = 'none'; // 让 elementFromPoint 穿过它
+        dragWrap.parentNode.insertBefore(placeholder, dragWrap);
+        // 将拖动 wrapper 设为 fixed，脱离流
+        dragWrap.style.position = 'fixed';
+        dragWrap.style.left = rect.left + 'px';
+        dragWrap.style.top = rect.top + 'px';
+        dragWrap.style.width = rect.width + 'px';
+        dragWrap.style.zIndex = '1000';
+        dragWrap.style.pointerEvents = 'none'; // 让 elementFromPoint 穿过它
       }, 400);
     }, { passive: false });
 
@@ -1708,16 +1712,17 @@ function initAreaDragReorder() {
         if (dist > 8) {
           if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
           dragBtn = null;
+          dragWrap = null;
         }
         return;
       }
       e.preventDefault();
       const touch = e.touches[0];
-      // 移动拖动按钮
-      dragBtn.style.left = (touch.clientX - offsetX) + 'px';
-      dragBtn.style.top = (touch.clientY - offsetY) + 'px';
+      // 移动拖动 wrapper
+      dragWrap.style.left = (touch.clientX - offsetX) + 'px';
+      dragWrap.style.top = (touch.clientY - offsetY) + 'px';
 
-      // 检测手指下方的区域按钮（拖动按钮已设 pointerEvents:none，可穿透）
+      // 检测手指下方的区域按钮（拖动 wrapper 已设 pointerEvents:none，可穿透）
       const el = document.elementFromPoint(touch.clientX, touch.clientY);
       if (!el) return;
       const target = el.closest('.area-btn');
@@ -1731,19 +1736,16 @@ function initAreaDragReorder() {
       target.classList.add('_drag-target');
       currentTarget = target;
 
-      // 用 CSS order 实现重排：计算占位符和目标的 order
-      const areaBtns = [...container.querySelectorAll('.area-btn:not(._drag-placeholder)')];
-      const targetIdx = areaBtns.indexOf(target);
-      const placeholderParent = placeholder.parentNode;
-      if (targetIdx < 0) return;
+      // 将占位符移到目标 wrapper 位置附近
+      const targetWrap = target.closest('.area-btn-wrap');
+      if (!targetWrap) return;
 
-      // 将占位符移到目标位置附近
       const targetRect = target.getBoundingClientRect();
       const midX = targetRect.left + targetRect.width / 2;
       if (touch.clientX < midX) {
-        if (placeholder.nextSibling !== target) container.insertBefore(placeholder, target);
+        if (placeholder.nextSibling !== targetWrap) container.insertBefore(placeholder, targetWrap);
       } else {
-        if (placeholder !== target.nextSibling) container.insertBefore(placeholder, target.nextSibling);
+        if (placeholder !== targetWrap.nextSibling) container.insertBefore(placeholder, targetWrap.nextSibling);
       }
     }, { passive: false });
 
@@ -1756,6 +1758,7 @@ function initAreaDragReorder() {
         const fidStr = dragBtn.dataset.floor;
         const aname = dragBtn.dataset.area;
         dragBtn = null;
+        dragWrap = null;
         if (fidStr && aname) {
           toggleAreaExpand(parseInt(fidStr), aname);
         }
@@ -1765,18 +1768,18 @@ function initAreaDragReorder() {
         return;
       }
 
-      // 拖动完成：将拖动按钮插入到占位符位置
+      // 拖动完成：将拖动 wrapper 插入到占位符位置
       if (placeholder && placeholder.parentNode) {
-        container.insertBefore(dragBtn, placeholder);
+        container.insertBefore(dragWrap, placeholder);
         placeholder.remove();
       }
       dragBtn.classList.remove('_dragging');
-      dragBtn.style.pointerEvents = '';
-      dragBtn.style.position = '';
-      dragBtn.style.left = '';
-      dragBtn.style.top = '';
-      dragBtn.style.width = '';
-      dragBtn.style.zIndex = '';
+      dragWrap.style.pointerEvents = '';
+      dragWrap.style.position = '';
+      dragWrap.style.left = '';
+      dragWrap.style.top = '';
+      dragWrap.style.width = '';
+      dragWrap.style.zIndex = '';
       if (currentTarget) { currentTarget.classList.remove('_drag-target'); currentTarget = null; }
 
       // 保存新的区域顺序
@@ -1785,6 +1788,7 @@ function initAreaDragReorder() {
 
       placeholder = null;
       dragBtn = null;
+      dragWrap = null;
       dragActive = false;
       longPressTimer = null;
       e.preventDefault();
