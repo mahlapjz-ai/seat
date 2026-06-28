@@ -100,12 +100,14 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .area-container.show{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:flex-start;gap:6px;padding:4px 12px 8px}
 .area-btn-wrap{position:relative;width:calc(33.33% - 8px);flex-shrink:0;overflow:visible}
 .area-btn-wrap:has(.expanded){margin-bottom:36px}
-.area-btn{display:inline-flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box;padding:10px 14px;font-size:14px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.area-btn{display:inline-flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box;padding:8px 10px;font-size:14px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .area-btn:active,.area-btn._pressing{transform:scale(.95)}
 .area-btn .arrow{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;display:inline-block;vertical-align:middle;margin-left:6px;transition:transform .25s}
-.area-btn .area-count{font-size:10px;font-weight:400;color:#999;margin-top:2px;display:flex;justify-content:space-between;width:100%;gap:4px}
-.area-btn .area-count .ac-left{white-space:nowrap}
-.area-btn .area-count .ac-right{white-space:nowrap}
+.area-btn .area-seat-count{font-size:10px;font-weight:400;color:#999;width:100%;text-align:left;line-height:1.3}
+.area-btn .area-name-row{display:flex;align-items:center;justify-content:center;line-height:1.4}
+.area-btn .area-stats{font-size:10px;font-weight:400;color:#999;width:100%;display:flex;justify-content:space-between;line-height:1.3;margin-top:1px}
+.area-btn .area-stats .as-left{white-space:nowrap}
+.area-btn .area-stats .as-right{white-space:nowrap}
 .area-btn.expanded .arrow{transform:rotate(180deg)}
 /* 【v1.17.2】区域按钮拖动调序 */
 .area-btn._dragging{box-shadow:0 8px 24px rgba(0,0,0,.25);transform:scale(1.05);z-index:100;opacity:.85;transition:box-shadow .15s,opacity .15s}
@@ -385,7 +387,7 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
 .theme-normal .area-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(245,252,245,.92);border:1.5px solid #a8c898;color:#4A3728;box-shadow:0 1px 4px rgba(120,160,90,.08);transition:background .15s,border-color .15s}
 .theme-normal .area-btn:hover{background:rgba(255,248,230,.92);border-color:#8B7355}
 .theme-normal .area-btn:active,.theme-normal .area-btn._pressing{transform:scale(.95)}
-.theme-normal .area-btn .area-count{color:#7a9a5a}
+.theme-normal .area-btn .area-seat-count,.theme-normal .area-btn .area-stats{color:#7a9a5a}
 .theme-normal .area-btn.expanded{border-color:#7a9a5a;background:rgba(248,255,240,.92)}
 .theme-normal .area-btn.has-images{border-color:#6a9a4a;background:linear-gradient(135deg,rgba(235,250,228,.92),rgba(210,240,195,.92));color:#3a6a1a}
 .theme-normal .area-btn.has-images.expanded{border-color:#7a9a5a;background:linear-gradient(135deg,rgba(235,250,228,.92),rgba(210,240,195,.92));color:#3a6a1a}
@@ -523,7 +525,7 @@ html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 
 .theme-yiban .area-btn{font-family:'Segoe UI','Helvetica Neue',sans-serif;background:rgba(55,55,62,.88);border:1px solid rgba(232,130,12,.5);color:#e0d0b8;box-shadow:0 0 4px rgba(232,130,12,.15),inset 0 1px 3px rgba(0,0,0,.3);transition:background .12s,border-color .12s,box-shadow .12s}
 .theme-yiban .area-btn:hover{border-color:#00ffff;box-shadow:0 0 8px rgba(0,255,255,.25),inset 0 1px 3px rgba(0,0,0,.3)}
 .theme-yiban .area-btn:active,.theme-yiban .area-btn._pressing{transform:scale(.95)}
-.theme-yiban .area-btn .area-count{color:#e8820c}
+.theme-yiban .area-btn .area-seat-count,.theme-yiban .area-btn .area-stats{color:#e8820c}
 .theme-yiban .area-btn.expanded{border-color:#00ffff;background:rgba(60,60,68,.92);box-shadow:0 0 10px rgba(0,255,255,.25)}
 .theme-yiban .area-btn.has-images{border-color:#00cccc;background:linear-gradient(135deg,rgba(0,80,80,.35),rgba(55,55,62,.88));color:#00ffff}
 .theme-yiban .area-btn.has-images.expanded{border-color:#00ffff;background:linear-gradient(135deg,rgba(0,80,80,.35),rgba(55,55,62,.88));color:#00ffff}
@@ -670,7 +672,7 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .area-btn{font-family:'Courier New',monospace;background:#aaa;border:3px solid #555;border-radius:0;box-shadow:3px 3px 0 #2d2d2d;color:#3a3a3a;font-weight:700;transition:transform .08s,box-shadow .08s}
 .theme-pixel .area-btn:hover{background:#bbb}
 .theme-pixel .area-btn:active,.theme-pixel .area-btn._pressing{transform:translate(2px,2px);box-shadow:1px 1px 0 #2d2d2d}
-.theme-pixel .area-btn .area-count{color:#555;font-size:9px;overflow:hidden}
+.theme-pixel .area-btn .area-seat-count,.theme-pixel .area-btn .area-stats{color:#555;font-size:9px;overflow:hidden}
 .theme-pixel .area-btn.expanded{border-color:#5a3d2b;background:#b8b8b8}
 .theme-pixel .area-btn.has-images{border-color:#7ec850;background:linear-gradient(135deg,#8dd850,#7ec850);color:#3a5a1a}
 .theme-pixel .area-btn.has-images.expanded{border-color:#5a3d2b;background:linear-gradient(135deg,#8dd850,#7ec850);color:#3a5a1a}
@@ -934,7 +936,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.19.0';
+const APP_VERSION = 'v1.20.0';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1542,7 +1544,7 @@ async function renderMain() {
       }
       // 【v1.19.0】区域图片总数显示上限240
       const displayImageTotal = Math.min(areaImageTotal, MAX_AREA_IMAGES);
-      html += `<div class="area-btn-wrap"><button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow"></span></span><span class="area-count"><span class="ac-left">(${seatsWithImages}/${areaTotal}座)</span><span class="ac-right">共${displayImageTotal}张</span></span></button>`;
+      html += `<div class="area-btn-wrap"><button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span class="area-seat-count">${areaTotal}座</span><span class="area-name-row">${aname}<span class="arrow"></span></span><span class="area-stats"><span class="as-left">${seatsWithImages}离座</span><span class="as-right">共${displayImageTotal}图</span></span></button>`;
       // 【v1.11.0】区域展开时，在区域按钮下方显示"记录完成时间"按钮
       if (aExp) {
         html += `<button class="record-time-btn" data-action="record-time" data-floor="${fid}" data-area="${aname}">⏱️记录完成时间</button>`;
