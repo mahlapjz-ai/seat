@@ -272,8 +272,11 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .batch-chip{padding:6px 12px;font-size:13px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;user-select:none;transition:all .1s}
 .batch-chip.checked{background:#722ed1;color:#fff;border-color:#722ed1}
 .batch-chip:active{opacity:.7}
+.batch-chip.disabled{opacity:.4;pointer-events:none}
 .batch-select-all{padding:6px 12px;font-size:12px;border:1px dashed #722ed1;border-radius:6px;background:#fff;color:#722ed1;cursor:pointer}
 .batch-select-all:active{opacity:.7}
+.batch-select-all.disabled{opacity:.4;pointer-events:none}
+.batch-progress{font-size:13px;color:#722ed1;text-align:center;padding:8px 0;font-weight:500}
 
 .picker-row{display:flex;gap:4px;margin-bottom:16px;height:160px;position:relative;background:#f5f5f5;border-radius:8px;overflow:hidden}
 .picker-col{flex:1;height:100%;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;position:relative}
@@ -819,6 +822,7 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
     <div class="batch-section"><h4>选择区域 <button class="batch-select-all" data-target="area">全选/取消</button></h4><div class="batch-grid" id="batch-areas"></div></div>
     <div class="batch-section"><h4>选择时段 <button class="batch-select-all" data-target="time">全选/取消</button></h4><div class="batch-grid" id="batch-times"></div></div>
     <div class="modal-btns"><button class="modal-cancel" id="batch-cancel">取消</button><button class="modal-confirm" id="batch-exec">打包下载(ZIP)</button></div>
+    <div class="batch-progress" id="batch-progress" style="display:none"></div>
   </div>
 </div>
 <!-- 【v1.10.4 改造】清除图片：复用批量下载的modal-overlay+batch-chip样式 -->
@@ -921,7 +925,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.13.16';
+const APP_VERSION = 'v1.14.1';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -2401,10 +2405,11 @@ async function generateMissingThumbnails(fid, aname, sidx) {
 // 六、文件输入
 // ============================================================
 const captureInput = document.createElement('input');
-captureInput.type = 'file'; captureInput.capture = 'environment'; captureInput.accept = 'image/*'; captureInput.style.display = 'none';
+captureInput.type = 'file'; captureInput.setAttribute('accept', 'image/*'); captureInput.setAttribute('capture', 'environment'); captureInput.style.display = 'none';
 document.body.appendChild(captureInput);
+// 【v1.13.17】上传按钮：规范 accept 为 image/*，确保不含 capture 属性以兼容小米等设备
 const uploadInput = document.createElement('input');
-uploadInput.type = 'file'; uploadInput.accept = 'image/*'; uploadInput.style.display = 'none';
+uploadInput.type = 'file'; uploadInput.setAttribute('accept', 'image/*'); uploadInput.removeAttribute('capture'); uploadInput.style.display = 'none';
 document.body.appendChild(uploadInput);
 let currentCaptureCellKey = null, currentUploadCellKey = null;
 function readFileAsDataURL(file) { return new Promise((r, j) => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.onerror = () => j(rd.error); rd.readAsDataURL(file); }); }
@@ -3444,7 +3449,16 @@ async function downloadConcatenated() {
 const batchModal = document.getElementById('batch-modal');
 const batchAreasDiv = document.getElementById('batch-areas');
 const batchTimesDiv = document.getElementById('batch-times');
+const batchProgress = document.getElementById('batch-progress');
 let batchSelectedAreas = new Set(), batchSelectedTimes = new Set();
+let batchPacking = false; // 【v1.14.0】打包进行中标志
+
+// 【v1.14.0】拼音映射：中文区域名→拼音，用于 ZIP 文件夹命名
+const PINYIN_MAP = { '一': 'yi', '二': 'er', '三': 'san', '四': 'si', '五': 'wu',
+  '中': 'zhong', '庭': 'ting', '报': 'bao', '刊': 'kan', '东': 'dong', '区': 'qu',
+  '南': 'nan', '西': 'xi', '北': 'bei', '青': 'qing', '少': 'shao', '年': 'nian',
+  '临': 'lin', '时': 'shi' };
+function toPinyin(str) { return str.split('').map(c => PINYIN_MAP[c] || c).join(''); }
 
 async function initBatchModal() {
   batchSelectedAreas = new Set(); batchSelectedTimes = new Set();
@@ -3476,6 +3490,12 @@ async function initBatchModal() {
 }
 
 batchModal.addEventListener('click', (e) => {
+  // 【v1.14.0】打包进行中禁止区域勾选和全选操作
+  if (batchPacking) {
+    const cancelBtn = e.target.closest('#batch-cancel');
+    if (cancelBtn) { batchPacking = false; return; }
+    return; // 阻止其他操作
+  }
   const chip = e.target.closest('.batch-chip');
   if (chip) {
     chip.classList.toggle('checked');
@@ -3496,83 +3516,240 @@ batchModal.addEventListener('click', (e) => {
   }
 });
 
-document.getElementById('batch-cancel').addEventListener('click', () => batchModal.classList.remove('show'));
+document.getElementById('batch-cancel').addEventListener('click', () => {
+  if (batchPacking) { batchPacking = false; return; } // 【v1.14.0】打包中点击取消→中断打包
+  batchModal.classList.remove('show');
+});
+
+// 【v1.14.0】设置/恢复打包中的 UI 状态
+function setBatchPackingUI(packing) {
+  const cancelBtn = document.getElementById('batch-cancel');
+  const execBtn = document.getElementById('batch-exec');
+  const chips = batchModal.querySelectorAll('.batch-chip');
+  const selAllBtns = batchModal.querySelectorAll('.batch-select-all');
+  if (packing) {
+    cancelBtn.textContent = '取消打包';
+    execBtn.style.display = 'none';
+    chips.forEach(c => c.classList.add('disabled'));
+    selAllBtns.forEach(b => b.classList.add('disabled'));
+    batchProgress.style.display = 'block';
+  } else {
+    cancelBtn.textContent = '取消';
+    execBtn.style.display = '';
+    chips.forEach(c => c.classList.remove('disabled'));
+    selAllBtns.forEach(b => b.classList.remove('disabled'));
+    batchProgress.style.display = 'none';
+    batchProgress.textContent = '';
+  }
+}
+
+// 【v1.14.0】收集某区域在选中时段内的所有图片 Blob
+async function collectAreaBlobs(ak) {
+  const parts = ak.split('-'), fid = parseInt(parts[0]), aname = parts[1];
+  const seatCount = getAreaSeatCount(fid, aname);
+  const neededKeys = [];
+  for (const tidx of batchSelectedTimes) {
+    const tIdx = parseInt(tidx);
+    for (let sidx = 0; sidx < seatCount; sidx++) {
+      const sk = seatKey(fid, aname, sidx);
+      if (state.deletedSeats.has(sk)) continue;
+      neededKeys.push(cellKey(fid, aname, sidx, tIdx));
+    }
+  }
+  const cellDataMap = await getCellDataBatch(neededKeys);
+  const blobs = []; // [{ blob, folder, filename }]
+  const floorObj = FLOORS.find(f => f.id === fid);
+  for (const tidx of batchSelectedTimes) {
+    const tIdx = parseInt(tidx);
+    for (let sidx = 0; sidx < seatCount; sidx++) {
+      const sk = seatKey(fid, aname, sidx);
+      if (state.deletedSeats.has(sk)) continue;
+      const ck = cellKey(fid, aname, sidx, tIdx);
+      const cellData = cellDataMap[ck];
+      if (!cellData) continue;
+      const sName = getSeatNameSync(fid, aname, sidx);
+      for (let i = 0; i < cellData.images.length; i++) {
+        const img = cellData.images[i];
+        let blob = null;
+        if (img._fullBlob) blob = img._fullBlob;
+        if (!blob) { const memBlob = getMemoryBlobURL(ck, i); if (memBlob && memBlob.fullBlob) blob = memBlob.fullBlob; }
+        if (!blob && img.data && img.data.startsWith('data:') && img.data.indexOf(',') > 0 && img.data.split(',')[1].length > 10) {
+          try { blob = dataURLtoBlob(img.data); } catch (e) { blob = null; }
+        }
+        if (!blob && img.original && img.original.startsWith('data:')) {
+          try { blob = dataURLtoBlob(img.original); } catch (e) { blob = null; }
+        }
+        if (!blob || blob.size === 0) continue;
+        // 【v1.14.0】文件夹命名：中文楼层+区域名
+        const folder = `${floorObj.name}_${aname}`;
+        const safeTimeSlot = TIME_SLOTS[tIdx].replace(/:/g, '');
+        const safeSName = sName.replace(/[^\w]/g, '_');
+        const fileDate = new Date('2024-01-01T12:00:00');
+        blobs.push({ blob, path: `${folder}/${safeSName}_${safeTimeSlot}_${i + 1}.jpg`, date: fileDate });
+      }
+    }
+  }
+  return blobs;
+}
+
+// 【v1.14.0】将 Blob 列表打包为 ZIP 并触发下载
+async function packAndDownload(blobs, zipName) {
+  const zip = new JSZip();
+  blobs.forEach(b => zip.file(b.path, b.blob, { date: b.date }));
+  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  _clearDlState();
+  _triggerDownload(zipBlob, zipName);
+}
+
 document.getElementById('batch-exec').addEventListener('click', async () => {
   if (batchSelectedAreas.size === 0 || batchSelectedTimes.size === 0) { showToast('请选择区域和时段'); return; }
-  batchModal.classList.remove('show'); showToast('正在打包...');
+  // 【v1.14.0】最多4个区域
+  if (batchSelectedAreas.size > 4) { showToast('最多选择4个区域'); return; }
+
+  // 第一步：统计每个区域的图片数量
+  const areaCounts = new Map(); // ak → count
+  for (const ak of batchSelectedAreas) {
+    const parts = ak.split('-'), fid = parseInt(parts[0]), aname = parts[1];
+    const seatCount = getAreaSeatCount(fid, aname);
+    let cnt = 0;
+    for (const tidx of batchSelectedTimes) {
+      const tIdx = parseInt(tidx);
+      for (let sidx = 0; sidx < seatCount; sidx++) {
+        const sk = seatKey(fid, aname, sidx);
+        if (state.deletedSeats.has(sk)) continue;
+        cnt += imageCountCache.get(cellKey(fid, aname, sidx, tIdx)) || 0;
+      }
+    }
+    areaCounts.set(ak, cnt);
+  }
+
+  // 拒绝超标区域（>240张）
+  const overLimit = [];
+  for (const [ak, cnt] of areaCounts) {
+    if (cnt > 240) overLimit.push(ak);
+  }
+  if (overLimit.length > 0) {
+    const names = overLimit.map(ak => { const p = ak.split('-'); return p[1]; }).join('、');
+    showToast(`${names}图片超过240张，请减选后重新下载`);
+    return;
+  }
+
+  // 进入打包模式
+  batchPacking = true;
+  setBatchPackingUI(true);
+
   try {
-    // 【性能优化】只收集需要的 key，批量读取，不加载全部图片
-    const neededKeys = [];
-    for (const ak of batchSelectedAreas) {
-      const parts = ak.split('-'), fid = parseInt(parts[0]), aname = parts[1];
-      const seatCount = getAreaSeatCount(fid, aname);
-      for (const tidx of batchSelectedTimes) {
-        const tIdx = parseInt(tidx);
-        for (let sidx = 0; sidx < seatCount; sidx++) {
-          const sk = seatKey(fid, aname, sidx);
-          if (state.deletedSeats.has(sk)) continue;
-          neededKeys.push(cellKey(fid, aname, sidx, tIdx));
+    // 第二步：贪心打包算法
+    const smallAreas = []; // ≤120张
+    const bigAreas = [];   // 121~240张
+    for (const [ak, cnt] of areaCounts) {
+      if (cnt <= 120) smallAreas.push({ ak, cnt });
+      else bigAreas.push({ ak, cnt });
+    }
+    smallAreas.sort((a, b) => a.cnt - b.cnt); // 从少到多
+
+    let batch1Areas = [], batch2Areas = [];
+    let batch1Total = 0, batch2Total = 0;
+
+    if (smallAreas.length > 0) {
+      // 情况A：存在≤120张的区域，贪心装入
+      for (const area of smallAreas) {
+        if (batch1Total + area.cnt <= 120) {
+          batch1Areas.push(area.ak); batch1Total += area.cnt;
+        } else if (batch2Total + area.cnt <= 120) {
+          batch2Areas.push(area.ak); batch2Total += area.cnt;
         }
+        // 装不下的保持选中，稍后提示
+      }
+      // 大区域保持选中，待下次打包
+    } else if (bigAreas.length > 0) {
+      // 情况B：全部>120张，取第一个独占2批
+      const firstBig = bigAreas.shift();
+      batch1Areas.push(firstBig.ak); batch1Total = Math.min(firstBig.cnt, 120);
+      batch2Areas.push(firstBig.ak); batch2Total = firstBig.cnt - 120;
+    }
+
+    // 确定实际批次数
+    const batches = [];
+    if (batch1Areas.length > 0) batches.push({ areas: batch1Areas, total: batch1Total, batchNum: 1 });
+    if (batch2Areas.length > 0) batches.push({ areas: batch2Areas, total: batch2Total, batchNum: 2 });
+
+    // 收集已下载的区域名（用于取消勾选和提示）
+    const downloadedAreas = new Set();
+    // 记录大区域（第一批需要切片的）
+    const bigAreaSet = new Set(bigAreas.map(b => b.ak));
+    // 情况B中第一个大区域
+    if (smallAreas.length === 0 && batches.length > 0) {
+      // 第一个区域独占2批，第二批只是它的剩余部分，也属于已下载
+      bigAreaSet.add(batches[0].areas[0]);
+    }
+
+    for (let bi = 0; bi < batches.length; bi++) {
+      if (!batchPacking) break; // 用户取消
+      const batch = batches[bi];
+      batchProgress.textContent = `正在打包第 ${batch.batchNum}/${batches.length} 批，请稍候…`;
+
+      // 收集该批所有区域的图片
+      let allBlobs = [];
+      for (const ak of batch.areas) {
+        if (!batchPacking) break;
+        let blobs = await collectAreaBlobs(ak);
+        // 情况B：大区域在第一批只取前120张
+        if (bigAreaSet.has(ak) && batch.batchNum === 1 && blobs.length > 120) {
+          blobs = blobs.slice(0, 120);
+        } else if (bigAreaSet.has(ak) && batch.batchNum === 2) {
+          // 第二批取剩余部分
+          const allBlobsForArea = await collectAreaBlobs(ak);
+          blobs = allBlobsForArea.slice(120);
+        }
+        allBlobs = allBlobs.concat(blobs);
+        downloadedAreas.add(ak);
+      }
+
+      if (!batchPacking) break;
+      if (allBlobs.length === 0) continue;
+
+      // 打包并触发下载
+      const zipName = `批量下载_第${batch.batchNum}批_${allBlobs.length}张.zip`;
+      await packAndDownload(allBlobs, zipName);
+      showToast(`已打包 ${allBlobs.length} 张图片，等待下载确认`);
+
+      // 等待2.5秒后开始下一批
+      if (bi < batches.length - 1 && batchPacking) {
+        await new Promise(resolve => setTimeout(resolve, 2500));
       }
     }
-    const cellDataMap = await getCellDataBatch(neededKeys);
-    const zip = new JSZip(); let count = 0;
-    for (const ak of batchSelectedAreas) {
-      const parts = ak.split('-'), fid = parseInt(parts[0]), aname = parts[1];
-      const seatCount = getAreaSeatCount(fid, aname);
-      const floorObj = FLOORS.find(f => f.id === fid);
-      for (const tidx of batchSelectedTimes) {
-        const tIdx = parseInt(tidx);
-        for (let sidx = 0; sidx < seatCount; sidx++) {
-          const sk = seatKey(fid, aname, sidx);
-          if (state.deletedSeats.has(sk)) continue;
-          const ck = cellKey(fid, aname, sidx, tIdx);
-          const cellData = cellDataMap[ck];
-          if (!cellData) continue;
-          const sName = getSeatNameSync(fid, aname, sidx);
-          for (let i = 0; i < cellData.images.length; i++) {
-            // 从图片数据获取 Blob：优先 _fullBlob → data(Base64) → 内存缓存
-            // 跳过数据未就绪或无效的图片，避免空文件损坏 ZIP
-            const img = cellData.images[i];
-            let blob = null;
-            // 1. 优先 _fullBlob（仅拍照后当前会话内存中存在）
-            if (img._fullBlob) blob = img._fullBlob;
-            // 2. 内存 Blob 缓存
-            if (!blob) {
-              const memBlob = getMemoryBlobURL(ck, i);
-              if (memBlob && memBlob.fullBlob) blob = memBlob.fullBlob;
-            }
-            // 3. data 字段（Base64 → Blob）
-            if (!blob && img.data && img.data.startsWith('data:') && img.data.indexOf(',') > 0 && img.data.split(',')[1].length > 10) {
-              try { blob = dataURLtoBlob(img.data); } catch (e) { blob = null; }
-            }
-            // 【v1.4.0】移除 original 字段回退逻辑，新数据不再有 original
-            // 兼容旧数据：如果 data 为空但有 original，用 original 作为 data
-            if (!blob && img.original && img.original.startsWith('data:')) {
-              try { blob = dataURLtoBlob(img.original); } catch (e) { blob = null; }
-            }
-            if (!blob || blob.size === 0) continue; // 无有效数据，跳过
-            // 【v1.3.11】文件夹名仅用英文字母、数字、下划线
-            const folder = `${floorObj.name.replace(/[^\w]/g, '_')}_${aname.replace(/[^\w]/g, '_')}`;
-            // 【v1.3.11】文件名仅用英文字母、数字、下划线，冒号去掉
-            const safeTimeSlot = TIME_SLOTS[tIdx].replace(/:/g, '');
-            // 【v1.3.11】ZIP 文件时间戳统一为 2024-01-01 12:00:00（秒数取偶数）
-            const fileDate = new Date('2024-01-01T12:00:00');
-            // 用路径字符串代替 zip.folder()，避免生成 STORED 目录条目导致 Android 解压失败
-            const safeSName = sName.replace(/[^\w]/g, '_');
-            zip.file(`${folder}/${safeSName}_${safeTimeSlot}_${i + 1}.jpg`, blob, { date: fileDate });
-            count++;
-          }
-        }
-      }
+
+    // 打包完成，更新选择状态
+    batchPacking = false;
+    setBatchPackingUI(false);
+
+    // 已提交下载的区域取消勾选
+    for (const ak of downloadedAreas) {
+      batchSelectedAreas.delete(ak);
+      const chip = batchAreasDiv.querySelector(`.batch-chip[data-ak="${ak}"]`);
+      if (chip) chip.classList.remove('checked');
     }
-    if (count === 0) { showToast('所选范围内无图片'); return; }
-    const blob = await zip.generateAsync({ type: 'blob' });
-    // 【v1.10.7】清除旧状态后触发下载
-    _clearDlState();
-    _triggerDownload(blob, `批量下载_${count}张.zip`);
-    showToast(`已打包 ${count} 张图片，等待下载确认`);
-  } catch (err) { console.error('批量下载出错:', err); showToast('下载出错'); }
+
+    // 提示文案
+    const dlNames = [...downloadedAreas].map(ak => { const p = ak.split('-'); return p[1]; });
+    const pendingAreas = [...batchSelectedAreas];
+    const pendingNames = pendingAreas.map(ak => { const p = ak.split('-'); return p[1]; });
+
+    if (pendingAreas.length > 0 && downloadedAreas.size > 0) {
+      showToast(`${pendingNames.join('、')}待下次打包`);
+    } else if (downloadedAreas.size > 0 && pendingAreas.length === 0) {
+      showToast('下载完成');
+    } else if (downloadedAreas.size === 0 && pendingAreas.length > 0) {
+      showToast('图片数量超出，请重新下载剩余区域');
+    }
+
+  } catch (err) {
+    console.error('批量下载出错:', err);
+    showToast('下载出错');
+    batchPacking = false;
+    setBatchPackingUI(false);
+  }
 });
 
 // ============================================================
