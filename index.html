@@ -936,7 +936,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.20.0';
+const APP_VERSION = 'v1.20.2';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1544,7 +1544,9 @@ async function renderMain() {
       }
       // 【v1.19.0】区域图片总数显示上限240
       const displayImageTotal = Math.min(areaImageTotal, MAX_AREA_IMAGES);
-      html += `<div class="area-btn-wrap"><button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span class="area-seat-count">${areaTotal}座</span><span class="area-name-row">${aname}<span class="arrow"></span></span><span class="area-stats"><span class="as-left">${seatsWithImages}离座</span><span class="as-right">共${displayImageTotal}图</span></span></button>`;
+      // 【v1.20.1】无图片时第三行隐藏文字但保留占位
+      const statsStyle = areaImageTotal === 0 ? ' style="visibility:hidden"' : '';
+      html += `<div class="area-btn-wrap"><button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span class="area-seat-count">${areaTotal}座</span><span class="area-name-row">${aname}<span class="arrow"></span></span><span class="area-stats"${statsStyle}><span class="as-left">${seatsWithImages}离座</span><span class="as-right">共${displayImageTotal}图</span></span></button>`;
       // 【v1.11.0】区域展开时，在区域按钮下方显示"记录完成时间"按钮
       if (aExp) {
         html += `<button class="record-time-btn" data-action="record-time" data-floor="${fid}" data-area="${aname}">⏱️记录完成时间</button>`;
@@ -1691,7 +1693,8 @@ function initAreaDragReorder() {
       if (!btn || btn.classList.contains('_drag-placeholder')) return;
       // 【v1.17.4】已展开的区域按钮不触发拖动调序
       if (btn.classList.contains('expanded')) return;
-      e.preventDefault(); // 【v1.17.3】阻止长按触发系统复制菜单
+      // 【v1.20.2】不再在touchstart中preventDefault，避免阻止页面滚动
+      // 长按系统菜单由CSS -webkit-touch-callout:none 阻止
       cleanup();
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
@@ -1719,23 +1722,32 @@ function initAreaDragReorder() {
         dragWrap.style.zIndex = '1000';
         dragWrap.style.pointerEvents = 'none'; // 让 elementFromPoint 穿过它
       }, 400);
-    }, { passive: false });
+    }, { passive: true });
 
     container.addEventListener('touchmove', (e) => {
       if (!dragBtn) return;
       const dx = e.touches[0].clientX - startX;
       const dy = e.touches[0].clientY - startY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      const absDx = Math.abs(dx), absDy = Math.abs(dy);
 
       if (!dragActive) {
-        if (dist > 8) {
+        // 【v1.20.2】手势意图识别：垂直滑动优先让页面滚动
+        if (absDy > 10 && absDy >= absDx) {
+          // 判定为页面滚动，放弃交互
+          if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+          dragBtn = null;
+          dragWrap = null;
+          return;
+        }
+        if (absDx > 8 || absDy > 8) {
+          // 水平移动或短距离移动，取消长按
           if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
           dragBtn = null;
           dragWrap = null;
         }
         return;
       }
-      e.preventDefault();
+      e.preventDefault(); // 仅在拖动调序激活时阻止滚动
       const touch = e.touches[0];
       // 移动拖动 wrapper
       dragWrap.style.left = (touch.clientX - offsetX) + 'px';
