@@ -924,7 +924,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.15.2';
+const APP_VERSION = 'v1.15.3';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -3617,7 +3617,7 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
   if (batchSelectedAreas.size === 0 || batchSelectedTimes.size === 0) { showToast('请选择区域和时段'); return; }
   if (batchSelectedAreas.size > 4) { showToast('最多选择4个区域'); return; }
 
-  // 【v1.15.1】强制清除上一次下载的所有残留状态
+  // 【v1.15.3】强制清除上一次下载的所有残留状态
   _clearDlState();
   batchPacking = false;
   setBatchPackingUI(false);
@@ -3639,27 +3639,26 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
     areaCounts.set(ak, cnt);
   }
 
-  // 【v1.15.0】过滤超标区域，不阻止其他区域
-  const overLimit = [];
+  // 【v1.15.3】记录超标区域但不取消勾选，后续与下载完成提示合并
+  const overLimitAreas = [];
+  const overLimitNames = [];
   for (const [ak, cnt] of areaCounts) {
-    if (cnt > 240) overLimit.push(ak);
+    if (cnt > 240) {
+      overLimitAreas.push(ak);
+      overLimitNames.push(ak.split('-')[1]);
+    }
   }
-  if (overLimit.length > 0) {
-    const names = overLimit.map(ak => { const p = ak.split('-'); return p[1]; }).join('、');
-    showToast(`${names}图片超过240张，已自动跳过`);
-    overLimit.forEach(ak => {
-      batchSelectedAreas.delete(ak);
-      areaCounts.delete(ak);
-      const chip = batchAreasDiv.querySelector(`.batch-chip[data-ak="${ak}"]`);
-      if (chip) chip.classList.remove('checked');
-    });
-    saveBatchSelection();
-    if (batchSelectedAreas.size === 0) return;
+  // 从打包列表中移除超标区域
+  overLimitAreas.forEach(ak => areaCounts.delete(ak));
+  const packableAreas = new Set([...areaCounts.keys()]);
+  if (packableAreas.size === 0) {
+    showToast(`${overLimitNames.join('、')}超240张请减选，无可下载区域`, 3000);
+    return;
   }
 
   // 第二步：统计每个座位的图片数量（用于按座位分组打包）
   const seatGroups = []; // { ak, sidx, count }
-  for (const ak of batchSelectedAreas) {
+  for (const ak of packableAreas) {
     const parts = ak.split('-'), fid = parseInt(parts[0]), aname = parts[1];
     const seatCount = getAreaSeatCount(fid, aname);
     for (let sidx = 0; sidx < seatCount; sidx++) {
@@ -3674,7 +3673,7 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
     }
   }
 
-  // 第三步：贪心打包（首次适应递减，以座位为粒度，同一座位图片不拆分）
+  // 第三步：贪心打包（首次适应递减，以座位为粒度，同一座位图片不拆分），最多2批
   seatGroups.sort((a, b) => b.count - a.count);
   const batches = []; // [{ groups: [{ak, sidx, count}], total }]
   for (const sg of seatGroups) {
@@ -3687,9 +3686,10 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
         break;
       }
     }
-    if (!placed) {
+    if (!placed && batches.length < 2) {
       batches.push({ groups: [sg], total: sg.count });
     }
+    // 超过2批无法装入的座位组，其所属区域将保持选中
   }
 
   // 确定每个区域跨几个批次（用于文件夹批次后缀）
@@ -3702,8 +3702,8 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
     });
   });
   // 为跨批次的区域分配批次标签
-  const areaBatchLabelMap = new Map(); // `${ak}_${bi}` → '第一批'/'第二批'/...
-  const batchLabels = ['第一批', '第二批', '第三批', '第四批', '第五批', '第六批'];
+  const areaBatchLabelMap = new Map(); // `${ak}_${bi}` → '第一批'/'第二批'
+  const batchLabels = ['第一批', '第二批'];
   areaBatchMap.forEach((bis, ak) => {
     let num = 0;
     [...bis].sort((a, b) => a - b).forEach(bi => {
@@ -3718,10 +3718,11 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
 
   try {
     const downloadedAreas = new Set();
-    const globalLabels = ['第一批', '第二批', '第三批', '第四批', '第五批', '第六批'];
+    const globalLabels = ['第一批', '第二批'];
+    let cancelled = false;
 
     for (let bi = 0; bi < batches.length; bi++) {
-      if (!batchPacking) break;
+      if (!batchPacking) { cancelled = true; break; }
       const batch = batches[bi];
       const globalLabel = bi < globalLabels.length ? globalLabels[bi] : `第${bi + 1}批`;
       batchProgress.textContent = `正在打包${globalLabel}（${bi + 1}/${batches.length}），请稍候…`;
@@ -3735,7 +3736,7 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
       });
 
       for (const [ak, sidxs] of areaSeats) {
-        if (!batchPacking) break;
+        if (!batchPacking) { cancelled = true; break; }
         const blobs = await collectAreaBlobs(ak, sidxs);
         // 确定文件夹名
         const parts = ak.split('-'), fid = parseInt(parts[0]), aname = parts[1];
@@ -3751,26 +3752,31 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
         downloadedAreas.add(ak);
       }
 
-      if (!batchPacking) break;
+      if (cancelled) break;
       if (allBlobs.length === 0) continue;
 
-      // 【v1.15.0】压缩包文件名以区域命名
+      // 压缩包文件名以区域命名
       const batchAreaNames = [...new Set(batch.groups.map(g => {
         const p = g.ak.split('-'); return p[1];
       }))];
       const zipName = `${batchAreaNames.join('_')}_${globalLabel}_${allBlobs.length}张.zip`;
       await packAndDownload(allBlobs, zipName);
 
-      // 等待2.5秒后开始下一批
+      // 【v1.15.3】等待4秒后开始下一批，给用户足够确认时间
       if (bi < batches.length - 1 && batchPacking) {
-        await new Promise(resolve => setTimeout(resolve, 2500));
+        await new Promise(resolve => setTimeout(resolve, 4000));
       }
     }
 
-    // 【v1.15.1】打包完成后，清除所有下载状态锁
+    // 打包完成后，清除所有下载状态锁
     _clearDlState();
     batchPacking = false;
     setBatchPackingUI(false);
+
+    if (cancelled) {
+      showToast('打包已取消', 3000);
+      return;
+    }
 
     // 已下载的区域取消勾选
     for (const ak of downloadedAreas) {
@@ -3780,20 +3786,24 @@ document.getElementById('batch-exec').addEventListener('click', async () => {
     }
     saveBatchSelection();
 
-    // 【v1.15.1】合并提示，只显示一条
-    const dlNames = [...downloadedAreas].map(ak => { const p = ak.split('-'); return p[1]; });
+    // 【v1.15.3】合并提示：超标+下载完成合为一条，3秒显示
+    const dlNames = [...downloadedAreas].map(ak => ak.split('-')[1]);
     const pendingAreas = [...batchSelectedAreas];
-    const pendingNames = pendingAreas.map(ak => { const p = ak.split('-'); return p[1]; });
+    const pendingNames = pendingAreas.map(ak => ak.split('-')[1]);
 
-    if (downloadedAreas.size > 0 && pendingAreas.length === 0) {
-      showToast(`下载完成：${dlNames.join('、')}`);
-    } else if (downloadedAreas.size > 0 && pendingAreas.length > 0) {
-      showToast(`已提交下载：${dlNames.join('、')}，其余待下次打包`);
+    if (overLimitNames.length > 0 && dlNames.length > 0) {
+      showToast(`${overLimitNames.join('、')}超240张请减选，已提交下载：${dlNames.join('、')}`, 3000);
+    } else if (overLimitNames.length === 0 && dlNames.length > 0 && pendingAreas.length > 0) {
+      showToast(`已提交下载：${dlNames.join('、')}，其余待下次打包`, 3000);
+    } else if (overLimitNames.length === 0 && dlNames.length > 0 && pendingAreas.length === 0) {
+      showToast(`已提交下载：${dlNames.join('、')}`, 3000);
+    } else if (dlNames.length === 0) {
+      showToast('图片数量超出，请重新下载剩余区域', 3000);
     }
 
   } catch (err) {
     console.error('批量下载出错:', err);
-    showToast('下载出错');
+    showToast('打包失败，请重试', 3000);
     _clearDlState();
     batchPacking = false;
     setBatchPackingUI(false);
