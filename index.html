@@ -97,8 +97,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .floor-5{background:linear-gradient(135deg,#fa709a,#fee140)}
 
 .area-container{display:none;padding:4px 0 8px 16px}
-.area-container.show{display:block}
-.area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:10px 10px;margin:4px 3px;font-size:13px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s}
+.area-container.show{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:4px 12px 8px}
+.area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:10px 14px;font-size:14px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s}
 .area-btn:active,.area-btn._pressing{transform:scale(.95)}
 .area-btn .arrow{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;display:inline-block;vertical-align:middle;margin-left:6px;transition:transform .25s}
 .area-btn .area-count{font-size:10px;font-weight:400;color:#999;margin-top:2px;display:flex;justify-content:space-between;width:100%;gap:4px}
@@ -931,7 +931,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.17.0';
+const APP_VERSION = 'v1.17.1';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1632,25 +1632,35 @@ function applyAreaOrder(areas, savedNames) {
   return ordered;
 }
 
-// 【v1.17.0】区域按钮长按拖动调序
+// 【v1.17.1】区域按钮触摸事件处理：短按(<400ms)→点击展开，长按(≥400ms)→拖动调序
+// 互斥逻辑：400ms内移动>8px→取消长按（滚动/误触），400ms内未移动→进入拖动调序
+let _areaTouchHandled = false; // 防止 touch 处理后 click 再次触发
 function initAreaDragReorder() {
   document.querySelectorAll('.area-container').forEach(container => {
     const fid = container.id.replace('areas-', '');
     let dragBtn = null, longPressTimer = null, dragActive = false;
     let startX = 0, startY = 0, offsetX = 0, offsetY = 0;
-    let placeholder = null, insertBefore = null;
+    let placeholder = null;
 
-    function cancelDrag() {
+    function cleanup() {
       if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
-      if (dragBtn) { dragBtn.classList.remove('_dragging'); dragBtn = null; }
       if (placeholder) { placeholder.remove(); placeholder = null; }
-      insertBefore = null;
+      container.querySelectorAll('.area-btn._drag-over').forEach(b => b.classList.remove('_drag-over'));
+      if (dragBtn) {
+        dragBtn.classList.remove('_dragging');
+        dragBtn.style.position = '';
+        dragBtn.style.left = '';
+        dragBtn.style.top = '';
+        dragBtn.style.width = '';
+      }
+      dragBtn = null;
       dragActive = false;
     }
 
     container.addEventListener('touchstart', (e) => {
       const btn = e.target.closest('.area-btn');
-      if (!btn) return;
+      if (!btn || btn.classList.contains('_drag-placeholder')) return;
+      cleanup(); // 清除上一次残留状态
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       const rect = btn.getBoundingClientRect();
@@ -1658,7 +1668,9 @@ function initAreaDragReorder() {
       offsetY = e.touches[0].clientY - rect.top;
       dragBtn = btn;
       dragActive = false;
+      // 启动400ms长按计时器
       longPressTimer = setTimeout(() => {
+        longPressTimer = null;
         dragActive = true;
         btn.classList.add('_dragging');
         // 创建占位符
@@ -1668,52 +1680,67 @@ function initAreaDragReorder() {
         placeholder.style.width = rect.width + 'px';
         placeholder.style.height = rect.height + 'px';
         btn.parentNode.insertBefore(placeholder, btn.nextSibling);
-        insertBefore = btn.nextSibling;
-      }, 500);
+      }, 400);
     }, { passive: true });
 
     container.addEventListener('touchmove', (e) => {
       if (!dragBtn) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
       if (!dragActive) {
-        const dx = e.touches[0].clientX - startX;
-        const dy = e.touches[0].clientY - startY;
-        if (Math.sqrt(dx * dx + dy * dy) > 8) { cancelDrag(); return; }
+        // 长按计时器未触发前，移动>8px则取消长按（用户在滚动或误触）
+        if (dist > 8) {
+          if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+          dragBtn = null; // 放弃本次触摸，让给默认行为
+        }
         return;
       }
+      // 拖动调序模式
       e.preventDefault();
       const touch = e.touches[0];
-      // 移动拖动按钮
-      const containerRect = container.getBoundingClientRect();
       dragBtn.style.position = 'fixed';
       dragBtn.style.left = (touch.clientX - offsetX) + 'px';
       dragBtn.style.top = (touch.clientY - offsetY) + 'px';
       dragBtn.style.width = placeholder.offsetWidth + 'px';
 
-      // 检测手指中心点下方的区域按钮
+      // 检测手指下方的区域按钮
       const el = document.elementFromPoint(touch.clientX, touch.clientY);
       if (!el) return;
       const target = el.closest('.area-btn');
-      // 清除所有 _drag-over
       container.querySelectorAll('.area-btn._drag-over').forEach(b => b.classList.remove('_drag-over'));
       if (target && target !== dragBtn && !target.classList.contains('_drag-placeholder')) {
         target.classList.add('_drag-over');
         const targetRect = target.getBoundingClientRect();
         const midX = targetRect.left + targetRect.width / 2;
         if (touch.clientX < midX) {
-          if (placeholder.nextSibling !== target) {
-            container.insertBefore(placeholder, target);
-          }
+          if (placeholder.nextSibling !== target) container.insertBefore(placeholder, target);
         } else {
-          if (placeholder !== target.nextSibling) {
-            container.insertBefore(placeholder, target.nextSibling);
-          }
+          if (placeholder !== target.nextSibling) container.insertBefore(placeholder, target.nextSibling);
         }
       }
     }, { passive: false });
 
-    container.addEventListener('touchend', () => {
-      if (!dragActive || !dragBtn) { cancelDrag(); return; }
-      // 将拖动按钮插入到占位符位置
+    container.addEventListener('touchend', (e) => {
+      if (!dragBtn) { cleanup(); return; }
+
+      if (!dragActive) {
+        // 短按：视为点击，触发区域展开/收起
+        if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+        const fidStr = dragBtn.dataset.floor;
+        const aname = dragBtn.dataset.area;
+        dragBtn = null;
+        if (fidStr && aname) {
+          toggleAreaExpand(parseInt(fidStr), aname);
+        }
+        e.preventDefault(); // 阻止合成 click 事件
+        _areaTouchHandled = true;
+        setTimeout(() => { _areaTouchHandled = false; }, 300);
+        return;
+      }
+
+      // 拖动调序完成：将按钮插入占位符位置
       if (placeholder && placeholder.parentNode) {
         container.insertBefore(dragBtn, placeholder);
         placeholder.remove();
@@ -1728,23 +1755,28 @@ function initAreaDragReorder() {
       const names = [...container.querySelectorAll('.area-btn:not(.record-time-btn)')].map(b => b.dataset.area).filter(Boolean);
       if (names.length > 0) saveAreaOrder(fid, names);
       placeholder = null;
-      insertBefore = null;
       dragBtn = null;
       dragActive = false;
       longPressTimer = null;
-    }, { passive: true });
+      e.preventDefault(); // 阻止合成 click
+    }, { passive: false });
 
     container.addEventListener('touchcancel', () => {
-      cancelDrag();
-      if (dragBtn) {
-        dragBtn.style.position = '';
-        dragBtn.style.left = '';
-        dragBtn.style.top = '';
-        dragBtn.style.width = '';
-        container.querySelectorAll('.area-btn._drag-over').forEach(b => b.classList.remove('_drag-over'));
-      }
+      cleanup();
     }, { passive: true });
   });
+}
+
+// 【v1.17.1】区域展开/收起切换（供触摸事件调用）
+function toggleAreaExpand(fid, aname) {
+  const ak = areaKey(fid, aname);
+  if (state.expandedAreas.has(ak)) {
+    state.expandedAreas.delete(ak);
+  } else {
+    state.expandedAreas.add(ak);
+  }
+  try { localStorage.setItem('expandedAreas', JSON.stringify([...state.expandedAreas])); } catch (e) {}
+  renderMain();
 }
 
 // 【修复Bug3】确保"功能"按钮文字始终显示，防止异步竞态或页面恢复时文字消失
@@ -3658,6 +3690,8 @@ async function initBatchModal() {
 batchModal.addEventListener('click', (e) => {
   // 【v1.15.4】打包进行中禁止所有操作
   if (batchPacking) return;
+  // 【v1.17.1】touch 已处理则跳过，防止双触发
+  if (_chipTouchHandled) return;
   const chip = e.target.closest('.batch-chip');
   if (chip) {
     chip.classList.toggle('checked');
@@ -3685,15 +3719,16 @@ document.getElementById('batch-cancel').addEventListener('click', () => {
   batchModal.classList.remove('show');
 });
 
-// 【v1.17.0】短按拖动多选（批量下载 + 清除图片共用）
-// 手指按下后直接拖动，移动>5px进入拖动选择模式；未移动则视为点击
+// 【v1.17.1】短按拖动多选（批量下载 + 清除图片共用）
+// 移动>8px进入拖动选择模式；≤8px视为点击，用preventDefault阻止合成click
+let _chipTouchHandled = false; // 防止 touch 处理后 click 再次触发
 function setupChipDragSelect(gridEl, onToggle, onClick) {
   let dragMode = null; // 'select' | 'deselect'
   let dragActive = false;
   let startChip = null;
   let startX = 0, startY = 0;
   const touchedChips = new Set();
-  const DRAG_THRESHOLD = 5;
+  const DRAG_THRESHOLD = 8;
 
   gridEl.addEventListener('touchstart', (e) => {
     const chip = e.target.closest('.batch-chip');
@@ -3734,15 +3769,18 @@ function setupChipDragSelect(gridEl, onToggle, onClick) {
     }
   }, { passive: false });
 
-  gridEl.addEventListener('touchend', () => {
+  gridEl.addEventListener('touchend', (e) => {
     if (startChip && !dragActive && onClick) {
       onClick(startChip);
+      e.preventDefault(); // 阻止合成 click 事件，防止双触发
+      _chipTouchHandled = true;
+      setTimeout(() => { _chipTouchHandled = false; }, 300);
     }
     startChip = null;
     dragActive = false;
     dragMode = null;
     touchedChips.clear();
-  }, { passive: true });
+  }, { passive: false });
 
   gridEl.addEventListener('touchcancel', () => {
     startChip = null;
@@ -5037,6 +5075,8 @@ function initCleanupModal() {
 
 // 【v1.10.4】清除弹窗内chip点击+全选/取消（与批量下载逻辑一致）
 cleanupModal.addEventListener('click', (e) => {
+  // 【v1.17.1】touch 已处理则跳过，防止双触发
+  if (_chipTouchHandled) return;
   const chip = e.target.closest('.batch-chip');
   if (chip) {
     chip.classList.toggle('checked');
@@ -5235,6 +5275,8 @@ document.getElementById('btn-clear-select').addEventListener('click', () => { st
 // ============================================================
 // 【修复文字消失】事件委托改为 document，因为 page-header 已移出 app
 document.addEventListener('click', async (e) => {
+  // 【v1.17.1】touch 已处理则跳过区域按钮点击，防止双触发
+  if (_areaTouchHandled) { _areaTouchHandled = false; return; }
   const target = e.target;
   // 【v1.13.0】底部折叠区域：标题切换展开/收起，内容区只展开不收起
   const footerOpt = target.closest('[data-action="toggle-footer-opt"]');
