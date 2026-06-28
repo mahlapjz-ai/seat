@@ -101,7 +101,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:12px 20px;margin:5px 4px;font-size:16px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s}
 .area-btn:active,.area-btn._pressing{transform:scale(.95)}
 .area-btn .arrow{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;display:inline-block;vertical-align:middle;margin-left:6px;transition:transform .25s}
-.area-btn .area-count{font-size:11px;font-weight:400;color:#999;margin-top:2px}
+.area-btn .area-count{font-size:11px;font-weight:400;color:#999;margin-top:2px;display:flex;justify-content:space-between;width:100%;gap:4px}
+.area-btn .area-count .ac-left{white-space:nowrap}
+.area-btn .area-count .ac-right{white-space:nowrap}
 .area-btn.expanded .arrow{transform:rotate(180deg)}
 /* 【v1.3.15】选中高亮改为红色描边+无背景色，避免与蓝色提示混淆 */
 .area-btn.expanded{background:#fff;border-color:#ff4d4f;box-shadow:none}
@@ -925,7 +927,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.15.4';
+const APP_VERSION = 'v1.16.0';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1503,7 +1505,18 @@ async function renderMain() {
       for (let si = 0; si < getAreaSeatCount(fid, aname); si++) {
         if (state.seatHasImages.has(seatKey(fid, aname, si))) { areaHasImages = true; break; }
       }
-      html += `<button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow"></span></span><span class="area-count">${areaTotal}座</span></button>`;
+      // 【v1.16.0】统计有图座位数和总图片数
+      let seatsWithImages = 0, areaImageTotal = 0;
+      const seatCount = getAreaSeatCount(fid, aname);
+      for (let si = 0; si < seatCount; si++) {
+        const sk = seatKey(fid, aname, si);
+        if (state.seatHasImages.has(sk)) {
+          seatsWithImages++;
+          const stat = seatImageStats.get(sk);
+          if (stat) areaImageTotal += stat.totalCount;
+        }
+      }
+      html += `<button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow"></span></span><span class="area-count"><span class="ac-left">(${seatsWithImages}/${areaTotal}座)</span><span class="ac-right">共${areaImageTotal}张</span></span></button>`;
       // 【v1.11.0】区域展开时，在区域按钮右侧显示"记录完成时间"按钮
       if (aExp) {
         html += `<button class="record-time-btn" data-action="record-time" data-floor="${fid}" data-area="${aname}">⏱️记录完成时间</button>`;
@@ -3533,6 +3546,71 @@ document.getElementById('batch-cancel').addEventListener('click', () => {
   batchModal.classList.remove('show');
 });
 
+// 【v1.16.0】长按拖动多选（批量下载 + 清除图片共用）
+function setupChipDragSelect(gridEl, onToggle) {
+  let dragMode = null; // 'select' | 'deselect'
+  let longPressTimer = null;
+  let dragActive = false;
+  const touchedChips = new Set();
+
+  gridEl.addEventListener('touchstart', (e) => {
+    const chip = e.target.closest('.batch-chip');
+    if (!chip || chip.classList.contains('disabled')) return;
+    dragMode = null;
+    dragActive = false;
+    touchedChips.clear();
+    longPressTimer = setTimeout(() => {
+      dragActive = true;
+      dragMode = chip.classList.contains('checked') ? 'deselect' : 'select';
+      chip.classList.toggle('checked');
+      onToggle(chip, dragMode === 'select');
+      touchedChips.add(chip);
+    }, 300);
+  }, { passive: true });
+
+  gridEl.addEventListener('touchmove', (e) => {
+    if (!dragActive) { clearTimeout(longPressTimer); return; }
+    e.preventDefault();
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!el) return;
+    const chip = el.closest('.batch-chip');
+    if (!chip || chip.classList.contains('disabled') || touchedChips.has(chip)) return;
+    touchedChips.add(chip);
+    const shouldCheck = dragMode === 'select';
+    if (shouldCheck !== chip.classList.contains('checked')) {
+      chip.classList.toggle('checked');
+      onToggle(chip, shouldCheck);
+    }
+  }, { passive: false });
+
+  gridEl.addEventListener('touchend', () => {
+    clearTimeout(longPressTimer);
+    dragActive = false;
+    dragMode = null;
+    touchedChips.clear();
+  }, { passive: true });
+
+  gridEl.addEventListener('touchcancel', () => {
+    clearTimeout(longPressTimer);
+    dragActive = false;
+    dragMode = null;
+    touchedChips.clear();
+  }, { passive: true });
+}
+
+// 批量下载拖动多选
+setupChipDragSelect(batchAreasDiv, (chip, isChecked) => {
+  if (chip.dataset.ak) { isChecked ? batchSelectedAreas.add(chip.dataset.ak) : batchSelectedAreas.delete(chip.dataset.ak); }
+  if (chip.dataset.tidx !== undefined) { const ti = chip.dataset.tidx; isChecked ? batchSelectedTimes.add(ti) : batchSelectedTimes.delete(ti); }
+  saveBatchSelection();
+});
+setupChipDragSelect(batchTimesDiv, (chip, isChecked) => {
+  if (chip.dataset.ak) { isChecked ? batchSelectedAreas.add(chip.dataset.ak) : batchSelectedAreas.delete(chip.dataset.ak); }
+  if (chip.dataset.tidx !== undefined) { const ti = chip.dataset.tidx; isChecked ? batchSelectedTimes.add(ti) : batchSelectedTimes.delete(ti); }
+  saveBatchSelection();
+});
+
 // 【v1.15.4】设置/恢复打包中的 UI 状态
 function setBatchPackingUI(packing) {
   const cancelBtn = document.getElementById('batch-cancel');
@@ -4833,6 +4911,22 @@ cleanupModal.addEventListener('click', (e) => {
 // 取消按钮
 document.getElementById('cleanup-cancel').addEventListener('click', () => cleanupModal.classList.remove('show'));
 
+// 【v1.16.0】清除图片拖动多选
+function cleanupUpdateBtnState() {
+  const hasSelection = cleanupSelectedAreas.size > 0 && cleanupSelectedTimes.size > 0;
+  cleanupExecBtn.disabled = !hasSelection;
+}
+setupChipDragSelect(cleanupAreasDiv, (chip, isChecked) => {
+  if (chip.dataset.ak) { isChecked ? cleanupSelectedAreas.add(chip.dataset.ak) : cleanupSelectedAreas.delete(chip.dataset.ak); }
+  if (chip.dataset.tidx !== undefined) { const ti = chip.dataset.tidx; isChecked ? cleanupSelectedTimes.add(ti) : cleanupSelectedTimes.delete(ti); }
+  cleanupUpdateBtnState();
+});
+setupChipDragSelect(cleanupTimesDiv, (chip, isChecked) => {
+  if (chip.dataset.ak) { isChecked ? cleanupSelectedAreas.add(chip.dataset.ak) : cleanupSelectedAreas.delete(chip.dataset.ak); }
+  if (chip.dataset.tidx !== undefined) { const ti = chip.dataset.tidx; isChecked ? cleanupSelectedTimes.add(ti) : cleanupSelectedTimes.delete(ti); }
+  cleanupUpdateBtnState();
+});
+
 // 清除图片按钮 → 弹出二次确认
 cleanupExecBtn.addEventListener('click', () => {
   if (cleanupSelectedAreas.size === 0 || cleanupSelectedTimes.size === 0) return;
@@ -4932,7 +5026,27 @@ document.getElementById('cleanup-confirm-exec').addEventListener('click', async 
 // ============================================================
 // 十一、提示与底部栏
 // ============================================================
-function showToast(msg, duration) { const d = duration || 2100; const t = document.createElement('div'); t.className = 'toast'; t.style.animationDuration = (d / 1000) + 's'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), d + 100); }
+// 【v1.16.0】轻提示防抖：同一内容2秒内只显示一次，重复触发刷新定时器
+const _toastMap = new Map(); // msg → { el, timer }
+function showToast(msg, duration) {
+  const d = duration || 2100;
+  const existing = _toastMap.get(msg);
+  if (existing) {
+    clearTimeout(existing.timer);
+    existing.el.style.animation = 'none';
+    void existing.el.offsetHeight;
+    existing.el.style.animation = `toast-in ${d / 1000}s ease`;
+    existing.timer = setTimeout(() => { existing.el.remove(); _toastMap.delete(msg); }, d + 100);
+    return;
+  }
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.style.animationDuration = (d / 1000) + 's';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  const timer = setTimeout(() => { t.remove(); _toastMap.delete(msg); }, d + 100);
+  _toastMap.set(msg, { el: t, timer });
+}
 const bottomBar = document.getElementById('bottom-bar'), selectedCount = document.getElementById('selected-count');
 function updateBottomBar() {
   if (state.selectedCells.length > 0) {
