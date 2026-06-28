@@ -97,9 +97,10 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .floor-5{background:linear-gradient(135deg,#fa709a,#fee140)}
 
 .area-container{display:none;padding:4px 0 8px 16px}
-.area-container.show{display:flex;flex-wrap:wrap;justify-content:space-evenly;gap:6px;padding:4px 12px 8px}
-.area-btn-wrap{position:relative;display:inline-flex;align-items:center;flex-shrink:0}
-.area-btn{display:inline-flex;flex-direction:column;align-items:center;padding:10px 14px;font-size:14px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;flex-shrink:0}
+.area-container.show{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:flex-start;gap:6px;padding:4px 12px 8px}
+.area-btn-wrap{position:relative;width:calc(33.33% - 8px);flex-shrink:0;overflow:visible}
+.area-btn-wrap:has(.expanded){margin-bottom:36px}
+.area-btn{display:inline-flex;flex-direction:column;align-items:center;width:100%;box-sizing:border-box;padding:10px 14px;font-size:14px;font-weight:600;border:2px solid transparent;border-radius:8px;background:#fff;color:#333;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12);transition:transform .1s,border-color .15s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .area-btn:active,.area-btn._pressing{transform:scale(.95)}
 .area-btn .arrow{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid currentColor;display:inline-block;vertical-align:middle;margin-left:6px;transition:transform .25s}
 .area-btn .area-count{font-size:10px;font-weight:400;color:#999;margin-top:2px;display:flex;justify-content:space-between;width:100%;gap:4px}
@@ -110,13 +111,13 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .area-btn._dragging{box-shadow:0 8px 24px rgba(0,0,0,.25);transform:scale(1.05);z-index:100;opacity:.85;transition:box-shadow .15s,opacity .15s}
 .area-btn._drag-placeholder{visibility:hidden;border:2px dashed #722ed1;opacity:.3}
 .area-btn._drag-target{border-color:#722ed1;border-style:dashed}
-._drag-placeholder-wrap{visibility:hidden;border:2px dashed #722ed1;opacity:.3;border-radius:8px;box-sizing:border-box}
+._drag-placeholder-wrap{visibility:hidden;border:2px dashed #722ed1;opacity:.3;border-radius:8px;box-sizing:border-box;width:calc(33.33% - 8px);flex-shrink:0}
 /* 【v1.3.15】选中高亮改为红色描边+无背景色，避免与蓝色提示混淆 */
 .area-btn.expanded{background:#fff;border-color:#ff4d4f;box-shadow:none}
 .area-btn.has-images{border:2px solid #52c41a;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
 .area-btn.has-images.expanded{border-color:#ff4d4f;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
 /* 【v1.12.1】记录完成时间按钮：圆角胶囊形 */
-.record-time-btn{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:4px 10px;margin:0 0 0 6px;font-size:11px;font-weight:500;border:1.5px solid #d9d9d9;border-radius:20px;background:#f5f5f5;color:#666;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s;-webkit-user-select:none;user-select:none;position:absolute;left:100%;top:50%;transform:translateY(-50%);z-index:2}
+.record-time-btn{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:4px 10px;margin:0;font-size:11px;font-weight:500;border:1.5px solid #d9d9d9;border-radius:20px;background:#f5f5f5;color:#666;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s;-webkit-user-select:none;user-select:none;position:absolute;top:100%;left:0;margin-top:4px;z-index:2}
 .record-time-btn:active,.record-time-btn._pressing{transform:scale(.95);background:#e8e8e8}
 /* 【v1.13.3】楼层卡片完成时间显示：居中填充中间空间 */
 .floor-completion{display:flex;flex-direction:column;flex:1;min-width:0;margin:0 8px;font-weight:400;color:rgba(255,255,255,.85);line-height:1.4;align-items:stretch;overflow:hidden}
@@ -143,7 +144,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .record-confirm-ok:active{opacity:.8}
 
 .seat-container{display:none;padding:8px 0}
-.seat-container.show{display:block}
+.seat-container.show{display:block;flex-basis:100%;width:100%}
 .seat-flow{display:flex;flex-wrap:wrap;gap:6px;padding:0 2px}
 .seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:13px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s,border-color .15s;position:relative}
 .seat-btn:active,.seat-btn._pressing{background:#e6f7ff}
@@ -933,7 +934,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.17.5';
+const APP_VERSION = 'v1.17.6';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1506,6 +1507,7 @@ async function renderMain() {
     // 【v1.17.0】应用自定义区域排列顺序
     const savedOrder = loadAreaOrder(fid);
     const orderedAreas = savedOrder ? applyAreaOrder(floor.areas, savedOrder) : floor.areas;
+    let seatHtml = ''; // 【v1.17.6】座位列表延后输出，保证按钮布局稳定
     orderedAreas.forEach(area => {
       const aname = area.name, ak = areaKey(fid, aname), aExp = state.expandedAreas.has(ak);
       const areaTotal = getAreaSeatCount(fid, aname) - (deletedCountMap[ak] || 0);
@@ -1526,13 +1528,14 @@ async function renderMain() {
         }
       }
       html += `<div class="area-btn-wrap"><button class="area-btn ${aExp ? 'expanded' : ''} ${areaHasImages ? 'has-images' : ''}" data-action="toggle-area" data-floor="${fid}" data-area="${aname}"><span>${aname}<span class="arrow"></span></span><span class="area-count"><span class="ac-left">(${seatsWithImages}/${areaTotal}座)</span><span class="ac-right">共${areaImageTotal}张</span></span></button>`;
-      // 【v1.11.0】区域展开时，在区域按钮右侧显示"记录完成时间"按钮
+      // 【v1.11.0】区域展开时，在区域按钮下方显示"记录完成时间"按钮
       if (aExp) {
         html += `<button class="record-time-btn" data-action="record-time" data-floor="${fid}" data-area="${aname}">⏱️记录完成时间</button>`;
       }
       html += `</div>`;
-      html += `<div class="seat-container ${aExp ? 'show' : ''}" id="seats-${ak}">${renderSeatFlow(fid, aname)}</div>`;
+      seatHtml += `<div class="seat-container ${aExp ? 'show' : ''}" id="seats-${ak}">${renderSeatFlow(fid, aname)}</div>`;
     });
+    html += seatHtml;
     html += '</div>';
   });
   // 【v1.12.6】底部信息：使用说明 + 近期优化记录 + 致谢 + 免责声明 + 联系小字
@@ -1689,7 +1692,6 @@ function initAreaDragReorder() {
         // 创建占位符并插入原位置（在 wrapper 层级）
         placeholder = document.createElement('div');
         placeholder.className = 'area-btn-wrap _drag-placeholder-wrap';
-        placeholder.style.width = rect.width + 'px';
         placeholder.style.height = rect.height + 'px';
         dragWrap.parentNode.insertBefore(placeholder, dragWrap);
         // 将拖动 wrapper 设为 fixed，脱离流
