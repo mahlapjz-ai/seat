@@ -1,4 +1,4 @@
-﻿/* 拆分自原单文件 index.html - 样式部分 */
+/* 拆分自原单文件 index.html - 样式部分 */
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:15px;color:#333;background:#f0f2f5;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 /* 【v1.2.0 iOS兼容】所有可点击元素统一 cursor:pointer，iOS 不做悬停效果 */
@@ -140,10 +140,10 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .seat-btn.has-images-1.expanded{border:2px solid #ff4d4f;background:linear-gradient(135deg,#e6f7ff,#bae7ff);color:#096dd9;font-weight:700}
 .seat-btn.has-images-2.expanded{border:2px solid #ff4d4f;background:linear-gradient(135deg,#fff7e6,#ffe7ba);color:#d46b08;font-weight:700}
 /* 【v1.3.10】闭眼图标：左上角，表示隐藏时段有图 */
-.seat-btn .icon-hidden{position:absolute;top:2px;left:4px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:5}
+.seat-btn .icon-hidden{position:absolute;top:2px;left:4px;right:auto;bottom:auto;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:5}
 .seat-btn .icon-hidden svg{width:12px;height:12px;fill:#999;filter:drop-shadow(0 1px 1px rgba(255,77,79,.5))}
 /* 【v1.3.10】筛选命中图标：右上角，表示可见时段有图（仅筛选非全选时显示） */
-.seat-btn .icon-filter-hit{position:absolute;top:2px;right:6px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:5}
+.seat-btn .icon-filter-hit{position:absolute;top:2px;right:6px;left:auto;bottom:auto;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:5}
 .seat-btn .icon-filter-hit svg{width:12px;height:12px;fill:#52c41a}
 .seat-btn-text{display:inline;line-height:1.3;text-align:center;pointer-events:none}
 /* 二~五楼东区临时长编号字号缩小 */
@@ -155,7 +155,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .android-device.theme-normal .seat-btn.long-name{font-size:9px}
 .android-device.theme-yiban .seat-btn.long-name{font-size:10px}
 .android-device.theme-pixel .seat-btn.long-name{font-size:8px}
-.add-seat-btn{width:calc(20% - 5px);height:44px;padding:0 8px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.add-seat-btn{width:calc(20% - 5px);height:44px;padding:0 22px 0 8px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-grow:0}
 .add-seat-btn:active{background:#e6f7ff;border-color:#1890ff;color:#1890ff}
 
 .timeslot-container{display:none;width:100%;padding:8px 0}
@@ -682,8 +682,9 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 /* 座位编号按钮：铁块/石英材质 + 像素描边 */
 .theme-pixel .seat-btn{font-family:'Courier New',monospace;background:#d8d8d8;border:2px solid #888;border-radius:0;box-shadow:2px 2px 0 #2d2d2d;color:#3a3a3a;font-size:11px;font-weight:700;transition:transform .08s,box-shadow .08s}
 .theme-pixel .seat-btn .icon-hidden{position:absolute;top:2px;left:4px;z-index:5}
+.theme-pixel .seat-btn .icon-hidden svg{filter:drop-shadow(1px 0 0 #333) drop-shadow(-1px 0 0 #333) drop-shadow(0 1px 0 #333) drop-shadow(0 -1px 0 #333)}
 .theme-pixel .seat-btn .icon-filter-hit{position:absolute;top:2px;right:6px;z-index:5}
-.theme-pixel .seat-btn .icon-filter-hit svg{filter:drop-shadow(1px 1px 0 #333)}
+.theme-pixel .seat-btn .icon-filter-hit svg{filter:drop-shadow(1px 0 0 #333) drop-shadow(-1px 0 0 #333) drop-shadow(0 1px 0 #333) drop-shadow(0 -1px 0 #333)}
 .theme-pixel .seat-btn:hover{background:#e0e0e0}
 .theme-pixel .seat-btn:active,.theme-pixel .seat-btn._pressing{transform:translate(1px,1px);box-shadow:1px 1px 0 #2d2d2d}
 .theme-pixel .seat-btn.expanded{border:3px solid #5a3d2b;background:#d8d8d8;box-shadow:3px 3px 0 #2d2d2d}
@@ -693,7 +694,7 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .seat-btn.has-images-1.expanded{border:3px solid #5a3d2b;background:#5bc0de;color:#1a4a5a;box-shadow:3px 3px 0 #2d2d2d}
 .theme-pixel .seat-btn.has-images-2.expanded{border:3px solid #5a3d2b;background:#f0ad4e;color:#5a3a0a;box-shadow:3px 3px 0 #2d2d2d}
 /* 【v1.20.13】安卓端座位按钮缩小字号，避免宽字体换行 */
-.android-device .seat-btn{font-size:11px;height:40px;padding:0 22px 0 8px}
+.android-device .seat-btn{font-size:11px;height:40px;padding:0 22px 0 8px;flex-shrink:0;flex-grow:0;position:relative}
 .android-device.theme-normal .seat-btn{font-size:10px}
 .android-device.theme-yiban .seat-btn{font-size:11px}
 .android-device.theme-pixel .seat-btn{font-size:10px}
