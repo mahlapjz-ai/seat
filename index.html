@@ -148,7 +148,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .seat-container{display:none;padding:8px 0}
 .seat-container.show{display:block;flex-basis:100%;width:100%}
 .seat-flow{display:flex;flex-wrap:wrap;gap:6px;padding:0 2px}
-.seat-btn{width:calc(20% - 5px);padding:12px 6px;font-size:12px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:normal;word-break:keep-all;overflow-wrap:break-word;overflow:visible;transition:background .15s,border-color .15s;position:relative}
+.seat-btn{width:calc(20% - 5px);padding:12px 22px 12px 18px;font-size:12px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;transition:background .15s,border-color .15s;position:relative}
 .seat-btn:active,.seat-btn._pressing{background:#e6f7ff}
 /* 【v1.3.15】选中高亮改为红色描边+无背景色 */
 .seat-btn.expanded{background:#fff;border:2px solid #ff4d4f}
@@ -165,6 +165,15 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .seat-btn .icon-filter-hit{position:absolute;top:2px;right:4px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:5}
 .seat-btn .icon-filter-hit svg{width:12px;height:12px;fill:#52c41a}
 .seat-btn-text{display:inline;line-height:1.3}
+/* 二~五楼东区临时长编号字号缩小 */
+.seat-btn.long-name{font-size:11px}
+.theme-normal .seat-btn.long-name{font-size:11px}
+.theme-yiban .seat-btn.long-name{font-size:11px}
+.theme-pixel .seat-btn.long-name{font-size:9px}
+.android-device .seat-btn.long-name{font-size:10px}
+.android-device.theme-normal .seat-btn.long-name{font-size:9px}
+.android-device.theme-yiban .seat-btn.long-name{font-size:10px}
+.android-device.theme-pixel .seat-btn.long-name{font-size:8px}
 .add-seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s}
 .add-seat-btn:active{background:#e6f7ff;border-color:#1890ff;color:#1890ff}
 
@@ -698,7 +707,7 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .seat-btn.has-images-1.expanded{border:3px solid #5a3d2b;background:#5bc0de;color:#1a4a5a;box-shadow:3px 3px 0 #2d2d2d}
 .theme-pixel .seat-btn.has-images-2.expanded{border:3px solid #5a3d2b;background:#f0ad4e;color:#5a3a0a;box-shadow:3px 3px 0 #2d2d2d}
 /* 【v1.20.13】安卓端座位按钮缩小字号，避免宽字体换行 */
-.android-device .seat-btn{font-size:11px;padding:10px 6px}
+.android-device .seat-btn{font-size:11px;padding:10px 22px 10px 18px}
 .android-device.theme-normal .seat-btn{font-size:10px}
 .android-device.theme-yiban .seat-btn{font-size:11px}
 .android-device.theme-pixel .seat-btn{font-size:10px}
@@ -942,7 +951,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.20.21';
+const APP_VERSION = 'v1.20.22';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -1125,24 +1134,21 @@ function getAreaImageTotal(fid, aname) {
 /** 获取座位默认编号 */
 function defaultSeatName(fid, aname, idx) {
   const cfg = getAreaConfig(fid, aname);
-  if (!cfg) return `${aname}\u200B${idx + 1}`;
+  if (!cfg) return `${aname}${idx + 1}`;
   const baseCount = cfg.count;
   if (idx < baseCount) {
-    // 基础座位：prefix + (start + idx)
-    return `${cfg.prefix}\u200B${cfg.start + idx}`;
+    return `${cfg.prefix}${cfg.start + idx}`;
   } else {
-    // 新增座位：prefix + (start + baseCount + (idx - baseCount))
-    return `${cfg.prefix}\u200B${cfg.start + idx}`;
+    return `${cfg.prefix}${cfg.start + idx}`;
   }
 }
 
 /** 获取座位编号（优先自定义） */
-function addLineBreakHint(name) { return name.replace(/([^\d])(\d)/, '$1\u200B$2'); }
 function getCleanSeatName(name) { return name.replace(/\u200B/g, ''); }
 function getSeatNameSync(fid, aname, idx) {
   const sk = seatKey(fid, aname, idx);
   const custom = state.seatNames[sk];
-  return custom ? addLineBreakHint(custom) : defaultSeatName(fid, aname, idx);
+  return custom || defaultSeatName(fid, aname, idx);
 }
 
 /** 获取北京时间字符串 */
@@ -1929,11 +1935,12 @@ function renderSeatFlow(fid, aname) {
     let imgClass = '';
     if (stat && stat.visibleTotalCount >= 2 && stat.visibleHasSlotWithMulti) imgClass = 'has-images-2';
     else if (stat && stat.visibleTotalCount >= 1) imgClass = 'has-images-1';
+    const longNameClass = (fid >= 2 && aname === '东区临时') ? ' long-name' : '';
     // 【v1.4.1 修改】左上角闭眼图标：隐藏时段有图（展开时不显示）
     const hiddenIcon = (stat && stat.hiddenHasImages && !sExp) ? '<span class="icon-hidden"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.804 11.804 0 001 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg></span>' : '';
     // 【v1.3.10】右上角筛选命中图标：筛选非全选 + 可见时段有图
     const filterHitIcon = (isFilterActive && stat && stat.visibleHasImages) ? '<span class="icon-filter-hit"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></span>' : '';
-    html += `<button class="seat-btn ${sExp ? 'expanded' : ''} ${imgClass}" data-action="toggle-seat" data-floor="${fid}" data-area="${aname}" data-seat="${i}">${hiddenIcon}${filterHitIcon}<span class="seat-btn-text">${sName}</span></button>`;
+    html += `<button class="seat-btn ${sExp ? 'expanded' : ''} ${imgClass}${longNameClass}" data-action="toggle-seat" data-floor="${fid}" data-area="${aname}" data-seat="${i}">${hiddenIcon}${filterHitIcon}<span class="seat-btn-text">${sName}</span></button>`;
     html += `<div class="timeslot-container ${sExp ? 'show' : ''}" id="timeslots-${sk}"></div>`;
   }
   html += `<button class="add-seat-btn" data-action="add-seat" data-floor="${fid}" data-area="${aname}">+</button></div>`;
@@ -5780,7 +5787,7 @@ async function refreshExpandedSeats() {
 }
 
 function updateSeatButtonText(sk, newName) {
-  document.querySelectorAll('.seat-btn').forEach(btn => { const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat)); if (k === sk) { const t = btn.querySelector('.seat-btn-text'); if (t) t.textContent = addLineBreakHint(newName); else btn.textContent = addLineBreakHint(newName); } });
+  document.querySelectorAll('.seat-btn').forEach(btn => { const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat)); if (k === sk) { const t = btn.querySelector('.seat-btn-text'); if (t) t.textContent = newName; else btn.textContent = newName; } });
 }
 async function regenerateWatermarksForSeat(sk) {
   // 【v1.4.0】修改座位编号后，仅更新 seatName 字段，不再重新生成水印
