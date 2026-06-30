@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <!-- 【v1.9.20】阻塞渲染：同步读取主题，防止非默认主题闪烁 -->
-<script>try{var t=localStorage.getItem('app_theme');if(t&&t!=='default'){var m={'normal':'theme-normal','yiban':'theme-yiban','pixel':'theme-pixel','pink':'theme-pink'};if(m[t])document.documentElement.className=m[t]}}catch(e){}</script>
+<script>try{var t=localStorage.getItem('app_theme');if(t&&t!=='default'){var m={'normal':'theme-normal','yiban':'theme-yiban','pixel':'theme-pixel','pink':'theme-pink'};if(m[t])document.documentElement.className=m[t]}}catch(e){}try{if(/Android/i.test(navigator.userAgent))document.documentElement.classList.add('android-device')}catch(e){}</script>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="seat-icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="seat-icon.png">
@@ -148,7 +148,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .seat-container{display:none;padding:8px 0}
 .seat-container.show{display:block;flex-basis:100%;width:100%}
 .seat-flow{display:flex;flex-wrap:wrap;gap:6px;padding:0 2px}
-.seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:13px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:normal;word-break:break-all;overflow:visible;transition:background .15s,border-color .15s;position:relative}
+.seat-btn{width:calc(20% - 5px);padding:12px 2px;font-size:13px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:normal;word-break:break-all;overflow:visible;transition:background .15s,border-color .15s;position:relative}
 .seat-btn:active,.seat-btn._pressing{background:#e6f7ff}
 /* 【v1.3.15】选中高亮改为红色描边+无背景色 */
 .seat-btn.expanded{background:#fff;border:2px solid #ff4d4f}
@@ -159,10 +159,10 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .seat-btn.has-images-1.expanded{border:2px solid #ff4d4f;background:linear-gradient(135deg,#e6f7ff,#bae7ff);color:#096dd9;font-weight:700}
 .seat-btn.has-images-2.expanded{border:2px solid #ff4d4f;background:linear-gradient(135deg,#fff7e6,#ffe7ba);color:#d46b08;font-weight:700}
 /* 【v1.3.10】闭眼图标：左上角，表示隐藏时段有图 */
-.seat-btn .icon-hidden{position:absolute;top:2px;left:4px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:1}
+.seat-btn .icon-hidden{position:absolute;top:2px;left:4px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:2}
 .seat-btn .icon-hidden svg{width:12px;height:12px;fill:#999;filter:drop-shadow(0 1px 1px rgba(255,77,79,.5))}
 /* 【v1.3.10】筛选命中图标：右上角，表示可见时段有图（仅筛选非全选时显示） */
-.seat-btn .icon-filter-hit{position:absolute;top:2px;right:4px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:1}
+.seat-btn .icon-filter-hit{position:absolute;top:2px;right:4px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:2}
 .seat-btn .icon-filter-hit svg{width:12px;height:12px;fill:#52c41a}
 .add-seat-btn{width:calc(20% - 5px);padding:10px 2px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s}
 .add-seat-btn:active{background:#e6f7ff;border-color:#1890ff;color:#1890ff}
@@ -696,6 +696,11 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .seat-btn.has-images-2{border-color:#f0ad4e;background:#f0ad4e;color:#5a3a0a;font-weight:700;box-shadow:2px 2px 0 #2d2d2d}
 .theme-pixel .seat-btn.has-images-1.expanded{border:3px solid #5a3d2b;background:#5bc0de;color:#1a4a5a;box-shadow:3px 3px 0 #2d2d2d}
 .theme-pixel .seat-btn.has-images-2.expanded{border:3px solid #5a3d2b;background:#f0ad4e;color:#5a3a0a;box-shadow:3px 3px 0 #2d2d2d}
+/* 【v1.20.13】安卓端座位按钮缩小字号，避免宽字体换行 */
+.android-device .seat-btn{font-size:12px;padding:10px 3px}
+.android-device.theme-normal .seat-btn{font-size:11px}
+.android-device.theme-yiban .seat-btn{font-size:11px}
+.android-device.theme-pixel .seat-btn{font-size:11px}
 /* 座位名称 */
 .theme-pixel .seat-name-text{color:#5a3d2b;border-bottom-color:#5a3d2b}
 .theme-pixel .seat-name-edit-input{color:#4a3728;border-bottom-color:#5a3d2b}
@@ -936,7 +941,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.20.12';
+const APP_VERSION = 'v1.20.14';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
