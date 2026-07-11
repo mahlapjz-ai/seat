@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.21.3';
+const APP_VERSION = 'v1.21.4';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -4890,7 +4890,21 @@ function renderFilterBody() {
   TIME_SLOTS.forEach((ts, idx) => {
     const checked = isTimeSlotVisible(idx);
     const passed = isTimeSlotPassed(idx);
-    html += `<div class="filter-slot-item" data-tidx="${idx}"><div class="filter-slot-cb ${checked ? 'checked' : ''}"></div><span class="filter-slot-label ${passed ? 'passed' : ''}">${ts}${passed ? ' (已过)' : ''}</span></div>`;
+    // 【v1.21.4】检查该时段是否有图片（遍历全楼层全区域）
+    let hasImages = false;
+    for (const floor of FLOORS) {
+      for (const area of floor.areas) {
+        const seatCount = getAreaSeatCount(floor.id, area.name);
+        for (let si = 0; si < seatCount; si++) {
+          const ck = cellKey(floor.id, area.name, si, idx);
+          if ((imageCountCache.get(ck) || 0) >= 1) { hasImages = true; break; }
+        }
+        if (hasImages) break;
+      }
+      if (hasImages) break;
+    }
+    const imgIcon = hasImages ? '<span class="filter-slot-img-icon"></span>' : '';
+    html += `<div class="filter-slot-item" data-tidx="${idx}"><div class="filter-slot-cb ${checked ? 'checked' : ''}"></div><span class="filter-slot-label ${passed ? 'passed' : ''}">${ts}${passed ? ' (已过)' : ''}</span>${imgIcon}</div>`;
   });
   filterBody.innerHTML = html;
 }

@@ -331,6 +331,11 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .filter-slot-cb.checked::after{content:'✓';color:#fff;font-size:14px;font-weight:700}
 .filter-slot-label{font-size:15px;color:#333;font-weight:500}
 .filter-slot-label.passed{color:#999}
+/* 【v1.21.4】时段筛选面板：有图片的时段显示图标 */
+.filter-slot-img-icon{width:14px;height:14px;flex-shrink:0;margin-left:auto;display:inline-block;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E") no-repeat center/contain;mask:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E") no-repeat center/contain;color:#1890ff;opacity:.7}
+.theme-normal .filter-slot-img-icon{color:#7a9a5a}
+.theme-yiban .filter-slot-img-icon{color:#00cccc}
+.theme-pixel .filter-slot-img-icon{color:#8b7355}
 
 /* ============================================================
    【v1.6.0 新增】主题系统 - 主题选择列表样式
@@ -811,24 +816,26 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 #app .floor-btn,#app .area-container,#app .app-footer{transition:opacity .3s ease-in-out,transform .3s ease-in-out}
 #app.mode-hiding .floor-btn,#app.mode-hiding .area-container,#app.mode-hiding .app-footer{opacity:0;transform:scale(.95) translateY(-10px)}
 #app.mode-hidden .floor-btn,#app.mode-hidden .area-container,#app.mode-hidden .app-footer{display:none}
-/* 【v1.21.1】切回默认模式：纯淡入，不触发高度/展开动画 */
-#app.mode-fadein .floor-btn,#app.mode-fadein .area-container,#app.mode-fadein .app-footer{opacity:0;transition:opacity .3s ease-in-out}
+/* 【v1.21.4】切回默认模式：淡入+上滑，仅opacity和transform */
+#app.mode-fadein .floor-btn,#app.mode-fadein .area-container,#app.mode-fadein .app-footer{opacity:0;transform:translateY(10px);transition:opacity .3s ease-in-out,transform .3s ease-in-out}
 #app.mode-fadein .floor-btn:not(.expanded)+.area-container{display:none}
 #app.mode-fadein .area-container:not(.show){display:none}
 
 /* 剑光掠过效果（仅多图模式下生效） */
-.page-title.sword-light{background:linear-gradient(90deg,#1a1a1a 0%,rgba(255,255,255,.5) 45%,rgba(255,255,255,.7) 50%,rgba(255,255,255,.5) 55%,#1a1a1a 100%);background-size:200% 100%;background-position:200% 0;background-clip:text;-webkit-background-clip:text;color:#1a1a1a;animation:sword-sweep 4s ease-in-out infinite}
+.page-title.sword-light{background:linear-gradient(90deg,transparent 0%,transparent 30%,rgba(255,255,255,.5) 50%,transparent 70%,transparent 100%);background-size:200% 100%;background-position:200% 0;background-clip:text;-webkit-background-clip:text;color:inherit;animation:sword-sweep 4s ease-in-out infinite}
 @keyframes sword-sweep{0%{background-position:200% 0}100%{background-position:-200% 0}}
-/* 各主题剑光颜色 - 底色保证文字可见 */
-.theme-normal .page-title.sword-light{background:linear-gradient(90deg,#5B3A1A 0%,rgba(200,160,80,.4) 45%,rgba(255,220,150,.7) 50%,rgba(200,160,80,.4) 55%,#5B3A1A 100%);background-size:200% 100%;background-clip:text;-webkit-background-clip:text;color:#5B3A1A;animation:sword-sweep 4s ease-in-out infinite}
-.theme-yiban .page-title.sword-light{background:linear-gradient(90deg,#00cccc 0%,rgba(0,255,255,.4) 45%,rgba(0,255,255,.7) 50%,rgba(0,255,255,.4) 55%,#00cccc 100%);background-size:200% 100%;background-clip:text;-webkit-background-clip:text;color:#00cccc;animation:sword-sweep 4s ease-in-out infinite}
-.theme-pixel .page-title.sword-light{background:linear-gradient(90deg,#3e2b1f 0%,rgba(200,169,110,.4) 45%,rgba(220,190,140,.7) 50%,rgba(200,169,110,.4) 55%,#3e2b1f 100%);background-size:200% 100%;background-clip:text;-webkit-background-clip:text;color:#3e2b1f;animation:sword-sweep 4s ease-in-out infinite}
+/* 各主题剑光颜色 */
+.theme-normal .page-title.sword-light{background:linear-gradient(90deg,transparent 0%,transparent 30%,rgba(255,255,255,.5) 50%,transparent 70%,transparent 100%);background-size:200% 100%;background-clip:text;-webkit-background-clip:text;color:#333;animation:sword-sweep 4s ease-in-out infinite}
+.theme-yiban .page-title.sword-light{background:linear-gradient(90deg,transparent 0%,transparent 30%,rgba(255,200,50,.4) 50%,transparent 70%,transparent 100%);background-size:200% 100%;background-clip:text;-webkit-background-clip:text;color:#e8e0c8;animation:sword-sweep 4s ease-in-out infinite}
+.theme-pixel .page-title.sword-light{background:linear-gradient(90deg,transparent 0%,transparent 30%,rgba(255,215,0,.4) 50%,transparent 70%,transparent 100%);background-size:200% 100%;background-clip:text;-webkit-background-clip:text;color:#3e2b1f;animation:sword-sweep 4s ease-in-out infinite}
 
 /* 多图模式：标题可点击 */
 .page-title.mode-toggle{cursor:pointer;pointer-events:auto!important;-webkit-tap-highlight-color:transparent}
 
+/* 标题组：标题+提示小字 */
+.title-group{display:flex;flex-direction:column;align-items:flex-start}
 /* 小字提示（两种模式均显示） */
-.mode-hint{font-size:11px;color:#999;text-align:center;width:100%;margin-top:2px}
+.mode-hint{font-size:11px;color:#999;margin-top:0;line-height:1.2}
 
 /* 第二种模式：时段筛选按钮 */
 .btn-filter-multi{background:#1890ff}
