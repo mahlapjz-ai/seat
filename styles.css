@@ -128,8 +128,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 
 .seat-container{display:none;padding:8px 0}
 .seat-container.show{display:block;flex-basis:100%;width:100%}
-.seat-flow{display:flex;flex-wrap:wrap;gap:6px;padding:0 2px;align-items:flex-start}
-.seat-btn{width:calc(20% - 5px);height:44px;padding:0 8px;font-size:12px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;transition:background .15s,border-color .15s;position:relative;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-grow:0}
+.seat-flow{display:flex;flex-wrap:wrap;row-gap:4px;padding:0;align-items:flex-start;justify-content:flex-start}
+.seat-btn{width:calc(20% - 6px);height:44px;margin:0 3px;padding:0 8px;font-size:12px;font-weight:500;border:2px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;transition:background .15s,border-color .15s;position:relative;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-grow:0}
 .seat-btn:active,.seat-btn._pressing{background:#e6f7ff}
 /* 【v1.3.15】选中高亮改为红色描边+无背景色 */
 .seat-btn.expanded{background:#fff;border:2px solid #ff4d4f}
@@ -147,14 +147,14 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .seat-btn .icon-filter-hit svg{width:12px;height:12px;fill:#52c41a}
 .seat-btn-text{display:inline;line-height:1.3;text-align:center;pointer-events:none}
 /* 二~五楼东区临时长编号字号缩小 */
-.seat-btn.long-name{font-size:11px}
-.theme-normal .seat-btn.long-name{font-size:11px}
-.theme-yiban .seat-btn.long-name{font-size:11px}
-.theme-pixel .seat-btn.long-name{font-size:9px}
-.android-device .seat-btn.long-name{font-size:10px}
-.android-device.theme-normal .seat-btn.long-name{font-size:9px}
-.android-device.theme-yiban .seat-btn.long-name{font-size:10px}
-.android-device.theme-pixel .seat-btn.long-name{font-size:8px}
+.seat-btn.long-name{font-size:11.5px}
+.theme-normal .seat-btn.long-name{font-size:11.5px}
+.theme-yiban .seat-btn.long-name{font-size:11.5px}
+.theme-pixel .seat-btn.long-name{font-size:9.5px}
+.android-device .seat-btn.long-name{font-size:10.5px}
+.android-device.theme-normal .seat-btn.long-name{font-size:9.5px}
+.android-device.theme-yiban .seat-btn.long-name{font-size:10.5px}
+.android-device.theme-pixel .seat-btn.long-name{font-size:8.5px}
 .add-seat-btn{width:calc(20% - 5px);height:44px;padding:0 8px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-grow:0}
 .add-seat-btn:active{background:#e6f7ff;border-color:#1890ff;color:#1890ff}
 
@@ -390,7 +390,7 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
 .theme-normal .floor-completion .fc-row{display:flex}
 .theme-normal .floor-completion.fixed{color:#8B7355}
 /* 座位编号按钮：米白底，暖棕边框 */
-.theme-normal .seat-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(255,253,248,.96);border:1px solid #c8bca8;color:#4A3728;font-size:12px;transition:background .12s,border-color .12s}
+.theme-normal .seat-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(255,253,248,.96);border:1px solid #c8bca8;color:#4A3728;font-size:12.5px;transition:background .12s,border-color .12s}
 .theme-normal .seat-btn .icon-hidden{position:absolute;top:2px;left:4px;z-index:5}
 .theme-normal .seat-btn .icon-filter-hit{position:absolute;top:2px;right:6px;z-index:5}
 .theme-normal .seat-btn:hover{background:rgba(255,248,232,.96)}
@@ -694,10 +694,11 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .seat-btn.has-images-1.expanded{border:3px solid #5a3d2b;background:#5bc0de;color:#1a4a5a;box-shadow:3px 3px 0 #2d2d2d}
 .theme-pixel .seat-btn.has-images-2.expanded{border:3px solid #5a3d2b;background:#f0ad4e;color:#5a3a0a;box-shadow:3px 3px 0 #2d2d2d}
 /* 【v1.20.13】安卓端座位按钮缩小字号，避免宽字体换行 */
-.android-device .seat-btn{font-size:11px;height:40px;padding:0 8px;flex-shrink:0;flex-grow:0;position:relative}
-.android-device.theme-normal .seat-btn{font-size:10px}
-.android-device.theme-yiban .seat-btn{font-size:11px}
-.android-device.theme-pixel .seat-btn{font-size:10px}
+.android-device .seat-btn{font-size:11.5px;height:40px;padding:0 8px;flex-shrink:0;flex-grow:0;position:relative}
+.android-device:not(.theme-normal):not(.theme-yiban):not(.theme-pixel) .seat-btn{height:42px}
+.android-device.theme-normal .seat-btn{font-size:10.5px}
+.android-device.theme-yiban .seat-btn{font-size:11.5px}
+.android-device.theme-pixel .seat-btn{font-size:10.5px}
 /* 座位名称 */
 .theme-pixel .seat-name-text{color:#5a3d2b;border-bottom-color:#5a3d2b}
 .theme-pixel .seat-name-edit-input{color:#4a3728;border-bottom-color:#5a3d2b}
@@ -800,3 +801,52 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .skeleton-footer-line:nth-child(1){width:60%}
 .skeleton-footer-line:nth-child(2){width:80%}
 .skeleton-footer-line:nth-child(3){width:45%}
+
+/* ============================================================
+   【v1.21.0】第二种显示模式：多图模式
+   ============================================================ */
+
+/* 楼层卡片切换动画 */
+#app.mode-hiding{pointer-events:none}
+#app .floor-btn,#app .area-container,#app .app-footer{transition:opacity .3s ease-in-out,transform .3s ease-in-out}
+#app.mode-hiding .floor-btn,#app.mode-hiding .area-container,#app.mode-hiding .app-footer{opacity:0;transform:scale(.95) translateY(-10px)}
+#app.mode-hidden .floor-btn,#app.mode-hidden .area-container,#app.mode-hidden .app-footer{display:none}
+#app.mode-showing .floor-btn,#app.mode-showing .area-container,#app.mode-showing .app-footer{display:block;opacity:0;transform:scale(.95) translateY(-10px);transition:none}
+#app.mode-showing.animating .floor-btn,#app.mode-showing.animating .area-container,#app.mode-showing.animating .app-footer{transition:opacity .3s ease-in-out,transform .3s ease-in-out;opacity:1;transform:scale(1) translateY(0)}
+
+/* 标题呼吸灯效果（仅多图模式下生效） */
+.page-title.breathing{text-shadow:0 0 4px currentColor;animation:title-breathe 2s ease-in-out infinite}
+@keyframes title-breathe{0%,100%{text-shadow:0 0 4px currentColor}50%{text-shadow:0 0 16px currentColor}}
+/* 各主题呼吸灯颜色 */
+.theme-normal .page-title.breathing{color:#c8a050;animation-name:title-breathe-normal}
+@keyframes title-breathe-normal{0%,100%{text-shadow:0 0 4px #c8a050}50%{text-shadow:0 0 16px #c8a050}}
+.theme-yiban .page-title.breathing{color:#00ffff;animation-name:title-breathe-yiban}
+@keyframes title-breathe-yiban{0%,100%{text-shadow:0 0 4px #00ffff}50%{text-shadow:0 0 16px #00ffff}}
+.theme-pixel .page-title.breathing{color:#7ec850;animation-name:title-breathe-pixel}
+@keyframes title-breathe-pixel{0%,100%{text-shadow:0 0 4px #7ec850}50%{text-shadow:0 0 16px #7ec850}}
+
+/* 多图模式：标题可点击 */
+.page-title.mode-toggle{cursor:pointer;pointer-events:auto!important;-webkit-tap-highlight-color:transparent}
+
+/* 多图模式楼层色块 */
+.multi-floor-block{border-radius:10px;padding:12px 10px;margin:0 0 14px;position:relative}
+/* 默认主题楼层色块 */
+.multi-floor-block{background:#fff;border:1px solid #e0e0e0;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.theme-normal .multi-floor-block{background:rgba(255,253,248,.96);border:1px solid #d8cca8;box-shadow:0 1px 4px rgba(180,160,120,.1)}
+.theme-yiban .multi-floor-block{background:rgba(35,35,42,.94);border:1px solid rgba(0,255,255,.15);box-shadow:0 0 8px rgba(0,255,255,.06)}
+.theme-pixel .multi-floor-block{background:#e8dcc0;border:2px solid #8b7355;box-shadow:2px 2px 0 #2d2d2d;border-radius:0}
+
+/* 多图模式楼层名 */
+.multi-floor-name{font-size:16px;font-weight:700;margin-bottom:8px;color:#333}
+.theme-normal .multi-floor-name{color:#5B3A1A}
+.theme-yiban .multi-floor-name{color:#00cccc}
+.theme-pixel .multi-floor-name{color:#3e2b1f;font-family:'Courier New',monospace}
+
+/* 多图模式区域名 */
+.multi-area-name{font-size:14px;font-weight:600;margin:8px 0 4px;color:#666}
+.theme-normal .multi-area-name{color:#7a9a5a}
+.theme-yiban .multi-area-name{color:#e8820c}
+.theme-pixel .multi-area-name{color:#5a3d2b;font-family:'Courier New',monospace}
+
+/* 多图模式座位按钮区域 - 复用 .seat-flow 布局 */
+.multi-seat-flow{display:flex;flex-wrap:wrap;row-gap:4px;padding:0;align-items:flex-start;justify-content:flex-start}

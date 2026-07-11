@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.20.27';
+const APP_VERSION = 'v1.21.0';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -671,7 +671,7 @@ async function renderMain() {
     + `<div class="footer-title">使用说明</div>`
     + `<div class="usage-guide">·座位如有单张图片且当前时段未隐藏，座位显示蓝色；若时段隐藏，则不显示颜色<br>·座位的同一时段有多张图片且未隐藏，座位显示橙色；若时段隐藏，则不显示颜色<br>·隐藏时段内若存在图片，座位按钮左上角显示"闭眼"图标<br>·若区域存在图片，区域按钮显示绿色<br>·通过"时段筛选"选定某一时段后，若该时段有图片，座位按钮右上角显示"图片"图标</div>`
     + `<div class="footer-collapsible" data-action="toggle-footer-opt">近期优化记录</div>`
-    + `<div class="footer-collapsible-body ${optExpanded ? 'expanded' : 'collapsed'}" data-action="expand-footer-opt">·v1.15~v1.20 汇总：完善记录时间与区域统计功能，优化批量下载与清除图片逻辑，修复区域布局与拖动调序问题（06.29更新）<br>·琪同志反馈缩略图"×"按钮误触易删除图片：v1.13.5 新增"删除保护"功能，开启后可以防止误触删除图片。<br>·圳组、乔组建议增设占座倒计时：目前仅增设"记录完成时间"功能来辅助判断（06.25更新），真正的倒计时提醒待馆方自研系统实现。<br>·赖组反馈批量清理原功能易致页面崩溃：已修复功能为"清除图片"（06.21更新）。<br>·圳组建议的纸质登记辅助功能已简单实现：时段筛选设为当前拍照时段后，蓝底且带图标的座位可对应纸质表打"×"（06.18更新）。<br>·环总、馨同志建议数据互通：经费不足，待馆方自研系统实现。</div>`
+    + `<div class="footer-collapsible-body ${optExpanded ? 'expanded' : 'collapsed'}" data-action="expand-footer-opt">·修复部分安卓机型座位文字被省略显示的问题（06.30更新）<br>·v1.15~v1.20 汇总：完善记录时间与区域统计功能，优化批量下载与清除图片逻辑，修复区域布局与拖动调序问题（06.29更新）<br>·琪同志反馈缩略图"×"按钮误触易删除图片：v1.13.5 新增"删除保护"功能，开启后可以防止误触删除图片。<br>·圳组、乔组建议增设占座倒计时：目前仅增设"记录完成时间"功能来辅助判断（06.25更新），真正的倒计时提醒待馆方自研系统实现。<br>·赖组反馈批量清理原功能易致页面崩溃：已修复功能为"清除图片"（06.21更新）。<br>·圳组建议的纸质登记辅助功能已简单实现：时段筛选设为当前拍照时段后，蓝底且带图标的座位可对应纸质表打"×"（06.18更新）。<br>·环总、馨同志建议数据互通：资金实力不足，待馆方自研系统实现。</div>`
     + `<div class="footer-collapsible" data-action="toggle-footer-thx">给大佬的情书</div>`
     + `<div class="footer-collapsible-body ${thxExpanded ? 'expanded' : 'collapsed'}" data-action="expand-footer-thx">感谢以下不愿透露姓名的大佬的建议与使用体验反馈（排名不分先后）：<br>环总、何总、圳组、赖组、州组、乔组、伟同志、垚同志、馨同志、瑜同志、伦同志、元同志、彦同志、灵同志、琪同志……</div>`
     + `<div class="disclaimer">内部参考工具，功能尚不完善，数据可能丢失，不承担准确性与隐私责任</div><div class="contact${showContact ? '' : ' hidden'}">如有使用建议可联系老范尝试优化。</div></div>`;
@@ -4480,7 +4480,33 @@ document.addEventListener('click', async (e) => {
     return;
   }
   const seatBtn = target.closest('[data-action="toggle-seat"]');
-  if (seatBtn) { const fid = parseInt(seatBtn.dataset.floor), aname = seatBtn.dataset.area, sidx = parseInt(seatBtn.dataset.seat), sk = seatKey(fid, aname, sidx); const prev = [...state.expandedSeats]; state.expandedSeats.clear(); if (!prev.includes(sk)) state.expandedSeats.add(sk); saveUIState(); renderMain(); return; }
+  if (seatBtn) {
+    const fid = parseInt(seatBtn.dataset.floor), aname = seatBtn.dataset.area, sidx = parseInt(seatBtn.dataset.seat), sk = seatKey(fid, aname, sidx);
+    const prev = [...state.expandedSeats]; state.expandedSeats.clear();
+    if (!prev.includes(sk)) state.expandedSeats.add(sk);
+    saveUIState();
+    // 【v1.21.0】多图模式下，就地更新按钮状态和时段容器，不调用 renderMain
+    if (_multiMode) {
+      // 更新所有多图模式中的座位按钮状态
+      document.querySelectorAll('#multi-mode-container .seat-btn').forEach(btn => {
+        const bFid = parseInt(btn.dataset.floor), bArea = btn.dataset.area, bIdx = parseInt(btn.dataset.seat);
+        const bSk = seatKey(bFid, bArea, bIdx);
+        const isExp = state.expandedSeats.has(bSk);
+        btn.classList.toggle('expanded', isExp);
+        const tsContainer = document.getElementById('timeslots-' + bSk);
+        if (tsContainer) tsContainer.classList.toggle('show', isExp);
+        // 更新闭眼图标显隐
+        const hiddenIcon = btn.querySelector('.icon-hidden');
+        if (hiddenIcon) hiddenIcon.style.display = isExp ? 'none' : '';
+      });
+      // 渲染展开座位的时段
+      for (const esk of state.expandedSeats) {
+        await renderTimeSlots(esk);
+      }
+      return;
+    }
+    renderMain(); return;
+  }
   const addBtn = target.closest('[data-action="add-seat"]');
   if (addBtn) {
     const fid = parseInt(addBtn.dataset.floor), aname = addBtn.dataset.area, ak = areaKey(fid, aname);
@@ -4626,92 +4652,149 @@ document.addEventListener('click', async (e) => {
   },true);
 })();
 // ============================================================
-// 十二-A、标题点击检查更新（纯内联 onclick，最原始最稳固）
-// 【v1.9.22】修复非默认主题下标题点击失效
-//   - 仅使用内联 onclick="handleTitleClick()"
-//   - 行内样式 pointer-events:auto!important; z-index:99 防遮挡
-//   - 防抖存储在 window.__updateCheckTimer，3秒内不允许重复触发
-// 【v1.10.12】增加绕过缓存的强制探测，检测 index.html 内容变化
+// 十二-A、多图模式切换（点击标题切换）
+// 【v1.21.0】新增第二种显示模式：按楼层展示有多图(≥2)的座位
 // ============================================================
-window.__updateCheckTimer = false;
-function handleTitleClick() {
-  if (window.__updateCheckTimer) return;
-  window.__updateCheckTimer = true;
-  setTimeout(function() { window.__updateCheckTimer = false; }, 3000);
+let _multiMode = false; // 当前是否处于多图模式
+let _modeToggling = false; // 防止切换动画期间重复触发
+
+/** 切换显示模式 */
+async function toggleMultiMode() {
+  if (_modeToggling) return;
+  _modeToggling = true;
   try {
-    // 优先：如果 SW 已有 waiting worker，直接激活
-    if (swRegistration && swRegistration.waiting) {
-      try { saveFilterState(); } catch(ex) {}
-      swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      navigator.serviceWorker.addEventListener('controllerchange', function() {
-        try { saveFilterState(); } catch(ex) {}
-        window.location.reload();
-      });
-      setTimeout(function() {
-        try { saveFilterState(); } catch(ex) {}
-        window.location.reload();
-      }, 1000);
-      return;
+    if (!_multiMode) {
+      // 默认模式 → 多图模式
+      // 1. 隐藏默认内容（动画）
+      app.classList.add('mode-hiding');
+      await new Promise(r => setTimeout(r, 300));
+      app.classList.remove('mode-hiding');
+      app.classList.add('mode-hidden');
+      // 2. 渲染多图模式内容
+      await renderMultiMode();
+      // 3. 显示呼吸灯 + 隐藏菜单按钮
+      const titleEl = document.querySelector('.page-title');
+      if (titleEl) titleEl.classList.add('breathing');
+      const funcBtn = document.getElementById('func-btn');
+      if (funcBtn) funcBtn.style.display = 'none';
+      _multiMode = true;
+    } else {
+      // 多图模式 → 默认模式
+      // 1. 销毁多图模式 DOM
+      const multiContainer = document.getElementById('multi-mode-container');
+      if (multiContainer) multiContainer.remove();
+      // 2. 移除呼吸灯 + 恢复菜单按钮
+      const titleEl = document.querySelector('.page-title');
+      if (titleEl) titleEl.classList.remove('breathing');
+      const funcBtn = document.getElementById('func-btn');
+      if (funcBtn) funcBtn.style.display = '';
+      // 3. 显示默认内容（动画）
+      app.classList.remove('mode-hidden');
+      app.classList.add('mode-showing');
+      // 强制重排以启动动画
+      void app.offsetHeight;
+      app.classList.add('animating');
+      await new Promise(r => setTimeout(r, 300));
+      app.classList.remove('mode-showing', 'animating');
+      _multiMode = false;
+      // 刷新默认模式内容（数据可能已变化）
+      renderMain();
     }
-    // 【v1.10.12】绕过缓存强制探测 index.html 是否有更新
-    showToast('正在检查更新...');
-    fetch('/index.html', { cache: 'no-cache' })
-      .then(function(resp) {
-        var newEtag = resp.headers.get('ETag');
-        var newModified = resp.headers.get('Last-Modified');
-        var cachedEtag = window.__cachedEtag || null;
-        var cachedModified = window.__cachedModified || null;
-        // 优先用 ETag/Last-Modified 头判断
-        if (newEtag && cachedEtag && newEtag !== cachedEtag) { forceUpdate(); return; }
-        if (newModified && cachedModified && newModified !== cachedModified) { forceUpdate(); return; }
-        // 无头信息或头相同，回退到内容比对（取前 2000 字符的简易哈希）
-        return resp.text().then(function(text) {
-          var hash = simpleHash(text.substring(0, 2000));
-          var cachedHash = window.__cachedPageHash || null;
-          if (!cachedHash) {
-            // 首次加载时记录当前页面哈希
-            window.__cachedPageHash = hash;
-            window.__cachedEtag = newEtag;
-            window.__cachedModified = newModified;
-            showToast('已是最新版本');
-            return;
-          }
-          if (hash !== cachedHash) { forceUpdate(); }
-          else { showToast('已是最新版本'); }
-        });
-      })
-      .catch(function(err) {
-        console.warn('检查更新失败:', err);
-        showToast('检查更新失败，请稍后重试');
-      });
-  } catch(ex) { console.warn('检查更新失败:', ex); }
-}
-
-// 【v1.10.12】简易哈希函数：将字符串转为数字哈希
-function simpleHash(str) {
-  var hash = 0;
-  for (var i = 0; i < str.length; i++) {
-    var ch = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + ch;
-    hash = hash & hash;
+  } catch(ex) {
+    console.warn('模式切换失败:', ex);
+    // 安全回退：恢复默认模式
+    app.classList.remove('mode-hiding', 'mode-hidden', 'mode-showing', 'animating');
+    const multiContainer = document.getElementById('multi-mode-container');
+    if (multiContainer) multiContainer.remove();
+    const titleEl = document.querySelector('.page-title');
+    if (titleEl) titleEl.classList.remove('breathing');
+    const funcBtn = document.getElementById('func-btn');
+    if (funcBtn) funcBtn.style.display = '';
+    _multiMode = false;
   }
-  return hash.toString(16);
+  _modeToggling = false;
 }
 
-// 【v1.10.12】强制更新：尝试更新 SW → skipWaiting → 刷新
-function forceUpdate() {
-  showToast('发现新版本，正在更新...');
-  try { saveFilterState(); } catch(ex) {}
-  if (swRegistration) {
-    swRegistration.update().then(function() {
-      if (swRegistration.waiting) { swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' }); }
-      setTimeout(function() { window.location.reload(); }, 800);
-    }).catch(function() {
-      setTimeout(function() { window.location.reload(); }, 800);
+/** 渲染多图模式：按楼层展示有多图(同一时段≥2张)的座位 */
+async function renderMultiMode() {
+  // 从 imageCountCache 统计每个座位的各时段图片数
+  // 筛选：至少有一个时段图片数 ≥ 2 的座位
+  const multiSeatsByFloor = new Map(); // Map<floorId, Map<areaName, Array<seatIdx>>>
+
+  FLOORS.forEach(floor => {
+    const fid = floor.id;
+    floor.areas.forEach(area => {
+      const aname = area.name;
+      const seatCount = getAreaSeatCount(fid, aname);
+      for (let si = 0; si < seatCount; si++) {
+        const sk = seatKey(fid, aname, si);
+        if (state.deletedSeats.has(sk)) continue;
+        // 检查该座位是否有任一时段图片数 ≥ 2
+        let hasMulti = false;
+        for (let t = 0; t < TIME_SLOTS.length; t++) {
+          const ck = cellKey(fid, aname, si, t);
+          if ((imageCountCache.get(ck) || 0) >= 2) { hasMulti = true; break; }
+        }
+        if (hasMulti) {
+          if (!multiSeatsByFloor.has(fid)) multiSeatsByFloor.set(fid, new Map());
+          const floorMap = multiSeatsByFloor.get(fid);
+          if (!floorMap.has(aname)) floorMap.set(aname, []);
+          floorMap.get(aname).push(si);
+        }
+      }
     });
-  } else {
-    setTimeout(function() { window.location.reload(); }, 800);
+  });
+
+  // 构建 DOM
+  let html = '<div id="multi-mode-container">';
+  FLOORS.forEach(floor => {
+    const fid = floor.id;
+    const floorMap = multiSeatsByFloor.get(fid);
+    html += `<div class="multi-floor-block"><div class="multi-floor-name">${floor.name}</div>`;
+    if (floorMap && floorMap.size > 0) {
+      // 按区域顺序排列
+      floor.areas.forEach(area => {
+        const aname = area.name;
+        const seats = floorMap.get(aname);
+        if (!seats || seats.length === 0) return; // 无符合条件座位的区域不显示
+        html += `<div class="multi-area-name">${aname}</div>`;
+        html += '<div class="multi-seat-flow">';
+        seats.forEach(si => {
+          const sk = seatKey(fid, aname, si);
+          const sName = getSeatNameSync(fid, aname, si);
+          const sExp = state.expandedSeats.has(sk);
+          const stat = seatImageStats.get(sk);
+          let imgClass = '';
+          if (stat && stat.visibleTotalCount >= 2 && stat.visibleHasSlotWithMulti) imgClass = 'has-images-2';
+          else if (stat && stat.visibleTotalCount >= 1) imgClass = 'has-images-1';
+          const longNameClass = (fid >= 2 && aname === '东区临时') ? ' long-name' : '';
+          // 隐藏图标和筛选命中图标
+          const hiddenIcon = (stat && stat.hiddenHasImages && !sExp) ? '<span class="icon-hidden"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.804 11.804 0 001 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg></span>' : '';
+          const filterHitIcon = '';
+          html += `<button class="seat-btn ${sExp ? 'expanded' : ''} ${imgClass}${longNameClass}" data-action="toggle-seat" data-floor="${fid}" data-area="${aname}" data-seat="${si}">${hiddenIcon}${filterHitIcon}<span class="seat-btn-text">${sName}</span></button>`;
+          html += `<div class="timeslot-container ${sExp ? 'show' : ''}" id="timeslots-${sk}"></div>`;
+        });
+        html += '</div>'; // .multi-seat-flow
+      });
+    }
+    html += '</div>'; // .multi-floor-block
+  });
+  html += '</div>'; // #multi-mode-container
+
+  // 插入到 app 内部末尾
+  app.insertAdjacentHTML('beforeend', html);
+
+  // 渲染已展开座位的时段
+  for (const sk of state.expandedSeats) {
+    const el = document.getElementById('timeslots-' + sk);
+    if (el) await renderTimeSlots(sk);
   }
+}
+
+/** 标题点击处理：切换多图模式 */
+function handleTitleClick() {
+  if (_modeToggling) return;
+  toggleMultiMode();
 }
 
 // ============================================================
@@ -5271,4 +5354,4 @@ try {
 } catch(e) {
   console.error('应用启动异常:', e);
   try { document.getElementById('app').innerHTML = '<p style="padding:20px;color:#666;">应用启动异常，请刷新页面重试。</p>'; } catch(e2) {}
-}
+}
