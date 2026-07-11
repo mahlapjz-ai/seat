@@ -822,8 +822,8 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 #app.mode-fadein .area-container:not(.show){display:none}
 
 /* 轻微闪烁呼吸效果（仅多图模式下生效） */
-.page-title.sword-light{animation:title-breath 2.5s ease-in-out infinite}
-.theme-normal .page-title.sword-light{color:#000}
+.page-title.sword-light{animation:title-breath 2.5s ease-in-out infinite;color:#000}
+.theme-normal .page-title.sword-light{color:#4A3728}
 .theme-yiban .page-title.sword-light{color:#00ffff}
 .theme-pixel .page-title.sword-light{color:#3e2b1f}
 @keyframes title-breath{0%,100%{opacity:1}50%{opacity:.85}}
