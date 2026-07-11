@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.21.4';
+const APP_VERSION = 'v1.21.6';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -4482,29 +4482,6 @@ document.addEventListener('click', async (e) => {
   const seatBtn = target.closest('[data-action="toggle-seat"]');
   if (seatBtn) {
     const fid = parseInt(seatBtn.dataset.floor), aname = seatBtn.dataset.area, sidx = parseInt(seatBtn.dataset.seat), sk = seatKey(fid, aname, sidx);
-    // 【v1.21.2】多图模式下，独立的手风琴逻辑，不使用 state.expandedSeats
-    if (_multiMode) {
-      const wasExpanded = seatBtn.classList.contains('expanded');
-      // 收起所有
-      document.querySelectorAll('#multi-mode-container .seat-btn.expanded').forEach(btn => {
-        btn.classList.remove('expanded');
-        const bSk = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
-        const tsC = document.getElementById('timeslots-' + bSk);
-        if (tsC) { tsC.classList.remove('show'); tsC.innerHTML = ''; }
-        const hi = btn.querySelector('.icon-hidden');
-        if (hi) hi.style.display = '';
-      });
-      // 如果点击的不是已展开的，则展开它
-      if (!wasExpanded) {
-        seatBtn.classList.add('expanded');
-        const hi = seatBtn.querySelector('.icon-hidden');
-        if (hi) hi.style.display = 'none';
-        const multiSlotsStr = seatBtn.dataset.multiSlots;
-        const multiSlots = multiSlotsStr ? multiSlotsStr.split(',').map(Number) : [];
-        await renderMultiTimeSlots(sk, multiSlots);
-      }
-      return;
-    }
     const prev = [...state.expandedSeats]; state.expandedSeats.clear();
     if (!prev.includes(sk)) state.expandedSeats.add(sk);
     saveUIState();
@@ -4773,7 +4750,7 @@ async function renderMultiMode() {
   FLOORS.forEach(floor => {
     const fid = floor.id;
     const floorMap = multiSeatsByFloor.get(fid);
-    html += `<div class="multi-floor-block"><div class="multi-floor-name">${floor.name}</div>`;
+    html += `<div class="multi-floor-block floor-${fid}"><div class="multi-floor-name">${floor.name}</div>`;
     if (floorMap && floorMap.size > 0) {
       floor.areas.forEach(area => {
         const aname = area.name;
@@ -4790,8 +4767,7 @@ async function renderMultiMode() {
           else if (stat && stat.visibleTotalCount >= 1) imgClass = 'has-images-1';
           const longNameClass = (fid >= 2 && aname === '东区临时') ? ' long-name' : '';
           const hiddenIcon = (stat && stat.hiddenHasImages) ? '<span class="icon-hidden"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.804 11.804 0 001 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg></span>' : '';
-          html += `<button class="seat-btn ${imgClass}${longNameClass}" data-action="toggle-seat" data-floor="${fid}" data-area="${aname}" data-seat="${si}" data-multi-slots="${multiSlots.join(',')}">${hiddenIcon}<span class="seat-btn-text">${sName}</span></button>`;
-          html += `<div class="timeslot-container" id="timeslots-${sk}"></div>`;
+          html += `<button class="seat-btn ${imgClass}${longNameClass}" data-floor="${fid}" data-area="${aname}" data-seat="${si}" data-multi-slots="${multiSlots.join(',')}">${hiddenIcon}<span class="seat-btn-text">${sName}</span></button>`;
         });
         html += '</div>';
       });
