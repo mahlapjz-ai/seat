@@ -331,6 +331,11 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .filter-slot-cb.checked::after{content:'✓';color:#fff;font-size:14px;font-weight:700}
 .filter-slot-label{font-size:15px;color:#333;font-weight:500}
 .filter-slot-label.passed{color:#999}
+/* 【v1.21.4】时段筛选面板：有图片的时段显示图标 */
+.filter-slot-img-icon{width:14px;height:14px;flex-shrink:0;margin-left:auto;display:inline-block;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E") no-repeat center/contain;mask:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E") no-repeat center/contain;color:#1890ff;opacity:.7}
+.theme-normal .filter-slot-img-icon{color:#7a9a5a}
+.theme-yiban .filter-slot-img-icon{color:#00cccc}
+.theme-pixel .filter-slot-img-icon{color:#8b7355}
 
 /* ============================================================
    【v1.6.0 新增】主题系统 - 主题选择列表样式
@@ -801,3 +806,68 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .skeleton-footer-line:nth-child(1){width:60%}
 .skeleton-footer-line:nth-child(2){width:80%}
 .skeleton-footer-line:nth-child(3){width:45%}
+
+/* ============================================================
+   【v1.21.0】第二种显示模式：多图模式
+   ============================================================ */
+
+/* 楼层卡片切换动画 */
+#app.mode-hiding{pointer-events:none}
+#app .floor-btn,#app .area-container,#app .app-footer{transition:opacity .3s ease-in-out,transform .3s ease-in-out}
+#app.mode-hiding .floor-btn,#app.mode-hiding .area-container,#app.mode-hiding .app-footer{opacity:0;transform:scale(.95) translateY(-10px)}
+#app.mode-hidden .floor-btn,#app.mode-hidden .area-container,#app.mode-hidden .app-footer{display:none}
+/* 【v1.21.4】切回默认模式：淡入+上滑，仅opacity和transform */
+#app.mode-fadein .floor-btn,#app.mode-fadein .area-container,#app.mode-fadein .app-footer{opacity:0;transform:translateY(10px);transition:opacity .3s ease-in-out,transform .3s ease-in-out}
+#app.mode-fadein .floor-btn:not(.expanded)+.area-container{display:none}
+#app.mode-fadein .area-container:not(.show){display:none}
+
+/* 轻微闪烁呼吸效果（仅多图模式下生效） */
+.page-title.sword-light{animation:title-breath 2.5s ease-in-out infinite;color:#000}
+.theme-normal .page-title.sword-light{color:#4A3728}
+.theme-yiban .page-title.sword-light{color:#00ffff}
+.theme-pixel .page-title.sword-light{color:#3e2b1f}
+@keyframes title-breath{0%,100%{opacity:1}50%{opacity:.85}}
+
+/* 多图模式：标题可点击 */
+.page-title.mode-toggle{cursor:pointer;pointer-events:auto!important;-webkit-tap-highlight-color:transparent}
+
+/* 标题组：标题+提示小字 */
+.title-group{display:flex;flex-direction:column;align-items:flex-start}
+/* 小字提示（两种模式均显示） */
+.mode-hint{font-size:11px;color:#999;margin-top:0;line-height:1.2}
+
+/* 第二种模式：时段筛选按钮 */
+.btn-filter-multi{background:#1890ff}
+.btn-filter-multi:active,.btn-filter-multi._pressing{opacity:.7}
+
+/* 多图模式楼层色块 - 紧凑布局 */
+.multi-floor-block{border-radius:10px;padding:8px 6px;margin:0 0 8px;position:relative}
+/* 默认主题：使用与楼层卡片相同的渐变色 */
+.multi-floor-block.floor-1{background:linear-gradient(135deg,#667eea,#764ba2);border:none;box-shadow:0 2px 8px rgba(102,126,234,.3)}
+.multi-floor-block.floor-2{background:linear-gradient(135deg,#f093fb,#f5576c);border:none;box-shadow:0 2px 8px rgba(245,87,108,.3)}
+.multi-floor-block.floor-3{background:linear-gradient(135deg,#4facfe,#00f2fe);border:none;box-shadow:0 2px 8px rgba(79,172,254,.3)}
+.multi-floor-block.floor-4{background:linear-gradient(135deg,#43e97b,#38f9d7);border:none;box-shadow:0 2px 8px rgba(67,233,123,.3)}
+.multi-floor-block.floor-5{background:linear-gradient(135deg,#fa709a,#fee140);border:none;box-shadow:0 2px 8px rgba(250,112,154,.3)}
+.multi-floor-block.floor-1 .multi-floor-name,.multi-floor-block.floor-2 .multi-floor-name,.multi-floor-block.floor-3 .multi-floor-name,.multi-floor-block.floor-4 .multi-floor-name,.multi-floor-block.floor-5 .multi-floor-name{color:#fff}
+.multi-floor-block.floor-1 .multi-area-name,.multi-floor-block.floor-2 .multi-area-name,.multi-floor-block.floor-3 .multi-area-name,.multi-floor-block.floor-4 .multi-area-name,.multi-floor-block.floor-5 .multi-area-name{color:rgba(255,255,255,.85)}
+/* 护眼主题覆盖 */
+.theme-normal .multi-floor-block{background:rgba(255,253,248,.96);border:1px solid #d8cca8;box-shadow:0 1px 4px rgba(180,160,120,.1)}
+.theme-normal .multi-floor-block .multi-floor-name{color:#5B3A1A}
+.theme-normal .multi-floor-block .multi-area-name{color:#7a9a5a}
+/* 蓝色主题覆盖 */
+.theme-yiban .multi-floor-block{background:rgba(35,35,42,.94);border:1px solid rgba(0,255,255,.15);box-shadow:0 0 8px rgba(0,255,255,.06)}
+.theme-yiban .multi-floor-block .multi-floor-name{color:#00cccc}
+.theme-yiban .multi-floor-block .multi-area-name{color:#e8820c}
+/* 怀旧主题覆盖 */
+.theme-pixel .multi-floor-block{background:#e8dcc0;border:2px solid #8b7355;box-shadow:2px 2px 0 #2d2d2d;border-radius:0}
+.theme-pixel .multi-floor-block .multi-floor-name{color:#3e2b1f;font-family:'Courier New',monospace}
+.theme-pixel .multi-floor-block .multi-area-name{color:#5a3d2b;font-family:'Courier New',monospace}
+
+/* 多图模式楼层名 */
+.multi-floor-name{font-size:16px;font-weight:700;margin-bottom:6px;color:#333}
+
+/* 多图模式区域名 - 紧凑间距 */
+.multi-area-name{font-size:14px;font-weight:600;margin:4px 0 0;color:#666}
+
+/* 多图模式座位按钮区域 - 复用 .seat-flow 布局 */
+.multi-seat-flow{display:flex;flex-wrap:wrap;row-gap:4px;padding:0;align-items:flex-start;justify-content:flex-start}
