@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.21.1';
+const APP_VERSION = 'v1.21.3';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -4482,7 +4482,7 @@ document.addEventListener('click', async (e) => {
   const seatBtn = target.closest('[data-action="toggle-seat"]');
   if (seatBtn) {
     const fid = parseInt(seatBtn.dataset.floor), aname = seatBtn.dataset.area, sidx = parseInt(seatBtn.dataset.seat), sk = seatKey(fid, aname, sidx);
-    // 【v1.21.1】多图模式下，独立的手风琴逻辑，不使用 state.expandedSeats
+    // 【v1.21.2】多图模式下，独立的手风琴逻辑，不使用 state.expandedSeats
     if (_multiMode) {
       const wasExpanded = seatBtn.classList.contains('expanded');
       // 收起所有
@@ -4667,7 +4667,6 @@ async function toggleMultiMode() {
   _modeToggling = true;
   try {
     const titleTextEl = document.getElementById('title-text');
-    const hintEl = document.getElementById('mode-hint');
     if (!_multiMode) {
       // 默认模式 → 多图模式
       // 1. 隐藏默认内容（动画）
@@ -4677,42 +4676,42 @@ async function toggleMultiMode() {
       app.classList.add('mode-hidden');
       // 2. 渲染多图模式内容
       await renderMultiMode();
-      // 3. 切换标题文字 + 剑光效果 + 隐藏菜单按钮
+      // 3. 切换标题文字 + 剑光效果 + 按钮切换
       if (titleTextEl) titleTextEl.textContent = '已释放座位概览';
       const titleEl = document.querySelector('.page-title');
       if (titleEl) titleEl.classList.add('sword-light');
-      if (hintEl) hintEl.style.display = 'block';
       const funcBtn = document.getElementById('func-btn');
       if (funcBtn) funcBtn.style.display = 'none';
+      const filterBtn = document.getElementById('filter-btn-multi');
+      if (filterBtn) filterBtn.style.display = '';
       _multiMode = true;
     } else {
       // 多图模式 → 默认模式
       // 1. 销毁多图模式 DOM
       const multiContainer = document.getElementById('multi-mode-container');
       if (multiContainer) multiContainer.remove();
-      // 2. 恢复标题 + 移除剑光效果 + 恢复菜单按钮
+      // 2. 恢复标题 + 移除剑光效果 + 按钮切换
       if (titleTextEl) titleTextEl.textContent = '座位图片管理';
       const titleEl = document.querySelector('.page-title');
       if (titleEl) titleEl.classList.remove('sword-light');
-      if (hintEl) hintEl.style.display = 'none';
       const funcBtn = document.getElementById('func-btn');
       if (funcBtn) funcBtn.style.display = '';
+      const filterBtn = document.getElementById('filter-btn-multi');
+      if (filterBtn) filterBtn.style.display = 'none';
       // 3. 确保所有楼层和区域处于折叠状态，避免切回时异常展开
       state.expandedFloors.clear();
       state.expandedAreas.clear();
       // 4. 显示默认内容（淡入动画，不涉及高度变化）
       app.classList.remove('mode-hidden');
       app.classList.add('mode-fadein');
-      void app.offsetHeight; // 强制重排
+      void app.offsetHeight;
       await new Promise(r => setTimeout(r, 300));
       app.classList.remove('mode-fadein');
       _multiMode = false;
-      // 刷新默认模式内容（数据可能已变化）
       renderMain();
     }
   } catch(ex) {
     console.warn('模式切换失败:', ex);
-    // 安全回退：恢复默认模式
     app.classList.remove('mode-hiding', 'mode-hidden', 'mode-showing', 'mode-fadein', 'animating');
     const multiContainer = document.getElementById('multi-mode-container');
     if (multiContainer) multiContainer.remove();
@@ -4720,19 +4719,29 @@ async function toggleMultiMode() {
     if (titleTextEl) titleTextEl.textContent = '座位图片管理';
     const titleEl = document.querySelector('.page-title');
     if (titleEl) titleEl.classList.remove('sword-light');
-    const hintEl = document.getElementById('mode-hint');
-    if (hintEl) hintEl.style.display = 'none';
     const funcBtn = document.getElementById('func-btn');
     if (funcBtn) funcBtn.style.display = '';
+    const filterBtn = document.getElementById('filter-btn-multi');
+    if (filterBtn) filterBtn.style.display = 'none';
     _multiMode = false;
   }
   _modeToggling = false;
 }
 
-/** 渲染多图模式：按楼层展示有多图(同一时段≥2张)的座位 */
+/** 渲染多图模式：按楼层展示在当前时段筛选下有多图(≥2)的座位 */
 async function renderMultiMode() {
-  // 从 imageCountCache 统计每个座位的各时段图片数
-  // 筛选：至少有一个时段图片数 ≥ 2 的座位
+  // 获取当前时段筛选状态
+  const visibleSlots = [];
+  for (let t = 0; t < TIME_SLOTS.length; t++) {
+    if (isTimeSlotVisible(t)) visibleSlots.push(t);
+  }
+  // 如果没有勾选任何时段，不显示任何座位
+  if (visibleSlots.length === 0) {
+    app.insertAdjacentHTML('beforeend', '<div id="multi-mode-container"><div style="text-align:center;color:#999;padding:40px 0">未选择任何时段</div></div>');
+    return;
+  }
+
+  // 筛选：在可见时段中至少有一个时段图片数≥2的座位
   const multiSeatsByFloor = new Map(); // Map<floorId, Map<areaName, Array<{idx, multiSlots: number[]}>>
 
   FLOORS.forEach(floor => {
@@ -4743,9 +4752,9 @@ async function renderMultiMode() {
       for (let si = 0; si < seatCount; si++) {
         const sk = seatKey(fid, aname, si);
         if (state.deletedSeats.has(sk)) continue;
-        // 检查该座位哪些时段图片数 ≥ 2
+        // 检查该座位在可见时段中哪些时段图片数≥2
         const multiSlots = [];
-        for (let t = 0; t < TIME_SLOTS.length; t++) {
+        for (const t of visibleSlots) {
           const ck = cellKey(fid, aname, si, t);
           if ((imageCountCache.get(ck) || 0) >= 2) multiSlots.push(t);
         }
@@ -4794,7 +4803,7 @@ async function renderMultiMode() {
   app.insertAdjacentHTML('beforeend', html);
 }
 
-/** 【v1.21.1】多图模式下渲染座位的多图时段 */
+/** 【v1.21.3】多图模式下渲染座位的多图时段（可见时段中图片数≥2的时段） */
 async function renderMultiTimeSlots(sk, multiSlots) {
   const container = document.getElementById('timeslots-' + sk);
   if (!container) return;
@@ -5011,6 +5020,12 @@ async function refreshExpandedSeats() {
     for (const sk of state.expandedSeats) {
       const container = document.getElementById('timeslots-' + sk);
       applyTimeslotFilter(container);
+    }
+    // 【v1.21.2】多图模式下，筛选变化后重新渲染
+    if (_multiMode) {
+      const multiContainer = document.getElementById('multi-mode-container');
+      if (multiContainer) multiContainer.remove();
+      await renderMultiMode();
     }
   } finally {
     _refreshingSeats = false;
