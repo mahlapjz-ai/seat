@@ -664,7 +664,14 @@ async function dlDeletePhoto(photoId, url, ck) {
         clearLocalCache(ck);
       }
     } else {
-      clearLocalCache(ck); // 缓存中无数据也清除 localStorage
+      // _cellDataCache 无数据，但 _imageCountCache 可能有旧计数，强制减 1
+      const currentCount = _imageCountCache.get(ck) || 0;
+      if (currentCount > 1) {
+        _imageCountCache.set(ck, currentCount - 1);
+      } else {
+        _imageCountCache.delete(ck);
+      }
+      clearLocalCache(ck);
     }
     // 标记该 photo_id 为已删除，防止 saveCellData 增量合并时恢复
     _deletedPhotoIds.add(photoId);

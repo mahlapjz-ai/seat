@@ -5596,14 +5596,16 @@ document.addEventListener('click', async (e) => {
 
         // 【v2.5.2】删除成功后，增量更新 DOM + 同步 imageCountCache
         const sk = cellToSeatKey(ck);
+        // 优先从 _imageCountCache 读取已更新的计数（dlDeletePhoto 已更新）
+        const updatedCount = _imageCountCache.get(ck) || 0;
+        imageCountCache.set(ck, updatedCount); // 同步 scripts.js 的计数缓存
         const currentImages = _cellDataCache.get(ck) || [];
         const card = document.querySelector(`.timeslot-card[data-cell-key="${ck}"]`);
 
-        if (currentImages.length > 0) {
+        if (updatedCount > 0) {
           state.seatHasImages.add(sk);
-          imageCountCache.set(ck, currentImages.length); // 同步 scripts.js 的计数缓存
           // 增量重绘该 cell 的缩略图区域（索引已变化，需整体重绘）
-          if (card) {
+          if (card && currentImages.length > 0) {
             const canEdit = canEditFloor(parseInt(ck.split('-')[0]));
             const thumbsDiv = card.querySelector('.ts-thumbs');
             if (thumbsDiv) {
