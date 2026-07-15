@@ -41,6 +41,22 @@ const FLOORS = [
 
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
+
+/** 判断指定 cellKey 的拍照/上传按钮是否应禁用（实时读取缓存） */
+function shouldDisableButtons(cellKey) {
+  const count = imageCountCache.get(cellKey) || 0;
+  return count >= MAX_IMAGES;
+}
+
+/** 更新指定 cellKey 对应卡片的拍照/上传按钮 disabled 状态 */
+function updateCellButtonStates(cellKey) {
+  const card = document.querySelector(`.timeslot-card[data-cell-key="${cellKey}"]`);
+  if (!card) return;
+  const disabled = shouldDisableButtons(cellKey);
+  card.querySelectorAll('.ts-btn-capture, .ts-btn-upload').forEach(btn => {
+    btn.disabled = disabled;
+  });
+}
 // v1.9.4 像素主题标题去除文字阴影
 const APP_VERSION = 'v2.7.6';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
@@ -1390,6 +1406,7 @@ function _fillThumbnailsIntoCards(container, fid, aname, sidx, cellDataMap, canE
       // 更新 imageCountCache 以防与实际数据不一致
       imageCountCache.set(ck, images.length);
       thumbsEl.outerHTML = _renderThumbnailsHtml(ck, images, canEditThisFloor);
+      updateCellButtonStates(ck);
     } else {
       // 实际没有图片，移除占位
       thumbsEl.remove();
@@ -1400,6 +1417,7 @@ function _fillThumbnailsIntoCards(container, fid, aname, sidx, cellDataMap, canE
         const cb = card.querySelector('.ts-checkbox');
         if (cb) { cb.className = 'ts-checkbox disabled'; }
       }
+      updateCellButtonStates(ck);
     }
   }
 }
@@ -1440,6 +1458,10 @@ async function renderTimeSlots(sk) {
         if (state.selectedCells.includes(ck)) cb.classList.add('checked');
         else cb.classList.remove('checked');
       });
+      // 同步按钮 disabled 状态
+      for (let t = 0; t < TIME_SLOTS.length; t++) {
+        updateCellButtonStates(cellKey(fid, aname, sidx, t));
+      }
     } else {
       // 容器为空但有缓存，写入缓存HTML
       container.innerHTML = cached.html;
@@ -1450,6 +1472,10 @@ async function renderTimeSlots(sk) {
         if (state.selectedCells.includes(ck)) cb.classList.add('checked');
         else cb.classList.remove('checked');
       });
+      // 同步按钮 disabled 状态
+      for (let t = 0; t < TIME_SLOTS.length; t++) {
+        updateCellButtonStates(cellKey(fid, aname, sidx, t));
+      }
     }
     return;
   }
@@ -1496,9 +1522,9 @@ async function renderTimeSlots(sk) {
       const visible = isTimeSlotVisible(t);
       const displayStyle = visible ? '' : 'display:none;';
       const imgCount = imageCountCache.get(ck) || 0;
-      const hasImages = imgCount > 0, isFull = imgCount >= MAX_IMAGES, isSel = state.selectedCells.includes(ck);
+      const hasImages = imgCount > 0, isSel = state.selectedCells.includes(ck);
       const cbClass = hasImages ? `ts-checkbox ${isSel ? 'checked' : ''}` : 'ts-checkbox disabled';
-      const tsBtnsHtml = (canEditThisFloor && !isHistoricalDate()) ? `<div class="ts-btns"><button class="ts-btn ts-btn-capture" ${isFull ? 'disabled' : ''} data-action="capture" data-cell-key="${ck}">拍照</button><button class="ts-btn ts-btn-upload" ${isFull ? 'disabled' : ''} data-action="upload" data-cell-key="${ck}">上传</button></div>` : '';
+      const tsBtnsHtml = (canEditThisFloor && !isHistoricalDate()) ? `<div class="ts-btns"><button class="ts-btn ts-btn-capture" ${shouldDisableButtons(ck) ? 'disabled' : ''} data-action="capture" data-cell-key="${ck}">拍照</button><button class="ts-btn ts-btn-upload" ${shouldDisableButtons(ck) ? 'disabled' : ''} data-action="upload" data-cell-key="${ck}">上传</button></div>` : '';
       html += `<div class="timeslot-card" data-tidx="${t}" style="${displayStyle}" data-action="toggle-card" data-cell-key="${ck}" data-has-images="${hasImages ? '1' : '0'}"><div class="ts-top"><div class="${cbClass}" data-action="toggle-select" data-cell-key="${ck}"></div><span class="ts-time">${TIME_SLOTS[t]}</span>${tsBtnsHtml}</div>`;
       // 有图片时先放占位符，异步加载后替换
       if (hasImages) {
@@ -1557,9 +1583,9 @@ async function renderTimeSlots(sk) {
     const displayStyle = visible ? '' : 'display:none;';
     const cellData = cellDataMap[ck] || null;
     const images = (cellData && cellData.images) ? cellData.images : [];
-    const hasImages = images.length > 0, isFull = images.length >= MAX_IMAGES, isSel = state.selectedCells.includes(ck);
+    const hasImages = images.length > 0, isSel = state.selectedCells.includes(ck);
     const cbClass = hasImages ? `ts-checkbox ${isSel ? 'checked' : ''}` : 'ts-checkbox disabled';
-    const tsBtnsHtml = (canEditThisFloor && !isHistoricalDate()) ? `<div class="ts-btns"><button class="ts-btn ts-btn-capture" ${isFull ? 'disabled' : ''} data-action="capture" data-cell-key="${ck}">拍照</button><button class="ts-btn ts-btn-upload" ${isFull ? 'disabled' : ''} data-action="upload" data-cell-key="${ck}">上传</button></div>` : '';
+    const tsBtnsHtml = (canEditThisFloor && !isHistoricalDate()) ? `<div class="ts-btns"><button class="ts-btn ts-btn-capture" ${shouldDisableButtons(ck) ? 'disabled' : ''} data-action="capture" data-cell-key="${ck}">拍照</button><button class="ts-btn ts-btn-upload" ${shouldDisableButtons(ck) ? 'disabled' : ''} data-action="upload" data-cell-key="${ck}">上传</button></div>` : '';
     html += `<div class="timeslot-card" data-tidx="${t}" style="${displayStyle}" data-action="toggle-card" data-cell-key="${ck}" data-has-images="${hasImages ? '1' : '0'}"><div class="ts-top"><div class="${cbClass}" data-action="toggle-select" data-cell-key="${ck}"></div><span class="ts-time">${TIME_SLOTS[t]}</span>${tsBtnsHtml}</div>`;
     if (images.length > 0) {
       html += _renderThumbnailsHtml(ck, images, canEditThisFloor);
@@ -2215,9 +2241,7 @@ function appendThumbnailToDOM(ck, newImg, imgIdx) {
   const cb = card.querySelector('.ts-checkbox');
   if (cb) cb.className = imgCount > 0 ? `ts-checkbox ${state.selectedCells.includes(ck) ? 'checked' : ''}` : 'ts-checkbox disabled';
   // 图片满时禁用按钮，未满时启用
-  card.querySelectorAll('.ts-btn-capture, .ts-btn-upload').forEach(btn => {
-    btn.disabled = imgCount >= MAX_IMAGES;
-  });
+  updateCellButtonStates(ck);
 }
 
 /** 【v2.2.0】上传完成后，仅刷新新缩略图 src（Blob URL → 云端 URL）
@@ -5620,13 +5644,8 @@ document.addEventListener('click', async (e) => {
         const ckParts = ck.split('-');
         updateAreaVisual(parseInt(ckParts[0]), ckParts[1]);
         updateBottomBar();
-        // 【v2.7.6 修复】删除后更新拍照/上传按钮的 disabled 状态
-        const updatedCount = imageCountCache.get(ck) || 0;
-        if (card) {
-          card.querySelectorAll('.ts-btn-capture, .ts-btn-upload').forEach(btn => {
-            btn.disabled = updatedCount >= MAX_IMAGES;
-          });
-        }
+        // 删除后实时更新拍照/上传按钮状态
+        updateCellButtonStates(ck);
       } finally {
         _deletingCells.delete(ck);
       }
