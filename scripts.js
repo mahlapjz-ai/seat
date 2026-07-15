@@ -2214,10 +2214,10 @@ function appendThumbnailToDOM(ck, newImg, imgIdx) {
   // 更新 checkbox
   const cb = card.querySelector('.ts-checkbox');
   if (cb) cb.className = imgCount > 0 ? `ts-checkbox ${state.selectedCells.includes(ck) ? 'checked' : ''}` : 'ts-checkbox disabled';
-  // 图片满时禁用按钮
-  if (imgCount >= MAX_IMAGES) {
-    card.querySelectorAll('.ts-btn-capture, .ts-btn-upload').forEach(btn => btn.disabled = true);
-  }
+  // 图片满时禁用按钮，未满时启用
+  card.querySelectorAll('.ts-btn-capture, .ts-btn-upload').forEach(btn => {
+    btn.disabled = imgCount >= MAX_IMAGES;
+  });
 }
 
 /** 【v2.2.0】上传完成后，仅刷新新缩略图 src（Blob URL → 云端 URL）
@@ -5620,6 +5620,13 @@ document.addEventListener('click', async (e) => {
         const ckParts = ck.split('-');
         updateAreaVisual(parseInt(ckParts[0]), ckParts[1]);
         updateBottomBar();
+        // 【v2.7.6 修复】删除后更新拍照/上传按钮的 disabled 状态
+        const updatedCount = imageCountCache.get(ck) || 0;
+        if (card) {
+          card.querySelectorAll('.ts-btn-capture, .ts-btn-upload').forEach(btn => {
+            btn.disabled = updatedCount >= MAX_IMAGES;
+          });
+        }
       } finally {
         _deletingCells.delete(ck);
       }
