@@ -38,10 +38,10 @@ const FLOORS = [
   ]}
 ];
 
-const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
+const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.21.10';
+const APP_VERSION = 'v1.22.0';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
@@ -280,7 +280,7 @@ function calcCompletionTime() {
     return { type: 'time', time: `${tGet('hour')}:${tGet('minute')}:${tGet('second')}` };
   }
 
-  // 情况一：08:30–11:29、13:30–16:29、18:31–21:15 → +30分01秒
+  // 情况一：08:30–11:59、13:30–16:59、18:31–21:15 → +30分01秒
   const target = new Date(now.getTime() + (30 * 60 + 1) * 1000);
   const tParts = new Intl.DateTimeFormat('zh-CN', bjOpts).formatToParts(target);
   const tGet = (type) => tParts.find(p => p.type === type).value;
@@ -4531,8 +4531,8 @@ document.addEventListener('click', async (e) => {
     updateBottomBar(); saveUIState(); renderMain(); showToast('座位已删除'); return;
   }
   const checkbox = target.closest('[data-action="toggle-select"]');
-  // 【v1.10.0】限制手动勾选最多22个时段（仅影响打包下载ZIP）
-  if (checkbox) { if (checkbox.classList.contains('disabled')) return; const ck = checkbox.dataset.cellKey, idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); checkbox.classList.remove('checked'); } else { if (state.selectedCells.length >= 22) { showToast('最多可选 22 个时段，如超出请使用"批量下载"'); return; } state.selectedCells.push(ck); checkbox.classList.add('checked'); } updateBottomBar(); return; }
+  // 【v1.10.0】限制手动勾选最多23个时段（仅影响打包下载ZIP）
+  if (checkbox) { if (checkbox.classList.contains('disabled')) return; const ck = checkbox.dataset.cellKey, idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); checkbox.classList.remove('checked'); } else { if (state.selectedCells.length >= 23) { showToast('最多可选 23 个时段，如超出请使用"批量下载"'); return; } state.selectedCells.push(ck); checkbox.classList.add('checked'); } updateBottomBar(); return; }
   const captureBtn = target.closest('[data-action="capture"]');
   // 【v1.2.2 iOS修复】先同步触发 click()，再在 change 回调中检查图片数量
   // iOS PWA 中 await 后调用 click() 会被系统阻止，必须在用户交互同步栈中触发
@@ -4595,7 +4595,7 @@ document.addEventListener('click', async (e) => {
   if (previewBtn) { showPreview(previewBtn.dataset.cellKey, parseInt(previewBtn.dataset.imgIdx)); return; }
   // 点击时段卡片空白区域切换勾选
   const card = target.closest('[data-action="toggle-card"]');
-  if (card) { if (card.dataset.hasImages !== '1') return; const ck = card.dataset.cellKey, cb = card.querySelector('.ts-checkbox'); if (!cb || cb.classList.contains('disabled')) return; const idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); cb.classList.remove('checked'); } else { if (state.selectedCells.length >= 22) { showToast('最多可选 22 个时段，如超出请使用"批量下载"'); return; } state.selectedCells.push(ck); cb.classList.add('checked'); } updateBottomBar(); return; }
+  if (card) { if (card.dataset.hasImages !== '1') return; const ck = card.dataset.cellKey, cb = card.querySelector('.ts-checkbox'); if (!cb || cb.classList.contains('disabled')) return; const idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); cb.classList.remove('checked'); } else { if (state.selectedCells.length >= 23) { showToast('最多可选 23 个时段，如超出请使用"批量下载"'); return; } state.selectedCells.push(ck); cb.classList.add('checked'); } updateBottomBar(); return; }
   const nameEl = target.closest('[data-action="edit-seat-name"]');
   if (nameEl) { const sk = nameEl.dataset.seatKey, curName = nameEl.textContent; const input = document.createElement('input'); input.type = 'text'; input.value = curName; input.className = 'seat-name-edit-input'; const doSave = async () => { const newName = input.value.trim() || curName; if (newName === curName) { const sp = document.createElement('span'); sp.className = 'seat-name-text'; sp.dataset.action = 'edit-seat-name'; sp.dataset.seatKey = sk; sp.textContent = newName; if (input.parentNode) input.replaceWith(sp); return; } if (newName.length > 6) { showToast('编号最多6位'); input.focus(); return; } state.seatNames[sk] = newName; await saveSeatName(sk, newName); const sp = document.createElement('span'); sp.className = 'seat-name-text'; sp.dataset.action = 'edit-seat-name'; sp.dataset.seatKey = sk; sp.textContent = newName; if (input.parentNode) input.replaceWith(sp); updateSeatButtonText(sk, newName); await regenerateWatermarksForSeat(sk); }; input.addEventListener('blur', doSave); input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') input.blur(); }); nameEl.replaceWith(input); input.focus(); input.select(); return; }
   const cleanupBtn = target.closest('[data-action="open-cleanup"]');
