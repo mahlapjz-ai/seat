@@ -5,8 +5,8 @@
 //   seat-icon.png → Cache-First（缓存优先，不常变，省流量）
 //   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
 
-// 【v1.23.8】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
-const CACHE_NAME = 'seat-cache-v105';
+// 【v1.23.9】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
+const CACHE_NAME = 'seat-cache-v106';
 
 // 预缓存资源列表（安装时一次性缓存）
 const PRECACHE_ASSETS = [
@@ -82,8 +82,10 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       fetch(e.request)
         .then(resp => {
+          // 【v1.23.9】先同步 clone，再异步 put，避免 body 已被消费
           if (resp.ok) {
-            caches.open(CACHE_NAME).then(c => c.put(e.request, resp.clone()));
+            const respClone = resp.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, respClone));
           }
           return resp;
         })
@@ -100,9 +102,10 @@ self.addEventListener('fetch', e => {
       fetch(e.request, { cache: 'no-cache' })
         .then(resp => {
           // 网络成功：更新缓存并返回最新内容
+          // 【v1.23.9】先同步 clone，再异步 put
           if (resp.ok) {
-            const clone = resp.clone();
-            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+            const respClone = resp.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, respClone));
           }
           return resp;
         })
@@ -121,9 +124,10 @@ self.addEventListener('fetch', e => {
       caches.match(e.request).then(cached => {
         if (cached) return cached;
         return fetch(e.request).then(resp => {
+          // 【v1.23.9】先同步 clone，再异步 put
           if (resp.ok) {
-            const clone = resp.clone();
-            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+            const respClone = resp.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, respClone));
           }
           return resp;
         });
@@ -139,7 +143,11 @@ self.addEventListener('fetch', e => {
       cache.match(e.request).then(cached => {
         const fetchPromise = fetch(e.request)
           .then(resp => {
-            if (resp.ok) cache.put(e.request, resp.clone());
+            // 【v1.23.9】先同步 clone，再异步 put
+            if (resp.ok) {
+              const respClone = resp.clone();
+              cache.put(e.request, respClone);
+            }
             return resp;
           })
           .catch(() => cached);
