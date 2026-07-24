@@ -5,8 +5,8 @@
 //   seat-icon.png → Cache-First（缓存优先，不常变，省流量）
 //   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
 
-// 【v1.23.9】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
-const CACHE_NAME = 'seat-cache-v106';
+// 【v1.23.11】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
+const CACHE_NAME = 'seat-cache-v107';
 
 // 预缓存资源列表（安装时一次性缓存）
 const PRECACHE_ASSETS = [
