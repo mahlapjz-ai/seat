@@ -318,10 +318,17 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .filter-sheet-close{width:36px;height:36px;border:none;background:#f5f5f5;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#999}
 .filter-sheet-close:active{background:#e8e8e8}
 .filter-sheet-actions{display:flex;gap:8px;padding:12px 20px;border-bottom:1px solid #f0f0f0;flex-shrink:0}
-.filter-action-btn{flex:1;padding:10px 0;font-size:13px;font-weight:600;border:1px solid #d9d9d9;border-radius:8px;background:#fff;color:#333;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center}
+.filter-action-btn{flex:1;padding:10px 0;font-size:13px;font-weight:600;border:1px solid #d9d9d9;border-radius:8px;background:#fff;color:#333;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden}
 .filter-action-btn:active{background:#f5f5f5}
 .filter-action-btn.primary{border-color:#1890ff;color:#1890ff;background:#e6f7ff}
 .filter-action-btn.primary:active{background:#bae7ff}
+.filter-clear-btn{flex:0 0 auto;min-width:52px;padding:10px 8px}
+.filter-default-all{font-weight:400}
+.filter-default-all .fa-default,.filter-default-all .fa-all{font-size:13px;font-weight:400}
+.filter-default-all.state-default .fa-default{font-weight:700}
+.filter-default-all.state-default .fa-all{font-size:11px;opacity:.6}
+.filter-default-all.state-all .fa-all{font-weight:700}
+.filter-default-all.state-all .fa-default{font-size:11px;opacity:.6}
 .filter-sheet-body{overflow-y:auto;padding:8px 20px 24px;padding-bottom:calc(24px + constant(safe-area-inset-bottom));padding-bottom:calc(24px + env(safe-area-inset-bottom));flex:1;-webkit-overflow-scrolling:touch}
 .filter-slot-item{display:flex;align-items:center;padding:10px 0;min-height:44px;gap:12px;border-bottom:1px solid #f5f5f5;cursor:pointer}
 .filter-slot-item:last-child{border-bottom:none}
@@ -329,10 +336,10 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .filter-slot-cb{width:22px;height:22px;border-radius:4px;border:2px solid #bbb;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .filter-slot-cb.checked{background:#1890ff;border-color:#1890ff}
 .filter-slot-cb.checked::after{content:'✓';color:#fff;font-size:14px;font-weight:700}
-.filter-slot-label{font-size:15px;color:#333;font-weight:500}
+.filter-slot-label{font-size:15px;color:#333;font-weight:500;display:inline-flex;align-items:center;gap:3px}
 .filter-slot-label.passed{color:#999}
 /* 【v1.21.4】时段筛选面板：有图片的时段显示图标 */
-.filter-slot-img-icon{width:14px;height:14px;flex-shrink:0;margin-left:auto;display:inline-block;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E") no-repeat center/contain;mask:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E") no-repeat center/contain;color:#1890ff;opacity:.7}
+.filter-slot-img-icon{width:14px;height:14px;flex-shrink:0;display:inline-block;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E") no-repeat center/contain;mask:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E") no-repeat center/contain;color:#1890ff;opacity:.7}
 .theme-normal .filter-slot-img-icon{color:#7a9a5a}
 .theme-yiban .filter-slot-img-icon{color:#00cccc}
 .theme-pixel .filter-slot-img-icon{color:#8b7355}
