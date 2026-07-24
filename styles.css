@@ -336,7 +336,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .filter-slot-cb{width:22px;height:22px;border-radius:4px;border:2px solid #bbb;background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .filter-slot-cb.checked{background:#1890ff;border-color:#1890ff}
 .filter-slot-cb.checked::after{content:'✓';color:#fff;font-size:14px;font-weight:700}
-.filter-slot-label{font-size:15px;color:#333;font-weight:500;display:inline-flex;align-items:center;gap:3px}
+.filter-slot-label{font-size:15px;color:#333;font-weight:500;display:inline-flex;align-items:center;gap:3px;flex-shrink:0;flex-grow:0;flex-basis:auto}
 .filter-slot-label.passed{color:#999}
 /* 【v1.21.4】时段筛选面板：有图片的时段显示图标 */
 .filter-slot-img-icon{width:14px;height:14px;flex-shrink:0;display:inline-block;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E") no-repeat center/contain;mask:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z'/%3E%3C/svg%3E") no-repeat center/contain;color:#1890ff;opacity:.7}
