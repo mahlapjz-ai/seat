@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.23.7';
+const APP_VERSION = 'v1.23.8';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '新增11:30时段；时段筛选面板重做：默认时段组、仅显示有图、默认/全选三态按钮' },
@@ -631,6 +631,10 @@ function loadFilterState() {
   state.visibleTimeSlots = new Set(state._defaultSlots);
   state._filterNone = false;
   state._filterBtnState = 'default';
+  // 【v1.23.8】兜底：若默认时段组意外为空，强制使用上午组
+  if (state.visibleTimeSlots.size === 0) {
+    state.visibleTimeSlots = new Set([0, 1, 2, 3, 4, 5, 6]);
+  }
 }
 /** 【v1.3.18 深度修复】从 localStorage 恢复筛选状态到内存（用于 visibilitychange 等场景） */
 function restoreFilterStateFromStorage() {
@@ -701,6 +705,22 @@ function isTimeSlotVisible(tIdx) {
 function isAllSlotsPassed() {
   const lastIdx = TIME_SLOTS.length - 1;
   return isTimeSlotPassed(lastIdx);
+}
+
+/** 【v1.23.8】检查当前是否有任何可见时段（用于叠加筛选无结果提示） */
+function hasAnyVisibleSlot() {
+  for (let i = 0; i < TIME_SLOTS.length; i++) {
+    if (isTimeSlotVisible(i)) return true;
+  }
+  return false;
+}
+
+/** 【v1.23.8】检查是否有任何时段存在图片（用于"仅显示有图"无图提示） */
+function hasAnySlotWithImages() {
+  try {
+    if (!state._slotsWithImages || state._slotsWithImages.size === 0) return false;
+    return state._slotsWithImages.size > 0;
+  } catch (e) { return false; }
 }
 
 // ============================================================
@@ -5043,8 +5063,9 @@ if (filterBody) filterBody.addEventListener('click', (e) => {
   refreshExpandedSeats();
 });
 
-/** 【v1.23.5】隐藏已过时段（叠加筛选）
+/** 【v1.23.8】隐藏已过时段（叠加筛选）
  *  - 亮起：基于所有23个时段，实时隐藏已过的（保底21:00），不改 visibleTimeSlots
+ *  - 叠加无结果时：提示"当前无符合条件的时段"，按钮保持亮起
  *  - 熄灭：恢复默认时段组 */
 (() => {
   const btn = document.getElementById('filter-hide-passed');
@@ -5055,19 +5076,29 @@ if (filterBody) filterBody.addEventListener('click', (e) => {
       state._filterHidePassed = false;
       state.visibleTimeSlots = new Set(state._defaultSlots);
       state._filterNone = false;
+      deriveFilterButtonState();
+      saveFilterState();
+      renderFilterBody();
+      refreshExpandedSeats();
     } else {
       // 亮起：叠加筛选标记，不改 visibleTimeSlots
       state._filterHidePassed = true;
+      deriveFilterButtonState();
+      saveFilterState();
+      renderFilterBody();
+      refreshExpandedSeats();
+      // 叠加无结果提示
+      if (!hasAnyVisibleSlot()) {
+        showToast('当前无符合条件的时段', 1500);
+      }
     }
-    deriveFilterButtonState();
-    saveFilterState();
-    renderFilterBody();
-    refreshExpandedSeats();
   });
 })();
 
-/** 【v1.23.5】仅显示有图（基于所有23个时段）
+/** 【v1.23.8】仅显示有图（基于所有23个时段）
+ *  - 无图片数据时：不亮起，提示"当前无图片数据"
  *  - 亮起：在所有23个时段基础上，隐藏无图的，不改 visibleTimeSlots
+ *  - 叠加无结果时：提示"当前无符合条件的时段"，按钮保持亮起
  *  - 熄灭：恢复默认时段组 */
 (() => {
   const btn = document.getElementById('filter-only-images');
@@ -5078,15 +5109,29 @@ if (filterBody) filterBody.addEventListener('click', (e) => {
       state._filterOnlyImages = false;
       state.visibleTimeSlots = new Set(state._defaultSlots);
       state._filterNone = false;
+      deriveFilterButtonState();
+      saveFilterState();
+      renderFilterBody();
+      refreshExpandedSeats();
     } else {
-      // 亮起：叠加筛选标记，不改 visibleTimeSlots
-      state._filterOnlyImages = true;
+      // 亮起前先检查是否有图片数据
       try { computeSlotsWithImages(); } catch (e) { console.warn('computeSlotsWithImages 异常:', e); }
+      if (!hasAnySlotWithImages()) {
+        // 无图片数据：不亮起，轻提示
+        showToast('当前无图片数据', 1500);
+        return;
+      }
+      // 亮起：叠加筛选标记
+      state._filterOnlyImages = true;
+      deriveFilterButtonState();
+      saveFilterState();
+      renderFilterBody();
+      refreshExpandedSeats();
+      // 叠加无结果提示
+      if (!hasAnyVisibleSlot()) {
+        showToast('当前无符合条件的时段', 1500);
+      }
     }
-    deriveFilterButtonState();
-    saveFilterState();
-    renderFilterBody();
-    refreshExpandedSeats();
   });
 })();
 
