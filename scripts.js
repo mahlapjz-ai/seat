@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.23.0';
+const APP_VERSION = 'v1.23.1';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '新增11:30时段；时段筛选面板重做：默认时段组、仅显示有图、默认/全选三态按钮' },
@@ -477,41 +477,57 @@ const FILTER_KEY_BACKUP = 'seat_filter_timeslots_v2_backup';
 
 /** 【v1.23.0】根据页面加载时的北京时间计算默认时段组（固定一次） */
 function computeDefaultSlots() {
-  const now = new Date();
-  const opts = { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false };
-  const parts = new Intl.DateTimeFormat('en-US', opts).formatToParts(now);
-  const h = parseInt(parts.find(p => p.type === 'hour').value) % 24;
-  const m = parseInt(parts.find(p => p.type === 'minute').value);
-  const mins = h * 60 + m;
-  if (mins <= 12 * 60 + 30) {
-    return new Set([0, 1, 2, 3, 4, 5, 6]); // 09:00~12:00
-  } else if (mins <= 17 * 60 + 30) {
-    return new Set([6, 7, 8, 9, 10, 11, 12, 13, 14, 15]); // 12:00~17:00
-  } else {
-    return new Set([15, 16, 17, 18, 19, 20, 21, 22]); // 17:00~21:00
+  try {
+    const now = new Date();
+    const opts = { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false };
+    const parts = new Intl.DateTimeFormat('en-US', opts).formatToParts(now);
+    const hPart = parts.find(p => p.type === 'hour');
+    const mPart = parts.find(p => p.type === 'minute');
+    if (!hPart || !mPart) return new Set([0, 1, 2, 3, 4, 5, 6]); // 兜底：上午组
+    const h = parseInt(hPart.value) % 24;
+    const m = parseInt(mPart.value);
+    const mins = h * 60 + m;
+    if (mins <= 12 * 60 + 30) {
+      return new Set([0, 1, 2, 3, 4, 5, 6]); // 09:00~12:00
+    } else if (mins <= 17 * 60 + 30) {
+      return new Set([6, 7, 8, 9, 10, 11, 12, 13, 14, 15]); // 12:00~17:00
+    } else {
+      return new Set([15, 16, 17, 18, 19, 20, 21, 22]); // 17:00~21:00
+    }
+  } catch (e) {
+    console.warn('computeDefaultSlots 异常，使用兜底时段组:', e);
+    return new Set([0, 1, 2, 3, 4, 5, 6]); // 兜底：上午组
   }
 }
 
 /** 【v1.23.0】判断某时段是否有图片（使用缓存） */
 function slotHasAnyImages(tIdx) {
-  return state._slotsWithImages.has(tIdx);
+  return state._slotsWithImages && state._slotsWithImages.has(tIdx);
 }
 
 /** 【v1.23.0】预计算所有有图片的时段集合 */
 function computeSlotsWithImages() {
-  state._slotsWithImages = new Set();
-  for (let tIdx = 0; tIdx < TIME_SLOTS.length; tIdx++) {
-    for (const floor of FLOORS) {
-      for (const area of floor.areas) {
-        const seatCount = getAreaSeatCount(floor.id, area.name);
-        for (let si = 0; si < seatCount; si++) {
-          const ck = cellKey(floor.id, area.name, si, tIdx);
-          if ((imageCountCache.get(ck) || 0) >= 1) { state._slotsWithImages.add(tIdx); break; }
+  if (!state._slotsWithImages) state._slotsWithImages = new Set();
+  state._slotsWithImages.clear();
+  // 【v1.23.1 容错】imageCountCache 可能尚未就绪（IndexedDB 未完成），跳过计算不阻塞
+  if (!imageCountCache || imageCountCache.size === 0) return;
+  try {
+    for (let tIdx = 0; tIdx < TIME_SLOTS.length; tIdx++) {
+      for (const floor of FLOORS) {
+        if (!floor || !floor.areas) continue;
+        for (const area of floor.areas) {
+          const seatCount = getAreaSeatCount(floor.id, area.name);
+          for (let si = 0; si < seatCount; si++) {
+            const ck = cellKey(floor.id, area.name, si, tIdx);
+            if ((imageCountCache.get(ck) || 0) >= 1) { state._slotsWithImages.add(tIdx); break; }
+          }
+          if (state._slotsWithImages.has(tIdx)) break;
         }
         if (state._slotsWithImages.has(tIdx)) break;
       }
-      if (state._slotsWithImages.has(tIdx)) break;
     }
+  } catch (e) {
+    console.warn('computeSlotsWithImages 遍历异常:', e);
   }
 }
 
@@ -567,7 +583,10 @@ function saveFilterState() {
 }
 /** 【v1.23.0】加载时段筛选设置（计算默认时段组 → 恢复存储 → 推导按钮状态） */
 function loadFilterState() {
-  state._defaultSlots = computeDefaultSlots();
+  try { state._defaultSlots = computeDefaultSlots(); } catch (e) {
+    console.warn('computeDefaultSlots 失败，使用兜底:', e);
+    state._defaultSlots = new Set([0, 1, 2, 3, 4, 5, 6]);
+  }
   try {
     let raw = localStorage.getItem(FILTER_KEY_MAIN);
     if (!raw) raw = localStorage.getItem(FILTER_KEY_BACKUP);
@@ -587,9 +606,11 @@ function loadFilterState() {
     if (raw) {
       const o = JSON.parse(raw);
       if (o && Array.isArray(o.slots)) {
-        state.visibleTimeSlots = new Set(o.slots);
+        // 【v1.23.1 容错】过滤掉超出 TIME_SLOTS 范围的无效索引，避免后续渲染异常
+        const validSlots = o.slots.filter(s => typeof s === 'number' && s >= 0 && s < TIME_SLOTS.length);
+        state.visibleTimeSlots = new Set(validSlots);
         state._filterNone = !!o.none;
-        deriveFilterButtonState();
+        try { deriveFilterButtonState(); } catch (e) { state._filterBtnState = 'off'; }
         return;
       }
     }
@@ -4910,26 +4931,29 @@ function handleTitleClick() {
 // ============================================================
 // 十二-B、时段筛选面板
 // ============================================================
+// 【v1.23.1 容错】DOM 查询加 null 保护，避免元素缺失时整个脚本崩溃
 const filterOverlay = document.getElementById('filter-overlay');
 const filterSheet = document.getElementById('filter-sheet');
 const filterBody = document.getElementById('filter-body');
 
 /** 打开筛选面板 */
 function openFilterSheet() {
-  renderFilterBody();
+  if (!filterSheet || !filterOverlay || !filterBody) return;
+  try { renderFilterBody(); } catch (e) { console.warn('renderFilterBody 异常:', e); }
   filterOverlay.classList.add('show');
   requestAnimationFrame(() => filterSheet.classList.add('show'));
 }
 
 /** 关闭筛选面板 */
 function closeFilterSheet() {
-  filterSheet.classList.remove('show');
-  setTimeout(() => filterOverlay.classList.remove('show'), 300);
+  if (filterSheet) filterSheet.classList.remove('show');
+  if (filterOverlay) setTimeout(() => filterOverlay.classList.remove('show'), 300);
 }
 
 /** 【v1.23.0】渲染筛选面板内容 */
 function renderFilterBody() {
-  computeSlotsWithImages();
+  if (!filterBody) return;
+  try { computeSlotsWithImages(); } catch (e) { console.warn('computeSlotsWithImages 异常:', e); }
   let html = '';
   TIME_SLOTS.forEach((ts, idx) => {
     const checked = isTimeSlotSelected(idx);
@@ -4939,11 +4963,11 @@ function renderFilterBody() {
     html += `<div class="filter-slot-item" data-tidx="${idx}"><div class="filter-slot-cb ${checked ? 'checked' : ''}"></div><span class="filter-slot-label ${passed ? 'passed' : ''}">${ts}${imgIcon}${passed ? ' (已过)' : ''}</span></div>`;
   });
   filterBody.innerHTML = html;
-  updateFilterButtonVisuals();
+  try { updateFilterButtonVisuals(); } catch (e) { console.warn('updateFilterButtonVisuals 异常:', e); }
 }
 
 /** 【v1.23.0】切换单个时段勾选 */
-filterBody.addEventListener('click', (e) => {
+if (filterBody) filterBody.addEventListener('click', (e) => {
   const item = e.target.closest('.filter-slot-item');
   if (!item) return;
   const tidx = parseInt(item.dataset.tidx);
@@ -4953,11 +4977,11 @@ filterBody.addEventListener('click', (e) => {
   }
   if (state.visibleTimeSlots.has(tidx)) {
     state.visibleTimeSlots.delete(tidx);
-    cb.classList.remove('checked');
+    if (cb) cb.classList.remove('checked');
     if (state.visibleTimeSlots.size === 0) state._filterNone = true;
   } else {
     state.visibleTimeSlots.add(tidx);
-    cb.classList.add('checked');
+    if (cb) cb.classList.add('checked');
     state._filterNone = false;
   }
   if (state.visibleTimeSlots.size === TIME_SLOTS.length) {
@@ -4971,81 +4995,100 @@ filterBody.addEventListener('click', (e) => {
 });
 
 /** 【v1.23.0】隐藏已过时段（叠加筛选，熄灭时恢复默认时段组） */
-document.getElementById('filter-hide-passed').addEventListener('click', () => {
-  if (state._filterHidePassed) {
-    state._filterHidePassed = false;
-    state.visibleTimeSlots = new Set(state._defaultSlots);
-    state._filterNone = false;
-    state._filterBtnState = 'default';
-  } else {
-    state._filterHidePassed = true;
-  }
-  saveFilterState();
-  renderFilterBody();
-  refreshExpandedSeats();
-});
+(() => {
+  const btn = document.getElementById('filter-hide-passed');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (state._filterHidePassed) {
+      state._filterHidePassed = false;
+      state.visibleTimeSlots = new Set(state._defaultSlots);
+      state._filterNone = false;
+      state._filterBtnState = 'default';
+    } else {
+      state._filterHidePassed = true;
+    }
+    saveFilterState();
+    renderFilterBody();
+    refreshExpandedSeats();
+  });
+})();
 
 /** 【v1.23.0】仅显示有图（叠加筛选，熄灭时恢复点击前状态） */
-document.getElementById('filter-only-images').addEventListener('click', () => {
-  if (state._filterOnlyImages) {
-    state._filterOnlyImages = false;
-    if (state._savedFilterState) {
-      state.visibleTimeSlots = new Set(state._savedFilterState.slots);
-      state._filterNone = state._savedFilterState.none;
-      state._savedFilterState = null;
-      deriveFilterButtonState();
+(() => {
+  const btn = document.getElementById('filter-only-images');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (state._filterOnlyImages) {
+      state._filterOnlyImages = false;
+      if (state._savedFilterState) {
+        state.visibleTimeSlots = new Set(state._savedFilterState.slots);
+        state._filterNone = state._savedFilterState.none;
+        state._savedFilterState = null;
+        deriveFilterButtonState();
+      }
+    } else {
+      state._savedFilterState = { slots: new Set(state.visibleTimeSlots), none: state._filterNone };
+      try { computeSlotsWithImages(); } catch (e) { console.warn('computeSlotsWithImages 异常:', e); }
+      state._filterOnlyImages = true;
     }
-  } else {
-    state._savedFilterState = { slots: new Set(state.visibleTimeSlots), none: state._filterNone };
-    computeSlotsWithImages();
-    state._filterOnlyImages = true;
-  }
-  saveFilterState();
-  renderFilterBody();
-  refreshExpandedSeats();
-});
+    saveFilterState();
+    renderFilterBody();
+    refreshExpandedSeats();
+  });
+})();
 
 /** 【v1.23.0】默认/全选按钮（三态循环：默认→全选→熄灭→全选→默认） */
-document.getElementById('filter-default-all').addEventListener('click', () => {
-  state._filterHidePassed = false;
-  state._filterOnlyImages = false;
-  state._savedFilterState = null;
-  if (state._filterBtnState === 'default') {
-    state.visibleTimeSlots = new Set();
-    state._filterNone = false;
-    state._filterBtnState = 'all';
-  } else if (state._filterBtnState === 'all') {
-    state.visibleTimeSlots = new Set(state._defaultSlots);
-    state._filterNone = false;
-    state._filterBtnState = 'default';
-  } else {
-    state.visibleTimeSlots = new Set();
-    state._filterNone = false;
-    state._filterBtnState = 'all';
-  }
-  saveFilterState();
-  renderFilterBody();
-  refreshExpandedSeats();
-});
+(() => {
+  const btn = document.getElementById('filter-default-all');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    state._filterHidePassed = false;
+    state._filterOnlyImages = false;
+    state._savedFilterState = null;
+    if (state._filterBtnState === 'default') {
+      state.visibleTimeSlots = new Set();
+      state._filterNone = false;
+      state._filterBtnState = 'all';
+    } else if (state._filterBtnState === 'all') {
+      state.visibleTimeSlots = new Set(state._defaultSlots);
+      state._filterNone = false;
+      state._filterBtnState = 'default';
+    } else {
+      state.visibleTimeSlots = new Set();
+      state._filterNone = false;
+      state._filterBtnState = 'all';
+    }
+    saveFilterState();
+    renderFilterBody();
+    refreshExpandedSeats();
+  });
+})();
 
 /** 【v1.23.0】清除（全部取消勾选，按钮短暂高亮） */
-document.getElementById('filter-clear').addEventListener('click', () => {
+(() => {
   const btn = document.getElementById('filter-clear');
-  if (btn) { btn.classList.add('primary'); setTimeout(() => btn.classList.remove('primary'), 300); }
-  state.visibleTimeSlots = new Set();
-  state._filterNone = true;
-  state._filterBtnState = 'off';
-  state._filterHidePassed = false;
-  state._filterOnlyImages = false;
-  state._savedFilterState = null;
-  saveFilterState();
-  renderFilterBody();
-  refreshExpandedSeats();
-});
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    btn.classList.add('primary');
+    setTimeout(() => btn.classList.remove('primary'), 300);
+    state.visibleTimeSlots = new Set();
+    state._filterNone = true;
+    state._filterBtnState = 'off';
+    state._filterHidePassed = false;
+    state._filterOnlyImages = false;
+    state._savedFilterState = null;
+    saveFilterState();
+    renderFilterBody();
+    refreshExpandedSeats();
+  });
+})();
 
 /** 关闭面板 */
-filterOverlay.addEventListener('click', closeFilterSheet);
-document.getElementById('filter-close').addEventListener('click', closeFilterSheet);
+if (filterOverlay) filterOverlay.addEventListener('click', closeFilterSheet);
+(() => {
+  const closeBtn = document.getElementById('filter-close');
+  if (closeBtn) closeBtn.addEventListener('click', closeFilterSheet);
+})();
 
 /** 【修复Bug1】刷新已展开座位的视觉和筛选状态
  *  轻量化：筛选变化时只切换 CSS 显隐，不重建 DOM；数据变化时才重建
