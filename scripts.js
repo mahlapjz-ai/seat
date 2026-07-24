@@ -38,15 +38,15 @@ const FLOORS = [
   ]}
 ];
 
-const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
+const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.21.10';
+const APP_VERSION = 'v1.23.11';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
+  { date: '6月25日', text: '新增11:30时段；时段筛选面板重做：默认时段组、仅显示有图、默认/全选三态按钮' },
   { date: '6月25日', text: '计时按钮改为纯图标+二次确认；新增骨架屏加载动画；更新固定文案' },
   { date: '6月25日', text: '新增"记录完成时间"功能：区域按钮旁计时按钮，楼层卡片显示下轮参考时间' },
-  { date: '6月23日', text: '修复批量下载分批弹窗问题；清除图片改为选择性界面；新增22时段勾选限制' },
 ];
 UPDATE_LOG.__hasOlder = true; // 历史上曾有更早记录已移除
 const UPDATE_LOG_MAX = 3; // 最多保留3条
@@ -171,6 +171,8 @@ const state = {
   selectedCells: [], seatNames: {}, seatHasImages: new Set(),
   extraSeats: {}, deletedSeats: new Set(),
   visibleTimeSlots: new Set(), _filterNone: false, // 时段筛选：空集+!_filterNone=全显，空集+_filterNone=全不显
+  _defaultSlots: new Set(), _filterBtnState: 'default', _filterHidePassed: false, _filterOnlyImages: false,
+  _slotsWithImages: new Set(), _savedFilterState: null,
   autoShare: false, // 拍照后自动分享开关，默认关闭
   allowDeleteSeat: false, // 【修改1】允许删除座位开关，默认关闭
   showLogo: false, // 【v1.3.2 新功能3】深业运营 LOGO 水印开关，默认关闭
@@ -280,7 +282,7 @@ function calcCompletionTime() {
     return { type: 'time', time: `${tGet('hour')}:${tGet('minute')}:${tGet('second')}` };
   }
 
-  // 情况一：08:30–11:29、13:30–16:29、18:31–21:15 → +30分01秒
+  // 情况一：08:30–11:59、13:30–16:59、18:31–21:15 → +30分01秒
   const target = new Date(now.getTime() + (30 * 60 + 1) * 1000);
   const tParts = new Intl.DateTimeFormat('zh-CN', bjOpts).formatToParts(target);
   const tGet = (type) => tParts.find(p => p.type === type).value;
@@ -473,6 +475,104 @@ function applyTheme(theme) {
 const FILTER_KEY_MAIN = 'seat_filter_timeslots_v2_main';
 const FILTER_KEY_BACKUP = 'seat_filter_timeslots_v2_backup';
 
+/** 【v1.23.0】根据页面加载时的北京时间计算默认时段组（固定一次） */
+function computeDefaultSlots() {
+  try {
+    const now = new Date();
+    const opts = { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false };
+    const parts = new Intl.DateTimeFormat('en-US', opts).formatToParts(now);
+    const hPart = parts.find(p => p.type === 'hour');
+    const mPart = parts.find(p => p.type === 'minute');
+    if (!hPart || !mPart) return new Set([0, 1, 2, 3, 4, 5, 6]); // 兜底：上午组
+    const h = parseInt(hPart.value) % 24;
+    const m = parseInt(mPart.value);
+    const mins = h * 60 + m;
+    if (mins <= 12 * 60 + 30) {
+      return new Set([0, 1, 2, 3, 4, 5, 6]); // 09:00~12:00
+    } else if (mins <= 17 * 60 + 30) {
+      return new Set([6, 7, 8, 9, 10, 11, 12, 13, 14, 15]); // 12:00~17:00
+    } else {
+      return new Set([15, 16, 17, 18, 19, 20, 21, 22]); // 17:00~21:00
+    }
+  } catch (e) {
+    console.warn('computeDefaultSlots 异常，使用兜底时段组:', e);
+    return new Set([0, 1, 2, 3, 4, 5, 6]); // 兜底：上午组
+  }
+}
+
+/** 【v1.23.0】判断某时段是否有图片（使用缓存） */
+function slotHasAnyImages(tIdx) {
+  return state._slotsWithImages && state._slotsWithImages.has(tIdx);
+}
+
+/** 【v1.23.0】预计算所有有图片的时段集合 */
+function computeSlotsWithImages() {
+  if (!state._slotsWithImages) state._slotsWithImages = new Set();
+  state._slotsWithImages.clear();
+  // 【v1.23.1 容错】imageCountCache 可能尚未就绪（IndexedDB 未完成），跳过计算不阻塞
+  if (!imageCountCache || imageCountCache.size === 0) return;
+  try {
+    for (let tIdx = 0; tIdx < TIME_SLOTS.length; tIdx++) {
+      for (const floor of FLOORS) {
+        if (!floor || !floor.areas) continue;
+        for (const area of floor.areas) {
+          const seatCount = getAreaSeatCount(floor.id, area.name);
+          for (let si = 0; si < seatCount; si++) {
+            const ck = cellKey(floor.id, area.name, si, tIdx);
+            if ((imageCountCache.get(ck) || 0) >= 1) { state._slotsWithImages.add(tIdx); break; }
+          }
+          if (state._slotsWithImages.has(tIdx)) break;
+        }
+        if (state._slotsWithImages.has(tIdx)) break;
+      }
+    }
+  } catch (e) {
+    console.warn('computeSlotsWithImages 遍历异常:', e);
+  }
+}
+
+/** 【v1.23.0】判断某时段是否在基础选择中（不含叠加筛选） */
+function isTimeSlotSelected(tIdx) {
+  if (state.visibleTimeSlots.size === 0 && !state._filterNone) return true;
+  return state.visibleTimeSlots.has(tIdx);
+}
+
+/** 【v1.23.5】根据当前选中时段推导"默认/全选"按钮状态
+ *  - 叠加筛选（隐藏已过/仅显示有图）开启时，按钮状态为 'off' */
+function deriveFilterButtonState() {
+  if (state._filterHidePassed || state._filterOnlyImages) { state._filterBtnState = 'off'; return; }
+  if (state._filterNone) { state._filterBtnState = 'off'; return; }
+  if (state.visibleTimeSlots.size === 0) { state._filterBtnState = 'all'; return; }
+  const defaultArr = [...state._defaultSlots].sort((a, b) => a - b).join(',');
+  const currentArr = [...state.visibleTimeSlots].sort((a, b) => a - b).join(',');
+  state._filterBtnState = (defaultArr === currentArr) ? 'default' : 'off';
+}
+
+/** 【v1.23.0】更新筛选按钮视觉状态 */
+function updateFilterButtonVisuals() {
+  const hidePassedBtn = document.getElementById('filter-hide-passed');
+  const onlyImagesBtn = document.getElementById('filter-only-images');
+  if (hidePassedBtn) hidePassedBtn.classList.toggle('primary', state._filterHidePassed);
+  if (onlyImagesBtn) onlyImagesBtn.classList.toggle('primary', state._filterOnlyImages);
+  updateDefaultAllButtonVisual();
+}
+
+/** 【v1.23.6】更新"默认/全选"按钮视觉状态
+ *  - default/all 状态时添加 .primary 类，使按钮整体亮起（与其他两个按钮激活样式一致）
+ *  - off 状态时移除 .primary 类 */
+function updateDefaultAllButtonVisual() {
+  const btn = document.getElementById('filter-default-all');
+  if (!btn) return;
+  btn.classList.remove('state-default', 'state-all', 'state-off');
+  btn.classList.add('state-' + state._filterBtnState);
+  // default 或 all 状态时按钮整体亮起，off 状态时熄灭
+  if (state._filterBtnState === 'default' || state._filterBtnState === 'all') {
+    btn.classList.add('primary');
+  } else {
+    btn.classList.remove('primary');
+  }
+}
+
 /** 【v1.3.18 深度修复】保存时段筛选设置到 localStorage（双重备份 + 写入校验 + 版本标记） */
 function saveFilterState() {
   try {
@@ -491,42 +591,49 @@ function saveFilterState() {
     console.error('[筛选持久化] 保存失败', e);
   }
 }
-/** 【v1.3.18 深度修复】加载时段筛选设置（主键→备用键→旧键兼容→两键都空才默认全选） */
+/** 【v1.23.0】加载时段筛选设置（计算默认时段组 → 恢复存储 → 推导按钮状态） */
 function loadFilterState() {
+  try { state._defaultSlots = computeDefaultSlots(); } catch (e) {
+    console.warn('computeDefaultSlots 失败，使用兜底:', e);
+    state._defaultSlots = new Set([0, 1, 2, 3, 4, 5, 6]);
+  }
   try {
-    // 1. 先尝试主键
     let raw = localStorage.getItem(FILTER_KEY_MAIN);
-    // 2. 主键失败，尝试备用键
     if (!raw) raw = localStorage.getItem(FILTER_KEY_BACKUP);
-    // 3. 新键都为空，尝试读取旧键名（兼容 v1.3.17 及之前的数据）
     if (!raw) {
       const oldRaw = localStorage.getItem('seat_time_filter') || localStorage.getItem('seat_time_filter_bak');
       if (oldRaw) {
-        // 迁移旧数据到新键名
         try {
           const oldObj = JSON.parse(oldRaw);
           if (oldObj && Array.isArray(oldObj.slots)) {
             raw = JSON.stringify({ v: 2, slots: oldObj.slots, none: !!oldObj.none, ts: Date.now() });
             localStorage.setItem(FILTER_KEY_MAIN, raw);
             localStorage.setItem(FILTER_KEY_BACKUP, raw);
-            console.log('[筛选持久化] 旧键数据已迁移到新键名');
           }
-        } catch (migrateErr) { /* 迁移失败忽略 */ }
+        } catch (migrateErr) {}
       }
     }
     if (raw) {
       const o = JSON.parse(raw);
       if (o && Array.isArray(o.slots)) {
-        state.visibleTimeSlots = new Set(o.slots);
+        // 【v1.23.1 容错】过滤掉超出 TIME_SLOTS 范围的无效索引，避免后续渲染异常
+        const validSlots = o.slots.filter(s => typeof s === 'number' && s >= 0 && s < TIME_SLOTS.length);
+        state.visibleTimeSlots = new Set(validSlots);
         state._filterNone = !!o.none;
-        console.log('[筛选持久化] 加载成功', { slots: [...state.visibleTimeSlots], none: state._filterNone });
+        try { deriveFilterButtonState(); } catch (e) { state._filterBtnState = 'off'; }
         return;
       }
     }
-    // 两键都为空或数据异常，才默认全选（首次使用场景）
-    console.warn('[筛选持久化] 无有效存储，默认全选');
   } catch (e) {
-    console.error('[筛选持久化] 加载异常，默认全选', e);
+    console.error('[筛选持久化] 加载异常', e);
+  }
+  // 无存储或异常 → 使用默认时段组
+  state.visibleTimeSlots = new Set(state._defaultSlots);
+  state._filterNone = false;
+  state._filterBtnState = 'default';
+  // 【v1.23.8】兜底：若默认时段组意外为空，强制使用上午组
+  if (state.visibleTimeSlots.size === 0) {
+    state.visibleTimeSlots = new Set([0, 1, 2, 3, 4, 5, 6]);
   }
 }
 /** 【v1.3.18 深度修复】从 localStorage 恢复筛选状态到内存（用于 visibilitychange 等场景） */
@@ -538,17 +645,13 @@ function restoreFilterStateFromStorage() {
     if (o && Array.isArray(o.slots)) {
       const storedSlots = new Set(o.slots);
       const storedNone = !!o.none;
-      // 仅当内存状态与存储不一致时才恢复
-      const memSlots = [...state.visibleTimeSlots].sort().join(',');
-      const diskSlots = [...storedSlots].sort().join(',');
+      const memSlots = [...state.visibleTimeSlots].sort((a,b)=>a-b).join(',');
+      const diskSlots = [...storedSlots].sort((a,b)=>a-b).join(',');
       if (memSlots !== diskSlots || state._filterNone !== storedNone) {
-        console.warn('[筛选持久化] 检测到内存状态与存储不一致，从存储恢复', {
-          内存: { slots: [...state.visibleTimeSlots], none: state._filterNone },
-          存储: { slots: [...storedSlots], none: storedNone }
-        });
         state.visibleTimeSlots = storedSlots;
         state._filterNone = storedNone;
-        return true; // 表示状态已恢复
+        deriveFilterButtonState();
+        return true;
       }
     }
     return false;
@@ -563,22 +666,61 @@ function isTimeSlotPassed(tIdx) {
   const now = new Date();
   const opts = { timeZone: 'Asia/Shanghai', hour: '2-digit', minute: '2-digit', hour12: false };
   const parts = new Intl.DateTimeFormat('en-US', opts).formatToParts(now);
-  // 【修复】处理某些 locale 返回 hour=24 的边界情况
   const h = parseInt(parts.find(p => p.type === 'hour').value) % 24;
   const m = parseInt(parts.find(p => p.type === 'minute').value);
   const nowMinutes = h * 60 + m;
   const slot = TIME_SLOTS[tIdx];
   const [sh, sm] = slot.split(':').map(Number);
   const slotMinutes = sh * 60 + sm;
-  // 当前时间 > 时段时间表示该时段已过
   return nowMinutes > slotMinutes;
 }
 
-/** 判断某时段是否应该显示 */
+/** 【v1.23.5】判断某时段是否应该显示（基础选择 + 叠加筛选）
+ *  - 叠加筛选（隐藏已过/仅显示有图）开启时，绕过 visibleTimeSlots，基于所有23个时段过滤
+ *  - 叠加顺序：先隐藏已过时段，再隐藏无图时段
+ *  - 保底规则：若所有时段都已过，保留最后一个时段（21:00）显示 */
 function isTimeSlotVisible(tIdx) {
-  // visibleTimeSlots 为空且无特殊标记时，默认全部显示
-  if (state.visibleTimeSlots.size === 0 && !state._filterNone) return true;
-  return state.visibleTimeSlots.has(tIdx);
+  // 叠加筛选：隐藏已过时段（基于所有时段，实时判断）
+  if (state._filterHidePassed) {
+    if (isTimeSlotPassed(tIdx)) {
+      // 保底规则：所有时段都已过时，保留最后一个时段显示
+      if (isAllSlotsPassed() && tIdx === TIME_SLOTS.length - 1) return true;
+      return false;
+    }
+    // 叠加：仅显示有图
+    if (state._filterOnlyImages && !slotHasAnyImages(tIdx)) return false;
+    return true;
+  }
+  // 叠加筛选：仅显示有图（基于所有时段）
+  if (state._filterOnlyImages) {
+    if (!slotHasAnyImages(tIdx)) return false;
+    return true;
+  }
+  // 基础选择（visibleTimeSlots）
+  if (!isTimeSlotSelected(tIdx)) return false;
+  return true;
+}
+
+/** 【v1.23.2】判断是否所有时段都已过（当前北京时间晚于最后一个时段） */
+function isAllSlotsPassed() {
+  const lastIdx = TIME_SLOTS.length - 1;
+  return isTimeSlotPassed(lastIdx);
+}
+
+/** 【v1.23.8】检查当前是否有任何可见时段（用于叠加筛选无结果提示） */
+function hasAnyVisibleSlot() {
+  for (let i = 0; i < TIME_SLOTS.length; i++) {
+    if (isTimeSlotVisible(i)) return true;
+  }
+  return false;
+}
+
+/** 【v1.23.8】检查是否有任何时段存在图片（用于"仅显示有图"无图提示） */
+function hasAnySlotWithImages() {
+  try {
+    if (!state._slotsWithImages || state._slotsWithImages.size === 0) return false;
+    return state._slotsWithImages.size > 0;
+  } catch (e) { return false; }
 }
 
 // ============================================================
@@ -671,7 +813,7 @@ async function renderMain() {
     + `<div class="footer-title">使用说明</div>`
     + `<div class="usage-guide">·座位如有单张图片且当前时段未隐藏，座位显示蓝色；若时段隐藏，则不显示颜色<br>·座位的同一时段有多张图片且未隐藏，座位显示橙色；若时段隐藏，则不显示颜色<br>·隐藏时段内若存在图片，座位按钮左上角显示"闭眼"图标<br>·若区域存在图片，区域按钮显示绿色<br>·通过"时段筛选"选定某一时段后，若该时段有图片，座位按钮右上角显示"图片"图标</div>`
     + `<div class="footer-collapsible" data-action="toggle-footer-opt">近期优化记录</div>`
-    + `<div class="footer-collapsible-body ${optExpanded ? 'expanded' : 'collapsed'}" data-action="expand-footer-opt">·可切换显示已释放座位概览，时段筛选列表显示图片提示（07.11更新）<br>·修复部分安卓机型座位文字被省略显示的问题（06.30更新）<br>·v1.15~v1.20 汇总：完善记录时间与区域统计功能，优化批量下载与清除图片逻辑，修复区域布局与拖动调序问题（06.29更新）<br>·琪同志反馈缩略图"×"按钮误触易删除图片：v1.13.5 新增"删除保护"功能，开启后可以防止误触删除图片。<br>·圳组、乔组建议增设占座倒计时：目前仅增设"记录完成时间"功能来辅助判断（06.25更新），真正的倒计时提醒待馆方自研系统实现。<br>·赖组反馈批量清理原功能易致页面崩溃：已修复功能为"清除图片"（06.21更新）。<br>·圳组建议的纸质登记辅助功能已简单实现：时段筛选设为当前拍照时段后，蓝底且带图标的座位可对应纸质表打"×"（06.18更新）。<br>·环总、馨同志建议数据互通：资金实力不足，待馆方自研系统实现。</div>`
+    + `<div class="footer-collapsible-body ${optExpanded ? 'expanded' : 'collapsed'}" data-action="expand-footer-opt">·优化时段筛选功能，新增11:30时段（07.24更新）<br>·可切换显示已释放座位概览，时段筛选列表显示图片提示（07.11更新）<br>·修复部分安卓机型座位文字被省略显示的问题（06.30更新）<br>·v1.15~v1.20 汇总：完善记录时间与区域统计功能，优化批量下载与清除图片逻辑，修复区域布局与拖动调序问题（06.29更新）<br>·琪同志反馈缩略图"×"按钮误触易删除图片：v1.13.5 新增"删除保护"功能，开启后可以防止误触删除图片。<br>·圳组、乔组建议增设占座倒计时：目前仅增设"记录完成时间"功能来辅助判断（06.25更新），真正的倒计时提醒待馆方自研系统实现。<br>·赖组反馈批量清理原功能易致页面崩溃：已修复功能为"清除图片"（06.21更新）。<br>·圳组建议的纸质登记辅助功能已简单实现：时段筛选设为当前拍照时段后，蓝底且带图标的座位可对应纸质表打"×"（06.18更新）。<br>·环总、馨同志建议数据互通：资金实力不足，待馆方自研系统实现。</div>`
     + `<div class="footer-collapsible" data-action="toggle-footer-thx">给大佬的情书</div>`
     + `<div class="footer-collapsible-body ${thxExpanded ? 'expanded' : 'collapsed'}" data-action="expand-footer-thx">感谢以下不愿透露姓名的大佬的建议与使用体验反馈（排名不分先后）：<br>环总、何总、圳组、赖组、州组、乔组、伟同志、垚同志、馨同志、瑜同志、伦同志、元同志、彦同志、灵同志、琪同志……</div>`
     + `<div class="disclaimer">内部参考工具，功能尚不完善，数据可能丢失，不承担准确性与隐私责任</div><div class="contact${showContact ? '' : ' hidden'}">如有使用建议可联系老范尝试优化。</div></div>`;
@@ -1014,7 +1156,7 @@ document.addEventListener('visibilitychange', () => {
 function renderSeatFlow(fid, aname) {
   const count = getAreaSeatCount(fid, aname);
   // 【v1.3.10】判断筛选是否非全选
-  const isFilterActive = !(state.visibleTimeSlots.size === 0 && !state._filterNone);
+  const isFilterActive = !(state.visibleTimeSlots.size === 0 && !state._filterNone) || state._filterHidePassed || state._filterOnlyImages;
   let html = '<div class="seat-flow">';
   for (let i = 0; i < count; i++) {
     const sk = seatKey(fid, aname, i);
@@ -1203,7 +1345,7 @@ function updateSeatVisual(sk) {
   // 先刷新该座位的统计（同步，仅读内存缓存）
   refreshSingleSeatStats(sk);
   // 【v1.3.10】判断筛选是否非全选
-  const isFilterActive = !(state.visibleTimeSlots.size === 0 && !state._filterNone);
+  const isFilterActive = !(state.visibleTimeSlots.size === 0 && !state._filterNone) || state._filterHidePassed || state._filterOnlyImages;
   document.querySelectorAll('.seat-btn').forEach(btn => {
     const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
     if (k !== sk) return;
@@ -4531,8 +4673,8 @@ document.addEventListener('click', async (e) => {
     updateBottomBar(); saveUIState(); renderMain(); showToast('座位已删除'); return;
   }
   const checkbox = target.closest('[data-action="toggle-select"]');
-  // 【v1.10.0】限制手动勾选最多22个时段（仅影响打包下载ZIP）
-  if (checkbox) { if (checkbox.classList.contains('disabled')) return; const ck = checkbox.dataset.cellKey, idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); checkbox.classList.remove('checked'); } else { if (state.selectedCells.length >= 22) { showToast('最多可选 22 个时段，如超出请使用"批量下载"'); return; } state.selectedCells.push(ck); checkbox.classList.add('checked'); } updateBottomBar(); return; }
+  // 【v1.10.0】限制手动勾选最多23个时段（仅影响打包下载ZIP）
+  if (checkbox) { if (checkbox.classList.contains('disabled')) return; const ck = checkbox.dataset.cellKey, idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); checkbox.classList.remove('checked'); } else { if (state.selectedCells.length >= 23) { showToast('最多可选 23 个时段，如超出请使用"批量下载"'); return; } state.selectedCells.push(ck); checkbox.classList.add('checked'); } updateBottomBar(); return; }
   const captureBtn = target.closest('[data-action="capture"]');
   // 【v1.2.2 iOS修复】先同步触发 click()，再在 change 回调中检查图片数量
   // iOS PWA 中 await 后调用 click() 会被系统阻止，必须在用户交互同步栈中触发
@@ -4595,7 +4737,7 @@ document.addEventListener('click', async (e) => {
   if (previewBtn) { showPreview(previewBtn.dataset.cellKey, parseInt(previewBtn.dataset.imgIdx)); return; }
   // 点击时段卡片空白区域切换勾选
   const card = target.closest('[data-action="toggle-card"]');
-  if (card) { if (card.dataset.hasImages !== '1') return; const ck = card.dataset.cellKey, cb = card.querySelector('.ts-checkbox'); if (!cb || cb.classList.contains('disabled')) return; const idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); cb.classList.remove('checked'); } else { if (state.selectedCells.length >= 22) { showToast('最多可选 22 个时段，如超出请使用"批量下载"'); return; } state.selectedCells.push(ck); cb.classList.add('checked'); } updateBottomBar(); return; }
+  if (card) { if (card.dataset.hasImages !== '1') return; const ck = card.dataset.cellKey, cb = card.querySelector('.ts-checkbox'); if (!cb || cb.classList.contains('disabled')) return; const idx = state.selectedCells.indexOf(ck); if (idx >= 0) { state.selectedCells.splice(idx, 1); cb.classList.remove('checked'); } else { if (state.selectedCells.length >= 23) { showToast('最多可选 23 个时段，如超出请使用"批量下载"'); return; } state.selectedCells.push(ck); cb.classList.add('checked'); } updateBottomBar(); return; }
   const nameEl = target.closest('[data-action="edit-seat-name"]');
   if (nameEl) { const sk = nameEl.dataset.seatKey, curName = nameEl.textContent; const input = document.createElement('input'); input.type = 'text'; input.value = curName; input.className = 'seat-name-edit-input'; const doSave = async () => { const newName = input.value.trim() || curName; if (newName === curName) { const sp = document.createElement('span'); sp.className = 'seat-name-text'; sp.dataset.action = 'edit-seat-name'; sp.dataset.seatKey = sk; sp.textContent = newName; if (input.parentNode) input.replaceWith(sp); return; } if (newName.length > 6) { showToast('编号最多6位'); input.focus(); return; } state.seatNames[sk] = newName; await saveSeatName(sk, newName); const sp = document.createElement('span'); sp.className = 'seat-name-text'; sp.dataset.action = 'edit-seat-name'; sp.dataset.seatKey = sk; sp.textContent = newName; if (input.parentNode) input.replaceWith(sp); updateSeatButtonText(sk, newName); await regenerateWatermarksForSeat(sk); }; input.addEventListener('blur', doSave); input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') input.blur(); }); nameEl.replaceWith(input); input.focus(); input.select(); return; }
   const cleanupBtn = target.closest('[data-action="open-cleanup"]');
@@ -4843,114 +4985,213 @@ function handleTitleClick() {
 // ============================================================
 // 十二-B、时段筛选面板
 // ============================================================
+// 【v1.23.1 容错】DOM 查询加 null 保护，避免元素缺失时整个脚本崩溃
 const filterOverlay = document.getElementById('filter-overlay');
 const filterSheet = document.getElementById('filter-sheet');
 const filterBody = document.getElementById('filter-body');
 
-/** 打开筛选面板 */
+/** 【v1.23.5】打开筛选面板（锁定 body 滚动，防止滑动穿透） */
 function openFilterSheet() {
-  renderFilterBody();
+  if (!filterSheet || !filterOverlay || !filterBody) return;
+  try { renderFilterBody(); } catch (e) { console.warn('renderFilterBody 异常:', e); }
   filterOverlay.classList.add('show');
   requestAnimationFrame(() => filterSheet.classList.add('show'));
+  // 锁定背景滚动
+  document.body.style.overflow = 'hidden';
 }
 
-/** 关闭筛选面板 */
+/** 【v1.23.5】关闭筛选面板（恢复 body 滚动） */
 function closeFilterSheet() {
-  filterSheet.classList.remove('show');
-  setTimeout(() => filterOverlay.classList.remove('show'), 300);
+  if (filterSheet) filterSheet.classList.remove('show');
+  if (filterOverlay) setTimeout(() => filterOverlay.classList.remove('show'), 300);
+  // 恢复背景滚动
+  document.body.style.overflow = '';
 }
 
-/** 渲染筛选面板内容 */
+/** 【v1.23.5】渲染筛选面板内容
+ *  - checkbox 反映 isTimeSlotVisible（实际显示状态），而非 isTimeSlotSelected */
 function renderFilterBody() {
+  if (!filterBody) return;
+  try { computeSlotsWithImages(); } catch (e) { console.warn('computeSlotsWithImages 异常:', e); }
   let html = '';
   TIME_SLOTS.forEach((ts, idx) => {
     const checked = isTimeSlotVisible(idx);
     const passed = isTimeSlotPassed(idx);
-    // 【v1.21.4】检查该时段是否有图片（遍历全楼层全区域）
-    let hasImages = false;
-    for (const floor of FLOORS) {
-      for (const area of floor.areas) {
-        const seatCount = getAreaSeatCount(floor.id, area.name);
-        for (let si = 0; si < seatCount; si++) {
-          const ck = cellKey(floor.id, area.name, si, idx);
-          if ((imageCountCache.get(ck) || 0) >= 1) { hasImages = true; break; }
-        }
-        if (hasImages) break;
-      }
-      if (hasImages) break;
-    }
+    const hasImages = slotHasAnyImages(idx);
     const imgIcon = hasImages ? '<span class="filter-slot-img-icon"></span>' : '';
-    html += `<div class="filter-slot-item" data-tidx="${idx}"><div class="filter-slot-cb ${checked ? 'checked' : ''}"></div><span class="filter-slot-label ${passed ? 'passed' : ''}">${ts}${passed ? ' (已过)' : ''}</span>${imgIcon}</div>`;
+    html += `<div class="filter-slot-item" data-tidx="${idx}"><div class="filter-slot-cb ${checked ? 'checked' : ''}"></div><span class="filter-slot-label ${passed ? 'passed' : ''}">${ts}${passed ? ' (已过)' : ''}${imgIcon}</span></div>`;
   });
   filterBody.innerHTML = html;
+  try { updateFilterButtonVisuals(); } catch (e) { console.warn('updateFilterButtonVisuals 异常:', e); }
 }
 
-/** 切换单个时段勾选 */
-filterBody.addEventListener('click', (e) => {
+/** 【v1.23.5】切换单个时段勾选
+ *  - 手动勾选时自动关闭叠加筛选（隐藏已过/仅显示有图），进入自定义模式 */
+if (filterBody) filterBody.addEventListener('click', (e) => {
   const item = e.target.closest('.filter-slot-item');
   if (!item) return;
   const tidx = parseInt(item.dataset.tidx);
   const cb = item.querySelector('.filter-slot-cb');
-  // 如果当前是全显状态（空集+_filterNone=false），先初始化为全部勾选
+  // 手动勾选时关闭叠加筛选，以当前可见状态为基础进行自定义
+  if (state._filterHidePassed || state._filterOnlyImages) {
+    state._filterHidePassed = false;
+    state._filterOnlyImages = false;
+    // 将当前可见时段固化为 visibleTimeSlots
+    state.visibleTimeSlots = new Set();
+    TIME_SLOTS.forEach((_, i) => { if (isTimeSlotVisible(i)) state.visibleTimeSlots.add(i); });
+    state._filterNone = false;
+  }
   if (state.visibleTimeSlots.size === 0 && !state._filterNone) {
     state.visibleTimeSlots = new Set(TIME_SLOTS.map((_, i) => i));
   }
   if (state.visibleTimeSlots.has(tidx)) {
     state.visibleTimeSlots.delete(tidx);
-    cb.classList.remove('checked');
-    // 【v1.10.21】手动取消最后一个时段时，标记为全不显示，避免被重置为全选
+    if (cb) cb.classList.remove('checked');
     if (state.visibleTimeSlots.size === 0) state._filterNone = true;
   } else {
     state.visibleTimeSlots.add(tidx);
-    cb.classList.add('checked');
+    if (cb) cb.classList.add('checked');
     state._filterNone = false;
   }
-  // 如果全部勾选，等价于无筛选
   if (state.visibleTimeSlots.size === TIME_SLOTS.length) {
     state.visibleTimeSlots = new Set();
     state._filterNone = false;
   }
-  saveFilterState();
-  refreshExpandedSeats();
-});
-
-/** 隐藏已过时段 */
-document.getElementById('filter-hide-passed').addEventListener('click', () => {
-  state.visibleTimeSlots = new Set();
-  state._filterNone = false;
-  for (let i = 0; i < TIME_SLOTS.length; i++) {
-    if (!isTimeSlotPassed(i)) state.visibleTimeSlots.add(i);
-  }
-  // 如果所有时段都已过（如 21:00 之后），至少保留最后一个时段
-  if (state.visibleTimeSlots.size === 0) {
-    state.visibleTimeSlots.add(TIME_SLOTS.length - 1);
-  }
+  deriveFilterButtonState();
   saveFilterState();
   renderFilterBody();
   refreshExpandedSeats();
 });
 
-/** 全选 */
-document.getElementById('filter-select-all').addEventListener('click', () => {
-  state.visibleTimeSlots = new Set(); // 空集+_filterNone=false = 全部显示
-  state._filterNone = false;
-  saveFilterState();
-  renderFilterBody();
-  refreshExpandedSeats();
-});
+/** 【v1.23.8】隐藏已过时段（叠加筛选）
+ *  - 亮起：基于所有23个时段，实时隐藏已过的（保底21:00），不改 visibleTimeSlots
+ *  - 叠加无结果时：提示"当前无符合条件的时段"，按钮保持亮起
+ *  - 熄灭：恢复默认时段组 */
+(() => {
+  const btn = document.getElementById('filter-hide-passed');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (state._filterHidePassed) {
+      // 熄灭：恢复默认时段组
+      state._filterHidePassed = false;
+      state.visibleTimeSlots = new Set(state._defaultSlots);
+      state._filterNone = false;
+      deriveFilterButtonState();
+      saveFilterState();
+      renderFilterBody();
+      refreshExpandedSeats();
+    } else {
+      // 亮起：叠加筛选标记，不改 visibleTimeSlots
+      state._filterHidePassed = true;
+      deriveFilterButtonState();
+      saveFilterState();
+      renderFilterBody();
+      refreshExpandedSeats();
+      // 叠加无结果提示
+      if (!hasAnyVisibleSlot()) {
+        showToast('当前无符合条件的时段', 1500);
+      }
+    }
+  });
+})();
 
-/** 清除所有勾选 */
-document.getElementById('filter-clear').addEventListener('click', () => {
-  state.visibleTimeSlots = new Set();
-  state._filterNone = true; // 空集+_filterNone=true = 全不显示
-  saveFilterState();
-  renderFilterBody();
-  refreshExpandedSeats();
-});
+/** 【v1.23.8】仅显示有图（基于所有23个时段）
+ *  - 无图片数据时：不亮起，提示"当前无图片数据"
+ *  - 亮起：在所有23个时段基础上，隐藏无图的，不改 visibleTimeSlots
+ *  - 叠加无结果时：提示"当前无符合条件的时段"，按钮保持亮起
+ *  - 熄灭：恢复默认时段组 */
+(() => {
+  const btn = document.getElementById('filter-only-images');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (state._filterOnlyImages) {
+      // 熄灭：恢复默认时段组
+      state._filterOnlyImages = false;
+      state.visibleTimeSlots = new Set(state._defaultSlots);
+      state._filterNone = false;
+      deriveFilterButtonState();
+      saveFilterState();
+      renderFilterBody();
+      refreshExpandedSeats();
+    } else {
+      // 亮起前先检查是否有图片数据
+      try { computeSlotsWithImages(); } catch (e) { console.warn('computeSlotsWithImages 异常:', e); }
+      if (!hasAnySlotWithImages()) {
+        // 无图片数据：不亮起，轻提示
+        showToast('当前无图片数据', 1500);
+        return;
+      }
+      // 亮起：叠加筛选标记
+      state._filterOnlyImages = true;
+      deriveFilterButtonState();
+      saveFilterState();
+      renderFilterBody();
+      refreshExpandedSeats();
+      // 叠加无结果提示
+      if (!hasAnyVisibleSlot()) {
+        showToast('当前无符合条件的时段', 1500);
+      }
+    }
+  });
+})();
+
+/** 【v1.23.5】默认/全选按钮（三态循环：默认→全选→默认；off→全选）
+ *  - 点击时自动熄灭"隐藏已过时段"和"仅显示有图" */
+(() => {
+  const btn = document.getElementById('filter-default-all');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    // 联动：熄灭其他两个叠加筛选按钮
+    state._filterHidePassed = false;
+    state._filterOnlyImages = false;
+    state._savedFilterState = null;
+    if (state._filterBtnState === 'default') {
+      // 默认 → 全选
+      state.visibleTimeSlots = new Set();
+      state._filterNone = false;
+      state._filterBtnState = 'all';
+    } else if (state._filterBtnState === 'all') {
+      // 全选 → 默认
+      state.visibleTimeSlots = new Set(state._defaultSlots);
+      state._filterNone = false;
+      state._filterBtnState = 'default';
+    } else {
+      // off → 默认（熄灭后首次点击恢复默认时段组）
+      state.visibleTimeSlots = new Set(state._defaultSlots);
+      state._filterNone = false;
+      state._filterBtnState = 'default';
+    }
+    saveFilterState();
+    renderFilterBody();
+    refreshExpandedSeats();
+  });
+})();
+
+/** 【v1.23.0】清除（全部取消勾选，按钮短暂高亮） */
+(() => {
+  const btn = document.getElementById('filter-clear');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    btn.classList.add('primary');
+    setTimeout(() => btn.classList.remove('primary'), 300);
+    state.visibleTimeSlots = new Set();
+    state._filterNone = true;
+    state._filterBtnState = 'off';
+    state._filterHidePassed = false;
+    state._filterOnlyImages = false;
+    state._savedFilterState = null;
+    saveFilterState();
+    renderFilterBody();
+    refreshExpandedSeats();
+  });
+})();
 
 /** 关闭面板 */
-filterOverlay.addEventListener('click', closeFilterSheet);
-document.getElementById('filter-close').addEventListener('click', closeFilterSheet);
+if (filterOverlay) filterOverlay.addEventListener('click', closeFilterSheet);
+(() => {
+  const closeBtn = document.getElementById('filter-close');
+  if (closeBtn) closeBtn.addEventListener('click', closeFilterSheet);
+})();
 
 /** 【修复Bug1】刷新已展开座位的视觉和筛选状态
  *  轻量化：筛选变化时只切换 CSS 显隐，不重建 DOM；数据变化时才重建
@@ -4964,10 +5205,11 @@ async function refreshExpandedSeats() {
   try {
     // 【修复Bug1】不再 invalidateAllTimeslotCache！筛选变化时只需切换 CSS 显隐
     await refreshSeatImageStats();
+    computeSlotsWithImages();
     // 【性能优化】单次遍历所有座位按钮，批量更新视觉，避免 O(n²)
     const updatedAreas = new Set();
     // 【v1.3.10】判断筛选是否非全选
-    const isFilterActive = !(state.visibleTimeSlots.size === 0 && !state._filterNone);
+    const isFilterActive = !(state.visibleTimeSlots.size === 0 && !state._filterNone) || state._filterHidePassed || state._filterOnlyImages;
     document.querySelectorAll('.seat-btn').forEach(btn => {
       const sk = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
       refreshSingleSeatStats(sk);
@@ -5390,22 +5632,39 @@ async function init() {
       const bar = document.getElementById('update-bar');
       if (!bar || bar.classList.contains('show')) return;
       bar.classList.add('show');
-      bar.onclick = () => {
-        // 【v1.3.18 深度修复】SW 更新前强制保存筛选状态（使用新键名双重备份），防止刷新后丢失
+      let _reloading = false;
+      const doReload = () => {
+        if (_reloading) return;
+        _reloading = true;
         try { saveFilterState(); } catch(e) {}
+        window.location.reload();
+      };
+      bar.onclick = () => {
+        try { saveFilterState(); } catch(e) {}
+        // 第一步：让新 SW 立即激活
         if (worker && worker.postMessage) {
           worker.postMessage({ type: 'SKIP_WAITING' });
         }
+        // 第二步：新 SW 激活后（controllerchange），通知它清理所有缓存
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          // 【v1.3.18 深度修复】刷新前再次强制保存，确保最新状态
-          try { saveFilterState(); } catch(e) {}
-          window.location.reload();
+          const ctrl = navigator.serviceWorker.controller;
+          if (ctrl && ctrl.postMessage) {
+            ctrl.postMessage({ type: 'CLEAR_CACHE' });
+            // 等待 SW 清理完成后再刷新
+            navigator.serviceWorker.addEventListener('message', function onMsg(ev) {
+              if (ev.data && ev.data.type === 'CACHE_CLEARED') {
+                navigator.serviceWorker.removeEventListener('message', onMsg);
+                doReload();
+              }
+            });
+            // 超时保护：2秒后强制刷新
+            setTimeout(doReload, 2000);
+          } else {
+            doReload();
+          }
         });
-        setTimeout(() => {
-          // 【v1.3.18 深度修复】超时刷新前也强制保存
-          try { saveFilterState(); } catch(e) {}
-          window.location.reload();
-        }, 1000);
+        // 超时保护：3秒后强制刷新（应对 controllerchange 未触发）
+        setTimeout(doReload, 3000);
       };
     } catch(e) {}
   }

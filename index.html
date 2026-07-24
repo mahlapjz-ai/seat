@@ -11,7 +11,6 @@
 <link rel="apple-touch-icon" sizes="192x192" href="seat-icon-192.png">
 <link rel="apple-touch-icon" sizes="512x512" href="seat-icon.png">
 <meta name="theme-color" content="#1890ff">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="座位管理">
 <link rel="apple-touch-icon" href="seat-icon.png">
@@ -101,9 +100,10 @@
 <div class="filter-sheet" id="filter-sheet">
   <div class="filter-sheet-header"><span class="filter-sheet-title">选择显示时段（打勾为显示时段）</span><button class="filter-sheet-close" id="filter-close">&times;</button></div>
   <div class="filter-sheet-actions">
-    <button class="filter-action-btn primary" id="filter-hide-passed">隐藏已过时段</button>
-    <button class="filter-action-btn" id="filter-select-all">全选</button>
-    <button class="filter-action-btn" id="filter-clear">清除</button>
+    <button class="filter-action-btn" id="filter-hide-passed">隐藏已过时段</button>
+    <button class="filter-action-btn" id="filter-only-images">仅显示有图</button>
+    <button class="filter-action-btn filter-default-all" id="filter-default-all"><span class="fa-default">默认</span>/<span class="fa-all">全选</span></button>
+    <button class="filter-action-btn filter-clear-btn" id="filter-clear">清除</button>
   </div>
   <div class="filter-sheet-body" id="filter-body"></div>
 </div>
