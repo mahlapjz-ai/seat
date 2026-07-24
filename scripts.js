@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.23.5';
+const APP_VERSION = 'v1.23.6';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '新增11:30时段；时段筛选面板重做：默认时段组、仅显示有图、默认/全选三态按钮' },
@@ -557,12 +557,20 @@ function updateFilterButtonVisuals() {
   updateDefaultAllButtonVisual();
 }
 
-/** 【v1.23.0】更新"默认/全选"按钮视觉状态 */
+/** 【v1.23.6】更新"默认/全选"按钮视觉状态
+ *  - default/all 状态时添加 .primary 类，使按钮整体亮起（与其他两个按钮激活样式一致）
+ *  - off 状态时移除 .primary 类 */
 function updateDefaultAllButtonVisual() {
   const btn = document.getElementById('filter-default-all');
   if (!btn) return;
   btn.classList.remove('state-default', 'state-all', 'state-off');
   btn.classList.add('state-' + state._filterBtnState);
+  // default 或 all 状态时按钮整体亮起，off 状态时熄灭
+  if (state._filterBtnState === 'default' || state._filterBtnState === 'all') {
+    btn.classList.add('primary');
+  } else {
+    btn.classList.remove('primary');
+  }
 }
 
 /** 【v1.3.18 深度修复】保存时段筛选设置到 localStorage（双重备份 + 写入校验 + 版本标记） */
