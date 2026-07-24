@@ -5,8 +5,8 @@
 //   seat-icon.png → Cache-First（缓存优先，不常变，省流量）
 //   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
 
-// 【v1.23.3】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
-const CACHE_NAME = 'seat-cache-v100';
+// 【v1.23.4】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
+const CACHE_NAME = 'seat-cache-v101';
 
 // 预缓存资源列表（安装时一次性缓存）
 const PRECACHE_ASSETS = [
@@ -44,17 +44,31 @@ self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+  // 【v1.23.4】收到清理缓存指令：删除所有缓存并重新预缓存，完成后通知页面
+  if (e.data && e.data.type === 'CLEAR_CACHE') {
+    Promise.all(
+      caches.keys().then(keys => keys.map(k => caches.delete(k)))
+    ).then(() =>
+      caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE_ASSETS))
+    ).then(() => {
+      if (e.source) e.source.postMessage({ type: 'CACHE_CLEARED' });
+    }).catch(err => {
+      console.warn('SW 清理缓存失败:', err);
+      if (e.source) e.source.postMessage({ type: 'CACHE_CLEARED' });
+    });
+  }
 });
 
 // ===== 激活事件 =====
-// 清理旧版本缓存，立即接管所有客户端
+// 【v1.23.4】清理所有缓存（包括同名），重新预缓存最新资源，立即接管所有客户端
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+      Promise.all(keys.map(k => caches.delete(k)))
+    ).then(() =>
+      caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE_ASSETS))
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 // ===== 请求拦截 =====
@@ -80,9 +94,10 @@ self.addEventListener('fetch', e => {
 
   // --- index.html / styles.css / scripts.js / manifest.json：Network-First（网络优先）---
   // 每次打开都优先请求网络，确保拿到最新版；网络失败时才用缓存
-  if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html') || url.pathname === '/' || url.pathname.endsWith('/manifest.json') || url.pathname.endsWith('/styles.css') || url.pathname.endsWith('/scripts.js')) {
+  // 【v1.23.4】用 cache:'no-cache' 绕过浏览器 HTTP 缓存，避免拿到旧版本
+  if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html') || url.pathname === '/' || url.pathname.endsWith('/manifest.json') || url.pathname.endsWith('/styles.css') || url.pathname.endsWith('/scripts.js') || url.pathname.endsWith('/sw.js')) {
     e.respondWith(
-      fetch(e.request)
+      fetch(e.request, { cache: 'no-cache' })
         .then(resp => {
           // 网络成功：更新缓存并返回最新内容
           if (resp.ok) {

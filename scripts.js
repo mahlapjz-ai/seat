@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.23.3';
+const APP_VERSION = 'v1.23.4';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '新增11:30时段；时段筛选面板重做：默认时段组、仅显示有图、默认/全选三态按钮' },
@@ -5540,22 +5540,39 @@ async function init() {
       const bar = document.getElementById('update-bar');
       if (!bar || bar.classList.contains('show')) return;
       bar.classList.add('show');
-      bar.onclick = () => {
-        // 【v1.3.18 深度修复】SW 更新前强制保存筛选状态（使用新键名双重备份），防止刷新后丢失
+      let _reloading = false;
+      const doReload = () => {
+        if (_reloading) return;
+        _reloading = true;
         try { saveFilterState(); } catch(e) {}
+        window.location.reload();
+      };
+      bar.onclick = () => {
+        try { saveFilterState(); } catch(e) {}
+        // 第一步：让新 SW 立即激活
         if (worker && worker.postMessage) {
           worker.postMessage({ type: 'SKIP_WAITING' });
         }
+        // 第二步：新 SW 激活后（controllerchange），通知它清理所有缓存
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          // 【v1.3.18 深度修复】刷新前再次强制保存，确保最新状态
-          try { saveFilterState(); } catch(e) {}
-          window.location.reload();
+          const ctrl = navigator.serviceWorker.controller;
+          if (ctrl && ctrl.postMessage) {
+            ctrl.postMessage({ type: 'CLEAR_CACHE' });
+            // 等待 SW 清理完成后再刷新
+            navigator.serviceWorker.addEventListener('message', function onMsg(ev) {
+              if (ev.data && ev.data.type === 'CACHE_CLEARED') {
+                navigator.serviceWorker.removeEventListener('message', onMsg);
+                doReload();
+              }
+            });
+            // 超时保护：2秒后强制刷新
+            setTimeout(doReload, 2000);
+          } else {
+            doReload();
+          }
         });
-        setTimeout(() => {
-          // 【v1.3.18 深度修复】超时刷新前也强制保存
-          try { saveFilterState(); } catch(e) {}
-          window.location.reload();
-        }, 1000);
+        // 超时保护：3秒后强制刷新（应对 controllerchange 未触发）
+        setTimeout(doReload, 3000);
       };
     } catch(e) {}
   }
