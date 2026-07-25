@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.23.11';
+const APP_VERSION = 'v1.23.13';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '新增11:30时段；时段筛选面板重做：默认时段组、仅显示有图、默认/全选三态按钮' },
@@ -1380,14 +1380,34 @@ function updateSeatVisual(sk) {
   const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1];
   updateAreaVisual(fid, aname);
 }
-/** 更新区域按钮的 has-images 状态 */
+/** 更新区域按钮的 has-images 状态及 "X离座 / 共X图" 统计文本
+ *  【v1.23.12】补全刷新时机：拍照/上传/删除后即时刷新区域按钮统计 */
 function updateAreaVisual(fid, aname) {
   let areaHasImages = false;
-  for (let si = 0; si < getAreaSeatCount(fid, aname); si++) {
-    if (state.seatHasImages.has(seatKey(fid, aname, si))) { areaHasImages = true; break; }
+  let seatsWithImages = 0, areaImageTotal = 0;
+  const seatCount = getAreaSeatCount(fid, aname);
+  for (let si = 0; si < seatCount; si++) {
+    const sk = seatKey(fid, aname, si);
+    if (state.seatHasImages.has(sk)) {
+      areaHasImages = true;
+      seatsWithImages++;
+      const stat = seatImageStats.get(sk);
+      if (stat) areaImageTotal += stat.totalCount;
+    }
   }
+  // 【v1.19.0】区域图片总数显示上限 240
+  const displayImageTotal = Math.min(areaImageTotal, MAX_AREA_IMAGES);
   document.querySelectorAll(`.area-btn[data-floor="${fid}"][data-area="${aname}"]`).forEach(btn => {
     btn.classList.toggle('has-images', areaHasImages);
+    // 【v1.23.12】同步刷新统计文本与可见性，与 renderMain 渲染逻辑保持一致
+    const statsEl = btn.querySelector('.area-stats');
+    if (statsEl) {
+      statsEl.style.visibility = areaImageTotal === 0 ? 'hidden' : '';
+      const asLeft = statsEl.querySelector('.as-left');
+      const asRight = statsEl.querySelector('.as-right');
+      if (asLeft) asLeft.textContent = `${seatsWithImages}离座`;
+      if (asRight) asRight.textContent = `共${displayImageTotal}图`;
+    }
   });
 }
 

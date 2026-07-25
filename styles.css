@@ -299,8 +299,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .cleanup-spinner{width:36px;height:36px;margin:0 auto;border:3px solid #e8e8e8;border-top-color:#1890ff;border-radius:50%;animation:cleanup-spin .8s linear infinite}
 @keyframes cleanup-spin{to{transform:rotate(360deg)}}
 
-/* 【v1.9.30】使用 top/left/right/bottom:0 + margin:auto 居中，避免移动端滚动时 fixed+top:50%+transform 偏移 */
-.toast{position:fixed;top:0;left:0;right:0;bottom:0;margin:auto;width:max-content;height:max-content;max-width:80vw;background:rgba(0,0,0,.75);color:#fff;padding:14px 28px;border-radius:8px;font-size:15px;z-index:300;pointer-events:none;animation:toast-fade 2s forwards}
+/* 【v1.23.12】Toast 固定视口正中央：position:fixed + top/left:50% + transform:translate(-50%,-50%)，z-index:9999 确保最上层 */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:max-content;height:max-content;max-width:80vw;background:rgba(0,0,0,.75);color:#fff;padding:14px 28px;border-radius:8px;font-size:15px;z-index:9999;pointer-events:none;animation:toast-fade 2s forwards}
 @keyframes toast-fade{0%{opacity:1}70%{opacity:1}100%{opacity:0}}
 
 /* 时段筛选按钮 */
