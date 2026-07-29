@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.23.16';
+const APP_VERSION = 'v1.24.0';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '新增11:30时段；时段筛选面板重做：默认时段组、仅显示有图、默认/全选三态按钮' },
@@ -1309,6 +1309,32 @@ async function renderTimeSlots(sk) {
   timeslotDOMCache.set(sk, { html, countFingerprint });
 }
 
+/**
+ * 【v1.23.17 防闪烁】静默刷新 timeslot：后台存储完成后调用
+ * - 若卡片当前不在 DOM 中（座位已折叠）：全量 renderTimeSlots 重建（用户看不见，无闪烁）
+ * - 若卡片在 DOM 中（座位已展开）：只失效缓存（让下次展开拿最新 Base64），不重建 DOM 避免闪烁
+ *   缩略图已由 appendThumbnailToDOM 同步插入，Blob URL 在页面刷新前一直有效
+ * @param {string} sk - seatKey
+ */
+function silentRefreshTimeslot(sk) {
+  const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1], sidx = parseInt(parts[2]);
+  // 检查该座位任一 cellKey 的卡片是否在 DOM 中
+  let cardInDOM = false;
+  for (let t = 0; t < TIME_SLOTS.length; t++) {
+    const ck = cellKey(fid, aname, sidx, t);
+    const card = document.querySelector(`.timeslot-card[data-cell-key="${ck}"]`);
+    if (card) { cardInDOM = true; break; }
+  }
+  if (cardInDOM) {
+    // 卡片在 DOM 中：仅失效缓存，不重建（避免闪烁）
+    invalidateTimeslotCache(sk);
+  } else {
+    // 卡片不在 DOM 中：全量重建（用户看不见）
+    invalidateTimeslotCache(sk);
+    renderTimeSlots(sk);
+  }
+}
+
 /** 【修复Bug1】轻量级筛选切换：切换时段卡片 CSS 显隐 + 更新隐藏时段提示文字 */
 function applyTimeslotFilter(container) {
   if (!container) return;
@@ -2086,9 +2112,8 @@ captureInput.addEventListener('change', async (e) => {
           cd.images[lastIdx].thumbnail = thumbnail;
           cd.images[lastIdx].processingState = 'done'; // 【v1.9.39】后台存储完成
           await saveCellData(ck, cd.images);
-          // 数据已持久化，刷新 DOM 缓存
-          invalidateTimeslotCache(sk);
-          await renderTimeSlots(sk);
+          // 【v1.23.17 防闪烁】数据已持久化，静默刷新（卡片在 DOM 中不重建，避免闪烁）
+          silentRefreshTimeslot(sk);
           // 【v1.5.5】通知预览组件高清源已就绪
           notifyPreviewDataReady(ck);
         }
@@ -2228,8 +2253,8 @@ uploadInput.addEventListener('change', async (e) => {
             const lastIdx = cd.images.length - 1;
             cd.images[lastIdx] = { data: watermarked, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime, isHighResReady: true, processingState: 'done' };
             await saveCellData(ck, cd.images);
-            invalidateTimeslotCache(sk);
-            await renderTimeSlots(sk);
+            // 【v1.23.17 防闪烁】静默刷新，避免重建 DOM 闪烁
+            silentRefreshTimeslot(sk);
             // 【v1.5.5】通知预览组件高清源已就绪
             notifyPreviewDataReady(ck);
           }
@@ -2242,8 +2267,8 @@ uploadInput.addEventListener('change', async (e) => {
             const lastIdx = cd.images.length - 1;
             cd.images[lastIdx] = { data: original, thumbnail, type: 'upload', createdAt: Date.now(), seatName: sName, beijingTime: bTime, isHighResReady: true, processingState: 'done' };
             await saveCellData(ck, cd.images);
-            invalidateTimeslotCache(sk);
-            await renderTimeSlots(sk);
+            // 【v1.23.17 防闪烁】静默刷新，避免重建 DOM 闪烁
+            silentRefreshTimeslot(sk);
             // 【v1.5.5】通知预览组件高清源已就绪
             notifyPreviewDataReady(ck);
           }
