@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.23.14';
+const APP_VERSION = 'v1.23.15';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '新增11:30时段；时段筛选面板重做：默认时段组、仅显示有图、默认/全选三态按钮' },
@@ -5580,12 +5580,17 @@ window.addEventListener('unhandledrejection', (e) => {
   console.warn('未捕获的 Promise 异常:', e.reason);
   e.preventDefault(); // 阻止默认的控制台报错行为
 });
+// 【v1.23.15 微信兼容】error 事件也 preventDefault，与 unhandledrejection 保持一致，
+// 避免微信内置浏览器因控制台报错触发自动重载（仍会 console.warn 输出便于调试）
 window.addEventListener('error', (e) => {
   console.warn('全局异常:', e.message);
+  e.preventDefault();
 });
 
 // 【v1.9.15】全局变量：SW registration，供标题点击检查更新使用
 let swRegistration = null;
+// 【v1.23.15】SW 更新轮询定时器引用，页面卸载时清理避免泄漏
+let _swUpdateTimer = null;
 
 async function init() {
   // 【v1.12.0】骨架屏：记录初始化开始时间，加载完成后判断是否显示过骨架屏
@@ -5649,8 +5654,13 @@ async function init() {
             }
           });
         });
-        setInterval(() => { try { reg.update(); } catch(e) {} }, 30 * 60 * 1000);
+        // 【v1.23.15】保存轮询引用，页面卸载时清理，避免长时间停留的页面持续轮询
+        _swUpdateTimer = setInterval(() => { try { reg.update(); } catch(e) {} }, 30 * 60 * 1000);
       }).catch(() => {});
+      // 【v1.23.15】页面隐藏时清理 SW 更新轮询，减少后台资源占用
+      window.addEventListener('pagehide', () => {
+        if (_swUpdateTimer) { clearInterval(_swUpdateTimer); _swUpdateTimer = null; }
+      });
     } catch (e) { console.warn('SW 注册失败，不影响使用:', e); }
   }
   function showUpdateBar(worker) {
