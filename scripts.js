@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.23.13';
+const APP_VERSION = 'v1.23.14';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '新增11:30时段；时段筛选面板重做：默认时段组、仅显示有图、默认/全选三态按钮' },
@@ -149,6 +149,12 @@ async function getAllDeletedSeats() { const a = await dbGetAll('deletedSeats'); 
 
 // 【优化】批量读取多个 key 的图片数据（单事务），避免逐条异步读取
 async function getCellDataBatch(keys) {
+  // 【v1.23.14 iOS兼容】内存回退模式：直接从 dbFallback 读取，避免 dbInstance 为 null 时崩溃
+  if (dbIsFallback) {
+    const results = {};
+    keys.forEach(k => { if (dbFallback.cells && dbFallback.cells[k]) results[k] = dbFallback.cells[k]; });
+    return results;
+  }
   const db = await openDB();
   return new Promise((r, j) => {
     const tx = db.transaction('cells', 'readonly');

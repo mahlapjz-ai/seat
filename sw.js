@@ -5,8 +5,8 @@
 //   seat-icon.png → Cache-First（缓存优先，不常变，省流量）
 //   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
 
-// 【v1.23.13】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
-const CACHE_NAME = 'seat-cache-v109';
+// 【v1.23.14】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
+const CACHE_NAME = 'seat-cache-v110';
 
 // 预缓存资源列表（安装时一次性缓存）
 const PRECACHE_ASSETS = [
@@ -45,17 +45,18 @@ self.addEventListener('message', e => {
     self.skipWaiting();
   }
   // 【v1.23.4】收到清理缓存指令：删除所有缓存并重新预缓存，完成后通知页面
+  // 【v1.23.14】修复 Promise.all 写法：原写法 Promise.all(promise.then(arr)) 语义不清，改为标准链式
   if (e.data && e.data.type === 'CLEAR_CACHE') {
-    Promise.all(
-      caches.keys().then(keys => keys.map(k => caches.delete(k)))
-    ).then(() =>
-      caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE_ASSETS))
-    ).then(() => {
-      if (e.source) e.source.postMessage({ type: 'CACHE_CLEARED' });
-    }).catch(err => {
-      console.warn('SW 清理缓存失败:', err);
-      if (e.source) e.source.postMessage({ type: 'CACHE_CLEARED' });
-    });
+    caches.keys()
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE_ASSETS)))
+      .then(() => {
+        if (e.source) e.source.postMessage({ type: 'CACHE_CLEARED' });
+      })
+      .catch(err => {
+        console.warn('SW 清理缓存失败:', err);
+        if (e.source) e.source.postMessage({ type: 'CACHE_CLEARED' });
+      });
   }
 });
 
