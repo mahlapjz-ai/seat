@@ -1,2 +1,5 @@
 # 构建工具（本地开发用，不上传服务器）
 build.ps1
+
+# 源码（仅本地保留用于构建，仓库只放 scripts.min.js）
+scripts.js
