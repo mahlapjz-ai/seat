@@ -5,8 +5,8 @@
 //   seat-icon.png → Cache-First（缓存优先，不常变，省流量）
 //   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
 
-// 【v1.24.0】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
-const CACHE_NAME = 'seat-cache-v111';
+// 【v1.25.3】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
+const CACHE_NAME = 'seat-cache-v117';
 
 // 预缓存资源列表（安装时一次性缓存）
 const PRECACHE_ASSETS = [
@@ -61,13 +61,15 @@ self.addEventListener('message', e => {
 });
 
 // ===== 激活事件 =====
-// 【v1.23.4】清理所有缓存（包括同名），重新预缓存最新资源，立即接管所有客户端
+// 【v1.25.2】只清理旧版本缓存，保留当前版本缓存，避免激活期间页面请求落空返回"离线"
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.map(k => caches.delete(k)))
+      Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : Promise.resolve()))
     ).then(() =>
-      caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE_ASSETS))
+      caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE_ASSETS).catch(err => {
+        console.warn('SW activate 预缓存失败，保留已有缓存:', err);
+      }))
     ).then(() => self.clients.claim())
   );
 });

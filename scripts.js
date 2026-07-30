@@ -41,7 +41,7 @@ const FLOORS = [
 const TIME_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','18:00','18:30','19:00','19:30','20:00','20:30','21:00'];
 const MAX_IMAGES = 3;
 // v1.9.4 像素主题标题去除文字阴影
-const APP_VERSION = 'v1.24.0';
+const APP_VERSION = 'v1.25.3';
 // 【v1.10.18】更新日志：记录次版本号和主版本号变更，修订号变更不记录，最多保留3条
 const UPDATE_LOG = [
   { date: '6月25日', text: '新增11:30时段；时段筛选面板重做：默认时段组、仅显示有图、默认/全选三态按钮' },
@@ -1179,7 +1179,8 @@ function renderSeatFlow(fid, aname) {
     // 【v1.3.10】右上角筛选命中图标：筛选非全选 + 可见时段有图
     const filterHitIcon = (isFilterActive && stat && stat.visibleHasImages) ? '<span class="icon-filter-hit"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></span>' : '';
     html += `<button class="seat-btn ${sExp ? 'expanded' : ''} ${imgClass}${longNameClass}" data-action="toggle-seat" data-floor="${fid}" data-area="${aname}" data-seat="${i}">${hiddenIcon}${filterHitIcon}<span class="seat-btn-text">${sName}</span></button>`;
-    html += `<div class="timeslot-container ${sExp ? 'show' : ''}" id="timeslots-${sk}"></div>`;
+    // 【v1.24.2 性能优化】只有展开的座位才生成 timeslot-container，1438 座位下减少约 1430 个空 DOM 节点
+    if (sExp) html += `<div class="timeslot-container show" id="timeslots-${sk}"></div>`;
   }
   html += `<button class="add-seat-btn" data-action="add-seat" data-floor="${fid}" data-area="${aname}">+</button></div>`;
   return html;
@@ -1378,9 +1379,10 @@ function updateSeatVisual(sk) {
   refreshSingleSeatStats(sk);
   // 【v1.3.10】判断筛选是否非全选
   const isFilterActive = !(state.visibleTimeSlots.size === 0 && !state._filterNone) || state._filterHidePassed || state._filterOnlyImages;
-  document.querySelectorAll('.seat-btn').forEach(btn => {
-    const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat));
-    if (k !== sk) return;
+  // 【v1.24.1 性能优化】O(n) 遍历改为 O(1) 直接定位，1438 座位场景下显著提速
+  const parts = sk.split('-'), fid = parts[0], aname = parts[1], sidx = parts[2];
+  const btn = document.querySelector(`.seat-btn[data-floor="${fid}"][data-area="${aname}"][data-seat="${sidx}"]`);
+  if (btn) {
     // 移除旧类
     btn.classList.remove('has-images', 'has-images-1', 'has-images-2');
     // 移除旧图标
@@ -1407,10 +1409,9 @@ function updateSeatVisual(sk) {
       icon.innerHTML = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>';
       btn.appendChild(icon);
     }
-  });
+  }
   // 同步更新区域按钮视觉
-  const parts = sk.split('-'), fid = parseInt(parts[0]), aname = parts[1];
-  updateAreaVisual(fid, aname);
+  updateAreaVisual(parseInt(fid), aname);
 }
 /** 更新区域按钮的 has-images 状态及 "X离座 / 共X图" 统计文本
  *  【v1.23.12】补全刷新时机：拍照/上传/删除后即时刷新区域按钮统计 */
@@ -4570,8 +4571,25 @@ document.getElementById('cleanup-confirm-exec').addEventListener('click', async 
       }
     }
 
-    // 清理完毕：刷新界面
-    await buildSeatHasImages();
+    // 【v1.24.1 性能优化】清理后增量更新受影响座位的统计，避免全量 buildSeatHasImages 扫描
+    const affectedSeats = new Set();
+    cellsToDelete.forEach(ck => {
+      const p = ck.split('-');
+      affectedSeats.add(`${p[0]}-${p[1]}-${p[2]}`);
+    });
+    affectedSeats.forEach(sk => {
+      const p = sk.split('-'), aFid = parseInt(p[0]), aAname = p[1], aSidx = parseInt(p[2]);
+      let stillHasImages = false;
+      for (let t = 0; t < TIME_SLOTS.length; t++) {
+        if ((imageCountCache.get(cellKey(aFid, aAname, aSidx, t)) || 0) > 0) {
+          stillHasImages = true;
+          break;
+        }
+      }
+      if (stillHasImages) state.seatHasImages.add(sk);
+      else state.seatHasImages.delete(sk);
+      refreshSingleSeatStats(sk);
+    });
     invalidateAllTimeslotCache();
     state.selectedCells = state.selectedCells.filter(ck => !cellsToDelete.includes(ck));
     await renderMain();
@@ -4661,10 +4679,61 @@ document.addEventListener('click', async (e) => {
   const footerThxBody = target.closest('[data-action="expand-footer-thx"]');
   if (footerThxBody && !footerThxBody.classList.contains('expanded')) { localStorage.setItem('footer-thx-expanded', '1'); renderMain(); return; }
   const floorBtn = target.closest('[data-action="toggle-floor"]');
-  if (floorBtn) { const fid = parseInt(floorBtn.dataset.floor); state.expandedFloors.has(fid) ? state.expandedFloors.delete(fid) : state.expandedFloors.add(fid); saveUIState(); renderMain(); return; }
+  if (floorBtn) {
+    const fid = parseInt(floorBtn.dataset.floor);
+    const wasExp = state.expandedFloors.has(fid);
+    if (wasExp) state.expandedFloors.delete(fid);
+    else state.expandedFloors.add(fid);
+    saveUIState();
+    // 【v1.25.1 性能优化】局部更新替代全量 renderMain，只切换楼层容器显隐
+    floorBtn.classList.toggle('expanded', !wasExp);
+    const areaContainer = document.getElementById('areas-' + fid);
+    if (areaContainer) areaContainer.classList.toggle('show', !wasExp);
+    return;
+  }
   const areaBtn = target.closest('[data-action="toggle-area"]');
   // 【v1.9.21】手风琴模式：同楼层只能展开一个区域，展开新区域时自动收起同楼层其他区域
-  if (areaBtn) { const fid = parseInt(areaBtn.dataset.floor), aname = areaBtn.dataset.area, ak = areaKey(fid, aname); if (state.expandedAreas.has(ak)) { state.expandedAreas.delete(ak); } else { state.expandedAreas.add(ak); for (const k of [...state.expandedAreas]) { if (k !== ak && k.startsWith(fid + '-')) state.expandedAreas.delete(k); } } saveUIState(); renderMain(); return; }
+  if (areaBtn) {
+    const fid = parseInt(areaBtn.dataset.floor), aname = areaBtn.dataset.area, ak = areaKey(fid, aname);
+    const wasExp = state.expandedAreas.has(ak);
+    if (wasExp) {
+      state.expandedAreas.delete(ak);
+    } else {
+      state.expandedAreas.add(ak);
+      for (const k of [...state.expandedAreas]) {
+        if (k !== ak && k.startsWith(fid + '-')) state.expandedAreas.delete(k);
+      }
+    }
+    saveUIState();
+    // 【v1.25.1 性能优化】局部更新替代全量 renderMain，只更新该楼层内的区域
+    const areaContainer = document.getElementById('areas-' + fid);
+    if (areaContainer) {
+      areaContainer.querySelectorAll('.area-btn-wrap').forEach(wrap => {
+        const btn = wrap.querySelector('.area-btn');
+        if (!btn) return;
+        const bFid = btn.dataset.floor, bAname = btn.dataset.area, bAk = areaKey(parseInt(bFid), bAname);
+        const bExp = state.expandedAreas.has(bAk);
+        btn.classList.toggle('expanded', bExp);
+        // 处理 record-time-btn：展开时创建，折叠时移除
+        let recordBtn = wrap.querySelector('.record-time-btn');
+        if (bExp && !recordBtn) {
+          recordBtn = document.createElement('button');
+          recordBtn.className = 'record-time-btn';
+          recordBtn.dataset.action = 'record-time';
+          recordBtn.dataset.floor = bFid;
+          recordBtn.dataset.area = bAname;
+          recordBtn.textContent = '⏱️记录完成时间';
+          wrap.appendChild(recordBtn);
+        } else if (!bExp && recordBtn) {
+          recordBtn.remove();
+        }
+        // 切换座位容器显隐
+        const seatContainer = document.getElementById('seats-' + bAk);
+        if (seatContainer) seatContainer.classList.toggle('show', bExp);
+      });
+    }
+    return;
+  }
   // 【v1.12.0】记录完成时间按钮：二次确认弹窗
   const recordBtn = target.closest('[data-action="record-time"]');
   if (recordBtn) {
@@ -4678,7 +4747,56 @@ document.addEventListener('click', async (e) => {
     const prev = [...state.expandedSeats]; state.expandedSeats.clear();
     if (!prev.includes(sk)) state.expandedSeats.add(sk);
     saveUIState();
-    renderMain(); return;
+    // 【v1.25.0 性能优化】局部更新替代全量 renderMain，避免 1438 座位全量重建
+    // 1. 折叠之前展开的座位（仅在 DOM 中时处理）
+    prev.forEach(prevSk => {
+      if (prevSk === sk) return;
+      const pp = prevSk.split('-');
+      const prevBtn = document.querySelector(`.seat-btn[data-floor="${pp[0]}"][data-area="${pp[1]}"][data-seat="${pp[2]}"]`);
+      if (prevBtn) { prevBtn.classList.remove('expanded'); updateSeatVisual(prevSk); }
+      const prevContainer = document.getElementById('timeslots-' + prevSk);
+      if (prevContainer) prevContainer.remove();
+    });
+    // 2. 展开或折叠当前座位
+    if (state.expandedSeats.has(sk)) {
+      // 展开：加 expanded class + 移除闭眼图标 + 创建容器 + 渲染时段
+      seatBtn.classList.add('expanded');
+      const hiddenIcon = seatBtn.querySelector('.icon-hidden');
+      if (hiddenIcon) hiddenIcon.remove();
+      let container = document.getElementById('timeslots-' + sk);
+      let isNewContainer = false;
+      if (!container) {
+        container = document.createElement('div');
+        container.className = 'timeslot-container show';
+        container.id = 'timeslots-' + sk;
+        // 【v1.25.3 防闪烁】新创建的容器先透明，避免 await 期间显示空白
+        container.style.opacity = '0';
+        seatBtn.insertAdjacentElement('afterend', container);
+        isNewContainer = true;
+      }
+      // 【v1.25.3 防闪烁】renderTimeSlots 是 async，await 期间容器为空；填充完成后才显示
+      const renderPromise = renderTimeSlots(sk);
+      if (isNewContainer) {
+        renderPromise.then(() => {
+          // 容器仍在 DOM 中（未被快速切换移除）才显示
+          if (document.getElementById('timeslots-' + sk)) {
+            container.style.opacity = '';
+          }
+        }).catch(() => {
+          // 失败也恢复显示，避免永久隐藏
+          if (document.getElementById('timeslots-' + sk)) {
+            container.style.opacity = '';
+          }
+        });
+      }
+    } else {
+      // 折叠：移除 expanded class + 移除容器 + 恢复闭眼图标
+      seatBtn.classList.remove('expanded');
+      const container = document.getElementById('timeslots-' + sk);
+      if (container) container.remove();
+      updateSeatVisual(sk);
+    }
+    return;
   }
   const addBtn = target.closest('[data-action="add-seat"]');
   if (addBtn) {
@@ -5316,7 +5434,10 @@ async function refreshExpandedSeats() {
 }
 
 function updateSeatButtonText(sk, newName) {
-  document.querySelectorAll('.seat-btn').forEach(btn => { const k = seatKey(parseInt(btn.dataset.floor), btn.dataset.area, parseInt(btn.dataset.seat)); if (k === sk) { const t = btn.querySelector('.seat-btn-text'); if (t) t.textContent = newName; else btn.textContent = newName; } });
+  // 【v1.24.1 性能优化】O(n) 遍历改为 O(1) 直接定位
+  const parts = sk.split('-');
+  const btn = document.querySelector(`.seat-btn[data-floor="${parts[0]}"][data-area="${parts[1]}"][data-seat="${parts[2]}"]`);
+  if (btn) { const t = btn.querySelector('.seat-btn-text'); if (t) t.textContent = newName; else btn.textContent = newName; }
 }
 async function regenerateWatermarksForSeat(sk) {
   // 【v1.4.0】修改座位编号后，仅更新 seatName 字段，不再重新生成水印
