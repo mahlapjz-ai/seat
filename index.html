@@ -15,7 +15,8 @@
 <meta name="apple-mobile-web-app-title" content="座位管理">
 <link rel="apple-touch-icon" href="seat-icon.png">
 <title>座位图片管理</title>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
+<!-- 【v1.25.7】jszip 加 defer 避免阻塞渲染：JSZip 仅在打包下载时使用，无需阻塞首屏 -->
+<script defer src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
 <!-- 拆分自原单文件 - 外部样式 -->
 <link rel="stylesheet" href="styles.css">
 </head>
