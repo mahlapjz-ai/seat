@@ -1,6 +1,9 @@
 # 构建工具（本地开发用，不上传服务器）
 build.ps1
 
+# 源码（仅本地保留，仓库只放压缩后的 scripts.min.js）
+scripts.js
+
 # 临时/系统文件
 .trae/
 _check_lines.ps1
