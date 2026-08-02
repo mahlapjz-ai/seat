@@ -300,7 +300,11 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 @keyframes cleanup-spin{to{transform:rotate(360deg)}}
 
 /* 【v1.23.12】Toast 固定视口正中央：position:fixed + top/left:50% + transform:translate(-50%,-50%)，z-index:9999 确保最上层 */
-.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:max-content;height:max-content;max-width:80vw;background:rgba(0,0,0,.75);color:#fff;padding:14px 28px;border-radius:8px;font-size:15px;z-index:9999;pointer-events:none;animation:toast-fade 2s forwards}
+/* 【v1.26.5】Toast 居中改用 inset:0+margin:auto，移除 transform:translate(-50%,-50%)
+   根因：iOS Safari 在页面滚动时创建 position:fixed + transform 元素，fixed 定位会短暂失效，
+   导致 Toast 随页面滑动移动一下再跳回视口中心。改用 inset:0+margin:auto 不依赖 transform，
+   彻底避免该渲染 bug，且动画 keyframes 仅改 opacity 不影响位置。 */
+.toast{position:fixed;top:0;right:0;bottom:0;left:0;margin:auto;width:max-content;height:max-content;max-width:80vw;background:rgba(0,0,0,.75);color:#fff;padding:14px 28px;border-radius:8px;font-size:15px;z-index:9999;pointer-events:none;animation:toast-fade 2s forwards}
 @keyframes toast-fade{0%{opacity:1}70%{opacity:1}100%{opacity:0}}
 
 /* 时段筛选按钮 */
