@@ -69,7 +69,11 @@
 <div class="modal-overlay" id="cleanup-confirm-modal">
   <div class="modal-box">
     <h3>确认清除</h3>
-    <p style="font-size:14px;color:#666;margin-bottom:14px;text-align:center">将清除所选区域和时段的全部图片，不可恢复。确认清除？</p>
+    <!-- 【v1.26.16】确认文案分行显示，两行之间保持适当间距 -->
+    <div style="font-size:14px;color:#666;margin-bottom:14px;text-align:center;line-height:1.6">
+      <div>将清除所选区域和时段的所有图片及回收站</div>
+      <div style="margin-top:5px">不可恢复，确认清除？</div>
+    </div>
     <div class="cleanup-btns"><button class="cleanup-cancel" id="cleanup-confirm-cancel">取消</button><button class="cleanup-exec" id="cleanup-confirm-exec">确认清除</button></div>
   </div>
 </div>
