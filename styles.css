@@ -15,8 +15,11 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #app{max-width:480px;margin:0 auto;padding:0 10px 140px;min-height:calc(100vh - 50px);min-height:calc(100dvh - 50px)}
 
 /* 【修复文字消失】page-header 从 app 中移出，作为独立固定元素 */
-.page-header{display:flex;align-items:center;justify-content:center;padding:14px 10px 10px;gap:8px;flex-wrap:wrap;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:10}
+.page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 10px 10px;gap:8px;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:10}
 .page-title{font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:1px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;pointer-events:auto!important;position:relative;z-index:10}
+/* 【v1.27.0】标题栏两端对齐：左侧 LOGO+标题组 */
+.header-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
+.header-logo{width:40px;height:40px;flex-shrink:0;border:1px solid rgba(0,0,0,.15);border-radius:6px;object-fit:contain;display:block;background:#fff}
 .header-btn{padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;color:#fff;cursor:pointer;white-space:nowrap}
 .header-btn:active,.header-btn._pressing{opacity:.7}
 .btn-cleanup{background:#ff4d4f}
@@ -155,7 +158,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .android-device.theme-normal .seat-btn.long-name{font-size:9.5px}
 .android-device.theme-yiban .seat-btn.long-name{font-size:10.5px}
 .android-device.theme-pixel .seat-btn.long-name{font-size:8.5px}
-.add-seat-btn{width:calc(20% - 5px);height:44px;padding:0 8px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-grow:0}
+.add-seat-btn{width:calc(20% - 6px);height:44px;margin:0 3px;padding:0 8px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-grow:0}
 .add-seat-btn:active{background:#e6f7ff;border-color:#1890ff;color:#1890ff}
 
 .timeslot-container{display:none;width:100%;padding:8px 0}
@@ -398,6 +401,8 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
 .theme-normal .page-header{background:linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 100%);position:relative;z-index:10}
 .theme-normal .page-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#5B3A1A;letter-spacing:1.5px;text-shadow:0 1px 2px rgba(91,58,26,.08)}
 .theme-normal .page-title small{color:#9a8060!important}
+/* 【v1.27.0】LOGO 外框：护眼主题暖棕边框 */
+.theme-normal .header-logo{border:1px solid #a89070;background:rgba(255,252,245,.6);border-radius:8px}
 /* 菜单按钮：暖棕木牌 */
 .theme-normal .header-btn{background:#8B7355;border:1px solid rgba(139,115,85,.25);border-radius:8px;box-shadow:0 1px 3px rgba(139,115,85,.15)}
 .theme-normal .header-btn:active{opacity:.85;transform:scale(.97)}
@@ -537,6 +542,8 @@ html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 
 .theme-yiban .page-header{background:linear-gradient(170deg,#3c3c46 0%,#4a4540 100%);position:relative;z-index:10}
 .theme-yiban .page-title{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#00ffff;text-shadow:0 0 15px rgba(0,255,255,.5),0 0 5px rgba(0,255,255,.4);letter-spacing:2px;font-weight:700}
 .theme-yiban .page-title small{color:#e8820c!important;text-shadow:none}
+/* 【v1.27.0】LOGO 外框：蓝色主题霓虹边框 */
+.theme-yiban .header-logo{border:1px solid rgba(0,255,255,.4);background:rgba(45,45,52,.6);border-radius:4px;box-shadow:0 0 6px rgba(0,255,255,.2)}
 /* 菜单按钮：废土金属感 */
 .theme-yiban .header-btn{background:linear-gradient(135deg,#4a4540,#3c3c46);border:1px solid rgba(0,255,255,.4);border-radius:4px;box-shadow:0 0 6px rgba(0,255,255,.2);color:#00ffff}
 .theme-yiban .header-btn:active{box-shadow:0 0 12px rgba(0,255,255,.5);transform:scale(.97)}
@@ -683,6 +690,8 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .page-header{background:linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 100%);position:relative;z-index:10}
 .theme-pixel .page-title{font-family:'Courier New',monospace;color:#3e2b1f;letter-spacing:1px;font-weight:900;text-shadow:2px 2px 0 #e0d7c5}
 .theme-pixel .page-title small{color:#ffaa00!important}
+/* 【v1.27.0】LOGO 外框：怀旧主题像素描边 */
+.theme-pixel .header-logo{border:2px solid #5a3d2b;background:#c8a96e;border-radius:0;box-shadow:2px 2px 0 #2d2d2d}
 /* 菜单按钮：木板材质 + 像素描边 */
 .theme-pixel .header-btn{background:#c8a96e;border:4px solid #5a3d2b;border-radius:0;box-shadow:4px 4px 0 #2d2d2d;color:#4a3728;font-family:'Courier New',monospace;font-weight:700;transition:transform .08s,box-shadow .08s}
 .theme-pixel .header-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #2d2d2d}
