@@ -27,6 +27,14 @@ const ALLOWED_ORIGINS = new Set([
 const RATE_LIMIT_PER_MINUTE = 5;
 const RATE_LIMIT_PER_HOUR = 30;
 
+// 支持预览部署 URL：*.seat-def.pages.dev
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  if (/^https:\/\/[^/]+\.seat-def\.pages\.dev$/.test(origin)) return true;
+  return false;
+}
+
 function buildCorsHeaders(request) {
   const origin = request.headers.get('Origin');
   const headers = {
@@ -35,7 +43,7 @@ function buildCorsHeaders(request) {
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin'
   };
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
+  if (isAllowedOrigin(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
   }
   return headers;

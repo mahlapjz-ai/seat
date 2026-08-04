@@ -7,10 +7,18 @@ const ALLOWED_ORIGINS = new Set([
   'https://mahlapjz-ai.github.io'
 ]);
 
+// 支持预览部署 URL：*.seat-def.pages.dev
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  if (/^https:\/\/[^/]+\.seat-def\.pages\.dev$/.test(origin)) return true;
+  return false;
+}
+
 function buildCorsHeaders(request) {
   const origin = request.headers.get('Origin');
   const headers = { 'Content-Type': 'application/json', 'Vary': 'Origin' };
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
+  if (isAllowedOrigin(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
   }
   return headers;

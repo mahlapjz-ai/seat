@@ -26,6 +26,17 @@ const ALLOWED_ORIGINS = new Set([
 const RATE_LIMIT_PER_MINUTE = 5;
 const RATE_LIMIT_PER_HOUR = 30;
 
+// 判断 Origin 是否在白名单内
+//   - 精确匹配：seat-def.pages.dev / mahlapjz-ai.github.io
+//   - 通配匹配：*.seat-def.pages.dev（Cloudflare Pages 预览部署 URL，如 307823c4.seat-def.pages.dev）
+//     说明：seat-def.pages.dev 子域名全局唯一，仅项目 owner 可创建预览部署，安全可控
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  if (/^https:\/\/[^/]+\.seat-def\.pages\.dev$/.test(origin)) return true;
+  return false;
+}
+
 // 根据请求 Origin 构建 CORS 头（动态回显白名单内 Origin）
 function buildCorsHeaders(request) {
   const origin = request.headers.get('Origin');
@@ -35,7 +46,7 @@ function buildCorsHeaders(request) {
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin'
   };
-  if (origin && ALLOWED_ORIGINS.has(origin)) {
+  if (isAllowedOrigin(origin)) {
     headers['Access-Control-Allow-Origin'] = origin;
   }
   return headers;
