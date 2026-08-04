@@ -6,7 +6,7 @@
 //   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
 
 // 【v1.25.6】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
-const CACHE_NAME = 'seat-cache-v154';
+const CACHE_NAME = 'seat-cache-v155';
 
 // 【v1.25.9】友好离线页：当所有缓存回退均失败时返回，替代原裸露"离线"文本
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>离线</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;color:#333}.box{text-align:center;padding:32px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);max-width:80vw}h2{margin:0 0 8px;font-size:18px;color:#1890ff}p{margin:0;font-size:14px;color:#666;line-height:1.6}button{margin-top:16px;padding:8px 24px;background:#1890ff;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}button:active{opacity:.8}</style></head><body><div class="box"><h2>当前处于离线状态</h2><p>请检查网络连接后刷新页面</p><button onclick="location.reload()">重新加载</button></div></body></html>';
@@ -33,10 +33,20 @@ const CACHE_FIRST_URLS = [
 // ===== 安装事件 =====
 // 预缓存核心资源，不自动 skipWaiting（等用户确认更新提示后再激活）
 // 【v1.2.0 iOS兼容】添加 try-catch 防止 iOS 缓存失败导致 SW 安装中断
+// 【v1.28.8 P1修复】改用 fetch(cache:'no-cache') 逐个 put，替代 addAll
+//   原因：addAll 走默认缓存语义，可能拿到 CDN/浏览器 HTTP 缓存的旧版本，
+//   导致预缓存的资源是过期版本。逐个 fetch + put 可绕过 HTTP 缓存确保拿到最新版。
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE_ASSETS)).catch(err => {
-      console.warn('SW 预缓存失败（iOS 可能限制），继续安装:', err);
+    caches.open(CACHE_NAME).then(async c => {
+      await Promise.allSettled(PRECACHE_ASSETS.map(async url => {
+        try {
+          const resp = await fetch(url, { cache: 'no-cache' });
+          if (resp.ok) await c.put(url, resp);
+        } catch (err) {
+          console.warn('SW 预缓存失败:', url, err);
+        }
+      }));
     })
   );
 });
@@ -49,10 +59,20 @@ self.addEventListener('message', e => {
   }
   // 【v1.23.4】收到清理缓存指令：删除所有缓存并重新预缓存，完成后通知页面
   // 【v1.23.14】修复 Promise.all 写法：原写法 Promise.all(promise.then(arr)) 语义不清，改为标准链式
+  // 【v1.28.8 P1同步】改用 fetch(cache:'no-cache') 逐个 put，确保绕过 HTTP 缓存
   if (e.data && e.data.type === 'CLEAR_CACHE') {
     caches.keys()
       .then(keys => Promise.all(keys.map(k => caches.delete(k))))
-      .then(() => caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE_ASSETS)))
+      .then(() => caches.open(CACHE_NAME).then(async c => {
+        await Promise.allSettled(PRECACHE_ASSETS.map(async url => {
+          try {
+            const resp = await fetch(url, { cache: 'no-cache' });
+            if (resp.ok) await c.put(url, resp);
+          } catch (err) {
+            console.warn('SW 重新预缓存失败:', url, err);
+          }
+        }));
+      }))
       .then(() => {
         if (e.source) e.source.postMessage({ type: 'CACHE_CLEARED' });
       })
@@ -69,11 +89,19 @@ self.addEventListener('message', e => {
 //   导致用户看到左上角只有"离线"两个小字的页面。
 //   新顺序确保任意时刻至少有一份可用缓存（旧或新）。
 //   同时用 Promise.allSettled 替代 addAll：单个资源失败不导致整体回滚。
+//   【v1.28.8 P1同步】c.add 改为 fetch(cache:'no-cache')+put，绕过 HTTP 缓存
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(c =>
-      Promise.allSettled(PRECACHE_ASSETS.map(url => c.add(url)))
-    ).then(() =>
+    caches.open(CACHE_NAME).then(async c => {
+      await Promise.allSettled(PRECACHE_ASSETS.map(async url => {
+        try {
+          const resp = await fetch(url, { cache: 'no-cache' });
+          if (resp.ok) await c.put(url, resp);
+        } catch (err) {
+          console.warn('SW 激活时预缓存失败:', url, err);
+        }
+      }));
+    }).then(() =>
       caches.keys().then(keys =>
         Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : Promise.resolve()))
       )
@@ -111,7 +139,11 @@ self.addEventListener('fetch', e => {
   // --- index.html / styles.css / scripts.min.js / manifest.json：Network-First（网络优先）---
   // 每次打开都优先请求网络，确保拿到最新版；网络失败时才用缓存
   // 【v1.23.4】用 cache:'no-cache' 绕过浏览器 HTTP 缓存，避免拿到旧版本
-  if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html') || url.pathname === '/' || url.pathname.endsWith('/manifest.json') || url.pathname.endsWith('/styles.css') || url.pathname.endsWith('/scripts.min.js') || url.pathname.endsWith('/sw.js')) {
+  // 【v1.28.8 B1修复】从条件中移除 sw.js：SW 由浏览器独立管理，不需要 fetch 拦截
+  //   原逻辑会将 sw.js 纳入 Network-First，离线时回退到缓存的 index.html，
+  //   返回 Content-Type: text/html 但被浏览器当作 SW 解析，触发 MIME 类型错误，
+  //   导致 SW 注册失败、整个离线能力崩溃。
+  if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html') || url.pathname === '/' || url.pathname.endsWith('/manifest.json') || url.pathname.endsWith('/styles.css') || url.pathname.endsWith('/scripts.min.js')) {
     e.respondWith(
       fetch(e.request, { cache: 'no-cache' })
         .then(resp => {
