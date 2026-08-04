@@ -174,8 +174,8 @@ async function handleRequest(request, env) {
               model: modelName,
               messages: userMessages,
               temperature: 0.1,
-              // 【v1.28.8】提升到 2000：推理模型 reasoning_content 也消耗 tokens
-              max_tokens: 2000
+              // 【v1.28.8】提升到 1024：推理模型 reasoning_content 也消耗 tokens（上限 1024）
+              max_tokens: 1024
             })
           });
 

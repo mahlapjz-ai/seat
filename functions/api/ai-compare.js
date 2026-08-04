@@ -173,9 +173,10 @@ export async function onRequestPost(context) {
             model: modelName,
             messages: userMessages,
             temperature: 0.1,
-            // 【v1.28.8】提升到 2000：GLM-4.6V 是推理模型，reasoning_content 也消耗 tokens
+            // 【v1.28.8】提升到 1024：GLM-4.6V 是推理模型，reasoning_content 也消耗 tokens
             //   原 500 太小，思考过程未结束 tokens 就用光，导致实际 JSON 被截断解析失败
-            max_tokens: 2000
+            //   注意：glm-4.6v-flash 上限为 1024，超出会报 1210 错误
+            max_tokens: 1024
           })
         });
 
