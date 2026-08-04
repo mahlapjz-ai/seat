@@ -231,6 +231,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 /* 【v1.28.0】AI比对按钮：默认主题，渐变深色，区别于横拼/竖拼 */
 #concat-sheet .concat-btns-simple .concat-ai{background:linear-gradient(135deg,#52c41a,#389e0d);color:#fff}
 #concat-sheet .concat-btns-grid .concat-ai{background:linear-gradient(135deg,#52c41a,#389e0d);color:#fff}
+/* 【v1.28.1】AI比对按钮置灰状态（不使用disabled属性，以便点击触发提示） */
+#concat-sheet .concat-ai.ai-disabled{background:#ccc;color:#999;cursor:not-allowed}
 #concat-sheet .concat-grid{display:none;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 20px 8px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;touch-action:manipulation}
 #concat-sheet .concat-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#f5f5f5}
 #concat-sheet .concat-thumb.selected{border-color:#1890ff}
@@ -519,7 +521,7 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
 .theme-normal #concat-sheet .concat-ai{background:#5a8a5a;color:#fff;font-family:Georgia,'KaiTi','STKaiti',serif;border:1.5px solid #4a7a4a;border-radius:10px;box-shadow:0 2px 8px rgba(90,138,90,.2)}
 .theme-normal #concat-sheet .concat-ai:active{transform:scale(.98);box-shadow:0 1px 4px rgba(90,138,90,.2)}
 .theme-normal #concat-sheet .concat-h:disabled,.theme-normal #concat-sheet .concat-v:disabled{background:#c8bca8;color:#9a8a70;border-color:#b8a898;box-shadow:none;cursor:not-allowed}
-.theme-normal #concat-sheet button:disabled{background:#c8bca8;color:#9a8a70;border-color:#b8a898;box-shadow:none;cursor:not-allowed}
+.theme-normal #concat-sheet button:disabled,.theme-normal #concat-sheet .concat-ai.ai-disabled{background:#c8bca8;color:#9a8a70;border-color:#b8a898;box-shadow:none;cursor:not-allowed}
 .theme-normal #concat-sheet .concat-thumb{border-radius:8px;border-color:#d4c8b0;background:#f5f0e5}
 .theme-normal #concat-sheet .concat-thumb.selected{border-color:#6a9a4a}
 .theme-normal #concat-sheet .concat-thumb.selected .thumb-check{background:#6a9a4a}
@@ -662,7 +664,7 @@ html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 
 .theme-yiban #concat-sheet .concat-ai{background:#2d5a2d;color:#00ff88;font-family:'Segoe UI','Helvetica Neue',sans-serif;border:2px solid rgba(0,255,136,.5);border-radius:4px;box-shadow:0 0 8px rgba(0,255,136,.2),inset 0 0 20px rgba(0,0,0,.3);text-shadow:0 0 6px rgba(0,255,136,.3)}
 .theme-yiban #concat-sheet .concat-ai:active{transform:scale(.98);box-shadow:0 0 4px rgba(0,255,136,.3),inset 0 0 20px rgba(0,0,0,.3)}
 .theme-yiban #concat-sheet .concat-h:disabled,.theme-yiban #concat-sheet .concat-v:disabled{background:rgba(45,45,52,.8);color:#555;border-color:rgba(0,255,255,.1);box-shadow:none;text-shadow:none;cursor:not-allowed}
-.theme-yiban #concat-sheet button:disabled{background:rgba(45,45,52,.8);color:#555;border-color:rgba(0,255,255,.1);box-shadow:none;text-shadow:none;cursor:not-allowed}
+.theme-yiban #concat-sheet button:disabled,.theme-yiban #concat-sheet .concat-ai.ai-disabled{background:rgba(45,45,52,.8);color:#555;border-color:rgba(0,255,255,.1);box-shadow:none;text-shadow:none;cursor:not-allowed}
 .theme-yiban #concat-sheet .concat-thumb{border-radius:2px;border-color:rgba(0,255,255,.15);background:rgba(30,30,38,.9)}
 .theme-yiban #concat-sheet .concat-thumb.selected{border-color:#00ffff;box-shadow:0 0 6px rgba(0,255,255,.3)}
 .theme-yiban #concat-sheet .concat-thumb.selected .thumb-check{background:#00888a}
@@ -825,7 +827,7 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel #concat-sheet .concat-ai{background:#5a8a30;color:#e0f8d0;font-family:'Courier New',monospace;font-weight:700;border:3px solid #4a7a20;border-radius:0;box-shadow:3px 3px 0 #2d2d2d}
 .theme-pixel #concat-sheet .concat-ai:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #2d2d2d}
 .theme-pixel #concat-sheet .concat-h:disabled,.theme-pixel #concat-sheet .concat-v:disabled{background:#999;color:#666;border-color:#777;box-shadow:none;cursor:not-allowed}
-.theme-pixel #concat-sheet button:disabled{background:#999;color:#666;border-color:#777;box-shadow:none;cursor:not-allowed}
+.theme-pixel #concat-sheet button:disabled,.theme-pixel #concat-sheet .concat-ai.ai-disabled{background:#999;color:#666;border-color:#777;box-shadow:none;cursor:not-allowed}
 .theme-pixel #concat-sheet .concat-thumb{border-radius:0;border:2px solid #8b7355;background:#b89858}
 .theme-pixel #concat-sheet .concat-thumb.selected{border-color:#7ec850;box-shadow:2px 2px 0 #2d2d2d}
 .theme-pixel #concat-sheet .concat-thumb.selected .thumb-check{background:#7ec850}
