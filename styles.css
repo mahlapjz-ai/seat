@@ -230,7 +230,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #concat-sheet .concat-btns-simple .concat-v{background:#722ed1;color:#fff}
 /* 【v1.28.0】AI比对按钮：默认主题，渐变深色，区别于横拼/竖拼 */
 #concat-sheet .concat-btns-simple .concat-ai{background:linear-gradient(135deg,#52c41a,#389e0d);color:#fff}
-#concat-sheet .concat-btns-grid .concat-ai{background:linear-gradient(135deg,#52c41a,#389e0d);color:#fff;font-size:clamp(11px,3.5vw,14px)}
+#concat-sheet .concat-btns-grid .concat-ai{background:linear-gradient(135deg,#52c41a,#389e0d);color:#fff;font-size:clamp(10px,3vw,13px);white-space:nowrap;padding-left:8px;padding-right:8px}
 /* 【v1.28.1】AI比对按钮置灰状态（不使用disabled属性，以便点击触发提示） */
 #concat-sheet .concat-ai.ai-disabled{background:#ccc;color:#999;cursor:not-allowed}
 #concat-sheet .concat-grid{display:none;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 20px 8px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;touch-action:manipulation}
