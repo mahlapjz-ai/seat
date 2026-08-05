@@ -6,7 +6,8 @@
 //   外部 CDN（jszip）→ Network-First（网络优先，离线回退缓存）
 
 // 【v1.25.6】更新缓存版本号（每次发布新版本时必须递增，否则浏览器不会检测到 SW 更新）
-const CACHE_NAME = 'seat-cache-v155';
+// 【v1.28.10】第三批+第四批修复：SW 离线策略/并发锁/数据校验，递增 CACHE_NAME 触发更新
+const CACHE_NAME = 'seat-cache-v156';
 
 // 【v1.25.9】友好离线页：当所有缓存回退均失败时返回，替代原裸露"离线"文本
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>离线</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;color:#333}.box{text-align:center;padding:32px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);max-width:80vw}h2{margin:0 0 8px;font-size:18px;color:#1890ff}p{margin:0;font-size:14px;color:#666;line-height:1.6}button{margin-top:16px;padding:8px 24px;background:#1890ff;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}button:active{opacity:.8}</style></head><body><div class="box"><h2>当前处于离线状态</h2><p>请检查网络连接后刷新页面</p><button onclick="location.reload()">重新加载</button></div></body></html>';
@@ -60,26 +61,31 @@ self.addEventListener('message', e => {
   // 【v1.23.4】收到清理缓存指令：删除所有缓存并重新预缓存，完成后通知页面
   // 【v1.23.14】修复 Promise.all 写法：原写法 Promise.all(promise.then(arr)) 语义不清，改为标准链式
   // 【v1.28.8 P1同步】改用 fetch(cache:'no-cache') 逐个 put，确保绕过 HTTP 缓存
+  // 【v1.28.9 M3修复】用 e.waitUntil 包裹，防止 SW 在预缓存完成前被终止
+  //   原实现 message 事件无 waitUntil，9 个资源预缓存耗时较长时 SW 可能被浏览器杀掉
   if (e.data && e.data.type === 'CLEAR_CACHE') {
-    caches.keys()
-      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
-      .then(() => caches.open(CACHE_NAME).then(async c => {
-        await Promise.allSettled(PRECACHE_ASSETS.map(async url => {
-          try {
-            const resp = await fetch(url, { cache: 'no-cache' });
-            if (resp.ok) await c.put(url, resp);
-          } catch (err) {
-            console.warn('SW 重新预缓存失败:', url, err);
-          }
-        }));
-      }))
-      .then(() => {
-        if (e.source) e.source.postMessage({ type: 'CACHE_CLEARED' });
-      })
-      .catch(err => {
-        console.warn('SW 清理缓存失败:', err);
-        if (e.source) e.source.postMessage({ type: 'CACHE_CLEARED' });
-      });
+    e.waitUntil(
+      caches.keys()
+        .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+        .then(() => caches.open(CACHE_NAME).then(async c => {
+          await Promise.allSettled(PRECACHE_ASSETS.map(async url => {
+            try {
+              const resp = await fetch(url, { cache: 'no-cache' });
+              if (resp.ok) await c.put(url, resp);
+            } catch (err) {
+              console.warn('SW 重新预缓存失败:', url, err);
+            }
+          }));
+        }))
+        .then(() => {
+          if (e.source) e.source.postMessage({ type: 'CACHE_CLEARED' });
+        })
+        .catch(err => {
+          // 【v1.28.9】失败时发送不同的信号，前端可区分真实成功还是失败
+          console.warn('SW 清理缓存失败:', err);
+          if (e.source) e.source.postMessage({ type: 'CACHE_CLEAR_FAILED', error: String(err) });
+        })
+    );
   }
 });
 
@@ -131,7 +137,10 @@ self.addEventListener('fetch', e => {
           }
           return resp;
         })
-        .catch(() => caches.match(e.request))
+        // 【v1.28.9 M2修复】缓存未命中时返回 503，避免 respondWith 收到 undefined 报错
+        .catch(() => caches.match(e.request).then(cached =>
+          cached || new Response('', { status: 503 })
+        ))
     );
     return;
   }
@@ -160,13 +169,19 @@ self.addEventListener('fetch', e => {
           //   1. 精确匹配当前请求
           //   2. fallback 到缓存的 index.html 或 './'（保证至少有完整页面）
           //   3. 实在无缓存时返回友好离线页（带样式+重试按钮），而非裸露"离线"两字
-          return caches.match(e.request).then(cached =>
-            cached
-            || caches.match('./index.html')
-            || caches.match('./')
-            || caches.match(new Request(e.request.url, { mode: 'same-origin' }))
-            || new Response(OFFLINE_HTML, { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
-          );
+          // 【v1.28.9 M1修复】跨类型回退仅用于导航请求，子资源（css/js/json）回退到 HTML
+          //   会触发 MIME 类型不匹配错误，导致样式/脚本彻底加载失败，比直接 503 更糟
+          return caches.match(e.request).then(cached => {
+            if (cached) return cached;
+            // 仅导航请求（页面跳转）才回退到 index.html / 离线页
+            if (e.request.mode === 'navigate') {
+              return caches.match('./index.html')
+                || caches.match('./')
+                || new Response(OFFLINE_HTML, { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+            }
+            // 子资源（css/js/json）离线时返回 503，不跨类型回退
+            return new Response('', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+          });
         })
     );
     return;
@@ -178,6 +193,7 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       caches.match(e.request).then(cached => {
         if (cached) return cached;
+        // 【v1.28.9 M2修复】网络失败时返回 503，避免 respondWith 收到 rejected promise
         return fetch(e.request).then(resp => {
           // 【v1.23.9】先同步 clone，再异步 put
           if (resp.ok) {
@@ -185,7 +201,7 @@ self.addEventListener('fetch', e => {
             caches.open(CACHE_NAME).then(c => c.put(e.request, respClone));
           }
           return resp;
-        });
+        }).catch(() => new Response('', { status: 503 }));
       })
     );
     return;
@@ -205,7 +221,8 @@ self.addEventListener('fetch', e => {
             }
             return resp;
           })
-          .catch(() => cached);
+          // 【v1.28.9 M2修复】缓存未命中且网络失败时返回 503，避免返回 undefined
+          .catch(() => cached || new Response('', { status: 503 }));
         return cached || fetchPromise;
       })
     )
