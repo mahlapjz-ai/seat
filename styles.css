@@ -943,6 +943,22 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .ts-btn-restore{background:#c8a96e;border:2px solid #8b7355;border-radius:0;box-shadow:2px 2px 0 #2d2d2d}
 
 /* 【v1.26.1】回收站弹窗（时段恢复 + 浏览恢复 通用样式） */
+
+/* 【v1.28.13 A-02】全局键盘焦点可见样式，覆盖所有主题 */
+button:focus-visible,
+[role="button"]:focus-visible,
+[tabindex="0"]:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+/* 像素主题等特殊主题可覆盖颜色 */
+.theme-pixel button:focus-visible {
+  outline-color: #333;
+}
 .trash-browser-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center}
 .trash-browser-overlay.show{display:flex}
 .trash-browser-box{background:#fff;border-radius:12px;padding:20px 16px;width:92%;max-width:400px;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
