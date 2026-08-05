@@ -194,6 +194,10 @@ export async function onRequestPost(context) {
     //   - 数组长度上限，防止超长数组消耗上游配额
     //   - 单条 message 的 role/content 字段类型校验
     //   - content 字段长度上限，防止超大 base64 图片
+    // 【v1.28.11 修复】content 支持 string 和 array 两种类型
+    //   原校验写死 typeof content === 'string'，但智谱 GLM-4V 多模态格式要求 content 为数组：
+    //     content: [{ type:'text', text:'...' }, { type:'image_url', image_url:{ url:'...' } }]
+    //   原校验会拒绝合法多模态请求，导致 AI 比对 100% 失败。改为支持两种类型并分别校验结构。
     if (userMessages.length > MAX_MESSAGES_LENGTH) {
       return new Response(JSON.stringify({ error: { message: 'messages 数组过长' } }), {
         status: 400,
@@ -208,17 +212,83 @@ export async function onRequestPost(context) {
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
       }
-      if (typeof msg.role !== 'string' || typeof msg.content !== 'string') {
-        return new Response(JSON.stringify({ error: { message: `messages[${i}] 字段类型错误` } }), {
+      if (typeof msg.role !== 'string') {
+        return new Response(JSON.stringify({ error: { message: `messages[${i}] role 字段类型错误` } }), {
           status: 400,
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
       }
-      if (msg.content.length > MAX_MESSAGE_CONTENT_CHARS) {
-        return new Response(JSON.stringify({ error: { message: `messages[${i}] 内容过大` } }), {
-          status: 413,
+      // content 可为 string（纯文本）或 array（多模态，智谱 GLM-4V 格式）
+      if (typeof msg.content !== 'string' && !Array.isArray(msg.content)) {
+        return new Response(JSON.stringify({ error: { message: `messages[${i}] content 字段类型错误` } }), {
+          status: 400,
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
+      }
+      // 字符串型 content：直接校验长度
+      if (typeof msg.content === 'string') {
+        if (msg.content.length > MAX_MESSAGE_CONTENT_CHARS) {
+          return new Response(JSON.stringify({ error: { message: `messages[${i}] 内容过大` } }), {
+            status: 413,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        }
+        continue;
+      }
+      // 数组型 content（多模态）：逐项校验结构，防止注入非法字段
+      if (msg.content.length > MAX_MESSAGES_LENGTH) {
+        return new Response(JSON.stringify({ error: { message: `messages[${i}] content 数组过长` } }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+      for (let j = 0; j < msg.content.length; j++) {
+        const part = msg.content[j];
+        if (!part || typeof part !== 'object') {
+          return new Response(JSON.stringify({ error: { message: `messages[${i}].content[${j}] 格式错误` } }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        }
+        if (typeof part.type !== 'string') {
+          return new Response(JSON.stringify({ error: { message: `messages[${i}].content[${j}] 缺少 type 字段` } }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        }
+        if (part.type === 'text') {
+          if (typeof part.text !== 'string') {
+            return new Response(JSON.stringify({ error: { message: `messages[${i}].content[${j}] text 字段类型错误` } }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', ...corsHeaders }
+            });
+          }
+          if (part.text.length > MAX_MESSAGE_CONTENT_CHARS) {
+            return new Response(JSON.stringify({ error: { message: `messages[${i}].content[${j}] 文本过大` } }), {
+              status: 413,
+              headers: { 'Content-Type': 'application/json', ...corsHeaders }
+            });
+          }
+        } else if (part.type === 'image_url') {
+          if (!part.image_url || typeof part.image_url.url !== 'string') {
+            return new Response(JSON.stringify({ error: { message: `messages[${i}].content[${j}] image_url 格式错误` } }), {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', ...corsHeaders }
+            });
+          }
+          if (part.image_url.url.length > MAX_MESSAGE_CONTENT_CHARS) {
+            return new Response(JSON.stringify({ error: { message: `messages[${i}].content[${j}] 图片数据过大` } }), {
+              status: 413,
+              headers: { 'Content-Type': 'application/json', ...corsHeaders }
+            });
+          }
+        } else {
+          // 未知 type，拒绝以防注入（仅允许 text / image_url）
+          return new Response(JSON.stringify({ error: { message: `messages[${i}].content[${j}] 不支持的 type` } }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        }
       }
     }
 
