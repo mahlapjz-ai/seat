@@ -10,7 +10,15 @@
 // 【v1.28.12】H5 修复：9 个弹窗补 ARIA + 焦点管理（ESC/Tab 陷阱/焦点返回），递增 CACHE_NAME 触发更新
 // 【v1.28.13】第五批修复：键盘焦点样式/缩略图alt/SVG aria-hidden/record弹窗a11y/controllerchange叠加/AI结果XSS/删除弃用Worker
 // 【v1.28.14】AI比对分阶段进度提示，缓解等待焦虑
-const CACHE_NAME = 'seat-cache-v159';
+// 【v1.28.15】新增拍照提醒 + AI比对功能开关(AI_COMPARE_ENABLED=false)
+// 【v1.28.16】拍照提醒文字扫光动效 + 删除AI比对优化日志
+// 【v1.28.17】修复扫光动效(text-shadow覆盖根因)+photo-tip移至mode-hint同行+动画重启
+// 【v1.28.18】photo-tip移至设置按钮左侧+修复蓝色主题色块(background简写重置clip)+动画6s
+// 【v1.28.19】photo-tip与设置按钮底边对齐(header-right容器+align-items:flex-end)
+// 【v1.28.20】标题栏两行结构(header-top+header-bottom),photo-tip右边缘与设置按钮对齐
+// 【v1.28.21】回退标题栏至 v1.28.18 单行布局+最小改动：photo-tip 移入 header-bottom 与 mode-hint 同行
+// 【v1.28.22】修复 mode-hint 左边缘对齐：header-bottom padding-left 48px→0（已在 title-group 内 48px 处，避免重复计算）
+const CACHE_NAME = 'seat-cache-v167';
 
 // 【v1.25.9】友好离线页：当所有缓存回退均失败时返回，替代原裸露"离线"文本
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>离线</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;color:#333}.box{text-align:center;padding:32px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);max-width:80vw}h2{margin:0 0 8px;font-size:18px;color:#1890ff}p{margin:0;font-size:14px;color:#666;line-height:1.6}button{margin-top:16px;padding:8px 24px;background:#1890ff;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}button:active{opacity:.8}</style></head><body><div class="box"><h2>当前处于离线状态</h2><p>请检查网络连接后刷新页面</p><button onclick="location.reload()">重新加载</button></div></body></html>';
