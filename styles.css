@@ -15,7 +15,11 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #app{max-width:480px;margin:0 auto;padding:0 10px 140px;min-height:calc(100vh - 50px);min-height:calc(100dvh - 50px)}
 
 /* 【修复文字消失】page-header 从 app 中移出，作为独立固定元素 */
-.page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 10px 10px;gap:8px;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:10}
+.page-header{display:flex;flex-direction:column;padding:14px 10px 10px;gap:4px;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:10}
+/* 【v1.28.20】标题栏两行结构：第一行 LOGO+标题+设置，第二行 点击切换显示+拍照提醒 */
+.header-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+/* header-bottom padding-left:48px 对齐 LOGO 宽度(40px)+间距(8px)，使 mode-hint 左对齐标题文字 */
+.header-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-left:48px}
 .page-title{font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:1px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;pointer-events:auto!important;position:relative;z-index:10}
 /* 【v1.27.0】标题栏两端对齐：左侧 LOGO+标题组 */
 .header-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
@@ -25,11 +29,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .btn-cleanup{background:#ff4d4f}
 .btn-batch-dl{background:#722ed1}
 /* 【v1.28.18】拍照提醒：位于"设置"按钮左侧，扫光动效 6s */
-/* 【v1.28.19】photo-tip 与设置按钮底边对齐：放入 header-right 容器，align-items:flex-end */
-.header-right{display:flex;align-items:flex-end;gap:10px;flex-shrink:0}
+/* 【v1.28.20】photo-tip 移至 header-bottom 第二行右侧，右边缘与设置按钮对齐(space-between) */
 /* photo-tip 基础样式：不支持 background-clip:text 的浏览器降级为纯色文字 */
-/* padding-bottom 与设置按钮(8px)对齐，使文字视觉底边与按钮文字底边齐平 */
-.photo-tip{font-size:11px;color:#999;white-space:nowrap;flex-shrink:0;line-height:1.2;padding-bottom:8px}
+.photo-tip{font-size:11px;color:#999;white-space:nowrap;flex-shrink:0;line-height:1.2}
 .theme-yiban .photo-tip{color:#b0b0b0}
 /* 【v1.28.16→v1.28.17修复】扫光动效根因：原 text-shadow:0 0 0 #999 是无偏移无模糊硬阴影，
    绘制在 background-clip:text 的光剑之上，把光剑透明部分填成灰色，导致动效不可见。
