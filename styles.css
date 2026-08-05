@@ -16,9 +16,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 
 /* 【修复文字消失】page-header 从 app 中移出，作为独立固定元素 */
 .page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 10px 10px;gap:8px;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:10}
-/* 【v1.28.21】标题栏第二行：mode-hint + photo-tip，位于 title-group 内，左对齐标题文字 */
-/* padding-left:48px 对齐 LOGO 宽度(40px)+间距(8px)，使 mode-hint 左对齐标题文字 */
-.header-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-left:48px;margin-top:2px}
+/* 【v1.28.22】标题栏第二行：mode-hint + photo-tip，位于 title-group 内 */
+/* header-bottom 已在 title-group 内（LOGO 40px + gap 8px = 48px 处），padding-left:0 使 mode-hint 左边缘对齐标题文字 */
+.header-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-left:0;margin-top:2px}
 .page-title{font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:1px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;pointer-events:auto!important;position:relative;z-index:10}
 /* 【v1.27.0】标题栏两端对齐：左侧 LOGO+标题组 */
 .header-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
