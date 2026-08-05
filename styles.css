@@ -24,28 +24,30 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .header-btn:active,.header-btn._pressing{opacity:.7}
 .btn-cleanup{background:#ff4d4f}
 .btn-batch-dl{background:#722ed1}
-/* 【v1.28.15】拍照提醒：设置按钮左侧，仅在默认模式显示 */
-.photo-tip{font-size:11px;color:#999;white-space:nowrap;margin-right:10px;flex-shrink:0;line-height:1.4}
-/* 蓝色主题深色背景，提高对比度 */
+/* 【v1.28.17】拍照提醒：与"点击切换显示"同行，扫光动效 */
+/* mode-hint-row：把"点击切换显示"和"拍照请勿拍到人脸"放同一行，左对齐，不换行 */
+.mode-hint-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+/* photo-tip 基础样式：不支持 background-clip:text 的浏览器降级为纯色文字 */
+.photo-tip{font-size:11px;color:#999;white-space:nowrap;flex-shrink:0;line-height:1.2}
 .theme-yiban .photo-tip{color:#b0b0b0}
-/* 【v1.28.16】拍照提醒文字扫光动效：光剑从左到右循环流动，仅在文字轮廓内可见 */
-.photo-tip{
-  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.5) 50%,transparent 100%);
-  background-size:200% 100%;
-  background-position:200% 0;
-  background-clip:text;
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  color:transparent;
-  text-shadow:0 0 0 #999;
-  animation:photo-tip-scan 3s ease-in-out infinite
-}
-/* 兜底：动画未生效时仍可见文字（text-shadow 作为底层颜色） */
+/* 【v1.28.16→v1.28.17修复】扫光动效根因：原 text-shadow:0 0 0 #999 是无偏移无模糊硬阴影，
+   绘制在 background-clip:text 的光剑之上，把光剑透明部分填成灰色，导致动效不可见。
+   新方案：gradient 用"底色→高亮→底色"，文字始终可见，光剑流过时变亮，无需 text-shadow 兜底。
+   用 @supports 检测，不支持的浏览器保持纯色文字。 */
 @keyframes photo-tip-scan{0%{background-position:200% 0}100%{background-position:-200% 0}}
-/* 蓝色主题：霓虹青光剑 + 青色文字兜底 */
-.theme-yiban .photo-tip{
-  background:linear-gradient(90deg,transparent 0%,rgba(0,255,255,.5) 50%,transparent 100%);
-  text-shadow:0 0 0 #b0b0b0
+@supports ((background-clip:text) or (-webkit-background-clip:text)){
+  .photo-tip{
+    background:linear-gradient(90deg,#999 0%,rgba(255,255,255,.9) 50%,#999 100%);
+    background-size:200% 100%;
+    background-position:200% 0;
+    background-clip:text;
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    animation:photo-tip-scan 3s ease-in-out infinite
+  }
+  .theme-yiban .photo-tip{
+    background:linear-gradient(90deg,#b0b0b0 0%,rgba(0,255,255,.9) 50%,#b0b0b0 100%)
+  }
 }
 
 /* 【修改1】删除座位按钮受开关控制 */
