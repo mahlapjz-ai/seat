@@ -45,7 +45,7 @@
   <button class="bar-btn" id="btn-download-separate">下载</button>
   <button class="bar-btn" id="btn-download-concat">拼接预览</button>
 </div>
-<div id="preview-modal">
+<div id="preview-modal" role="dialog" aria-modal="true" aria-label="图片预览">
   <div id="preview-close">&times;</div>
   <div id="preview-scroller"></div>
   <div id="preview-indicator"></div>
@@ -54,27 +54,27 @@
   <!-- 【v1.28.0】AI比对结果展示区域：位于保存按钮上方，显示结论+可信度+提示 -->
   <div id="ai-compare-result"></div>
 </div>
-<div class="modal-overlay" id="batch-modal">
+<div class="modal-overlay" id="batch-modal" role="dialog" aria-modal="true" aria-labelledby="batch-modal-title">
   <div class="modal-box">
-    <h3>批量下载</h3>
+    <h3 id="batch-modal-title">批量下载</h3>
     <div class="batch-section"><h4>选择区域 <span class="batch-progress" id="batch-progress"></span> <button class="batch-select-all" data-target="area">全选/取消</button></h4><div class="batch-grid" id="batch-areas"></div></div>
     <div class="batch-section"><h4>选择时段 <button class="batch-select-all" data-target="time">全选/取消</button></h4><div class="batch-grid" id="batch-times"></div></div>
     <div class="modal-btns"><button class="modal-cancel" id="batch-cancel">取消</button><button class="modal-confirm" id="batch-exec">打包下载(ZIP)</button></div>
   </div>
 </div>
 <!-- 【v1.10.4 改造】清除图片：复用批量下载的modal-overlay+batch-chip样式 -->
-<div class="modal-overlay" id="cleanup-modal">
+<div class="modal-overlay" id="cleanup-modal" role="dialog" aria-modal="true" aria-labelledby="cleanup-modal-title">
   <div class="modal-box">
-    <h3>清除图片</h3>
+    <h3 id="cleanup-modal-title">清除图片</h3>
     <div class="batch-section"><h4>选择区域 <button class="batch-select-all" data-target="cleanup-area">全选/取消</button></h4><div class="batch-grid" id="cleanup-areas"></div></div>
     <div class="batch-section"><h4>选择时段 <button class="batch-select-all" data-target="cleanup-time">全选/取消</button></h4><div class="batch-grid" id="cleanup-times"></div></div>
     <div class="modal-btns"><button class="modal-cancel" id="cleanup-cancel">取消</button><button class="cleanup-exec" id="cleanup-exec" disabled>清除图片</button></div>
   </div>
 </div>
 <!-- 清除确认弹窗 -->
-<div class="modal-overlay" id="cleanup-confirm-modal">
+<div class="modal-overlay" id="cleanup-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="cleanup-confirm-title">
   <div class="modal-box">
-    <h3>确认清除</h3>
+    <h3 id="cleanup-confirm-title">确认清除</h3>
     <!-- 【v1.26.16】确认文案分行显示，两行之间保持适当间距 -->
     <div style="font-size:14px;color:#666;margin-bottom:14px;text-align:center;line-height:1.6">
       <div>将清除所选区域和时段的所有图片及回收站</div>
@@ -84,14 +84,14 @@
   </div>
 </div>
 <!-- 【v1.25.6】缩略图删除确认弹窗：复用 cleanup-btns 样式，与删除保护开关联动 -->
-<div class="modal-overlay" id="thumb-del-confirm-modal">
+<div class="modal-overlay" id="thumb-del-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="thumb-del-title">
   <div class="modal-box">
-    <h3>确定删除该图片吗？</h3>
+    <h3 id="thumb-del-title">确定删除该图片吗？</h3>
     <div class="cleanup-btns"><button class="cleanup-cancel" id="thumb-del-cancel">取消</button><button class="cleanup-exec" id="thumb-del-confirm">确定</button></div>
   </div>
 </div>
 <!-- 【v1.5.11 新增】清理进度 loading 弹窗 -->
-<div class="modal-overlay" id="cleanup-loading-modal" style="z-index:300">
+<div class="modal-overlay" id="cleanup-loading-modal" role="alertdialog" aria-modal="true" aria-label="正在处理" style="z-index:300">
   <div class="modal-box" style="text-align:center">
     <div class="cleanup-spinner"></div>
     <p id="cleanup-loading-text" style="font-size:15px;color:#333;margin-top:16px">正在清理图片...</p>
@@ -99,7 +99,7 @@
 </div>
 <!-- 【v1.1.1 改造】拼接选择改为底部滑出面板 -->
 <div id="concat-overlay"></div>
-<div id="concat-sheet">
+<div id="concat-sheet" role="dialog" aria-modal="true" aria-labelledby="concat-sheet-title">
   <div class="sheet-handle"></div>
   <div class="sheet-header"><span class="sheet-title" id="concat-sheet-title">选择拼接方式</span></div>
   <!-- 情况2：2~3张，只显示横拼/竖拼按钮 -->
@@ -119,8 +119,8 @@
   </div>
 </div>
 <div class="filter-sheet-overlay" id="filter-overlay"></div>
-<div class="filter-sheet" id="filter-sheet">
-  <div class="filter-sheet-header"><span class="filter-sheet-title">选择显示时段（打勾为显示时段）</span><button class="filter-sheet-close" id="filter-close">&times;</button></div>
+<div class="filter-sheet" id="filter-sheet" role="dialog" aria-modal="true" aria-labelledby="filter-sheet-title">
+  <div class="filter-sheet-header"><span class="filter-sheet-title" id="filter-sheet-title">选择显示时段（打勾为显示时段）</span><button class="filter-sheet-close" id="filter-close">&times;</button></div>
   <div class="filter-sheet-actions">
     <button class="filter-action-btn" id="filter-hide-passed">隐藏已过时段</button>
     <button class="filter-action-btn" id="filter-only-images">仅显示有图</button>
@@ -131,8 +131,8 @@
 </div>
 <!-- 【修改3】功能面板 -->
 <div class="func-panel-overlay" id="func-panel-overlay"></div>
-<div class="func-panel" id="func-panel">
-  <div class="func-panel-header"><span class="func-panel-title">设置</span><button class="func-panel-close" id="func-panel-close">&times;</button></div>
+<div class="func-panel" id="func-panel" role="dialog" aria-modal="true" aria-labelledby="func-panel-title">
+  <div class="func-panel-header"><span class="func-panel-title" id="func-panel-title">设置</span><button class="func-panel-close" id="func-panel-close">&times;</button></div>
   <div class="func-panel-body" id="func-panel-body"></div>
 </div>
 <!-- 拆分自原单文件 - 外部脚本 -->
