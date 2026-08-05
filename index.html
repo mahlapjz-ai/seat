@@ -16,7 +16,11 @@
 <link rel="apple-touch-icon" href="seat-icon.png">
 <title>座位图片管理</title>
 <!-- 【v1.25.7】jszip 加 defer 避免阻塞渲染：JSZip 仅在打包下载时使用，无需阻塞首屏 -->
-<script defer src="https://cdn.jsdelivr.net/npm/jszip@3/dist/jszip.min.js"></script>
+<!-- 【v1.28.9 H3修复】锁定版本+加 SRI 完整性校验，防止 CDN 被劫持注入恶意脚本 -->
+<!--   原引用 jszip@3/dist/jszip.min.js 未固定 patch 版本且无 integrity，CDN 被篡改时无防护 -->
+<script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"
+        integrity="sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG"
+        crossorigin="anonymous"></script>
 <!-- 拆分自原单文件 - 外部样式 -->
 <link rel="stylesheet" href="styles.css">
 </head>
