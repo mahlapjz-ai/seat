@@ -24,16 +24,17 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .header-btn:active,.header-btn._pressing{opacity:.7}
 .btn-cleanup{background:#ff4d4f}
 .btn-batch-dl{background:#722ed1}
-/* 【v1.28.17】拍照提醒：与"点击切换显示"同行，扫光动效 */
-/* mode-hint-row：把"点击切换显示"和"拍照请勿拍到人脸"放同一行，左对齐，不换行 */
-.mode-hint-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+/* 【v1.28.18】拍照提醒：位于"设置"按钮左侧，扫光动效 6s */
 /* photo-tip 基础样式：不支持 background-clip:text 的浏览器降级为纯色文字 */
-.photo-tip{font-size:11px;color:#999;white-space:nowrap;flex-shrink:0;line-height:1.2}
+.photo-tip{font-size:11px;color:#999;white-space:nowrap;flex-shrink:0;line-height:1.2;margin-right:10px}
 .theme-yiban .photo-tip{color:#b0b0b0}
 /* 【v1.28.16→v1.28.17修复】扫光动效根因：原 text-shadow:0 0 0 #999 是无偏移无模糊硬阴影，
    绘制在 background-clip:text 的光剑之上，把光剑透明部分填成灰色，导致动效不可见。
    新方案：gradient 用"底色→高亮→底色"，文字始终可见，光剑流过时变亮，无需 text-shadow 兜底。
    用 @supports 检测，不支持的浏览器保持纯色文字。 */
+/* 【v1.28.18修复】蓝色主题色块根因：.theme-yiban .photo-tip 原用 background 简写覆盖渐变，
+   background 简写会重置 background-clip 为默认值 border-box，导致渐变变成整个元素背景色块。
+   改用 background-image 只覆盖渐变图，保留 background-clip:text 不被重置。 */
 @keyframes photo-tip-scan{0%{background-position:200% 0}100%{background-position:-200% 0}}
 @supports ((background-clip:text) or (-webkit-background-clip:text)){
   .photo-tip{
@@ -43,10 +44,10 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
     background-clip:text;
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
-    animation:photo-tip-scan 3s ease-in-out infinite
+    animation:photo-tip-scan 6s ease-in-out infinite
   }
   .theme-yiban .photo-tip{
-    background:linear-gradient(90deg,#b0b0b0 0%,rgba(0,255,255,.9) 50%,#b0b0b0 100%)
+    background-image:linear-gradient(90deg,#b0b0b0 0%,rgba(0,255,255,.9) 50%,#b0b0b0 100%)
   }
 }
 
