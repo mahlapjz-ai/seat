@@ -25,8 +25,11 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .btn-cleanup{background:#ff4d4f}
 .btn-batch-dl{background:#722ed1}
 /* 【v1.28.18】拍照提醒：位于"设置"按钮左侧，扫光动效 6s */
+/* 【v1.28.19】photo-tip 与设置按钮底边对齐：放入 header-right 容器，align-items:flex-end */
+.header-right{display:flex;align-items:flex-end;gap:10px;flex-shrink:0}
 /* photo-tip 基础样式：不支持 background-clip:text 的浏览器降级为纯色文字 */
-.photo-tip{font-size:11px;color:#999;white-space:nowrap;flex-shrink:0;line-height:1.2;margin-right:10px}
+/* padding-bottom 与设置按钮(8px)对齐，使文字视觉底边与按钮文字底边齐平 */
+.photo-tip{font-size:11px;color:#999;white-space:nowrap;flex-shrink:0;line-height:1.2;padding-bottom:8px}
 .theme-yiban .photo-tip{color:#b0b0b0}
 /* 【v1.28.16→v1.28.17修复】扫光动效根因：原 text-shadow:0 0 0 #999 是无偏移无模糊硬阴影，
    绘制在 background-clip:text 的光剑之上，把光剑透明部分填成灰色，导致动效不可见。
