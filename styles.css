@@ -28,6 +28,25 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .photo-tip{font-size:11px;color:#999;white-space:nowrap;margin-right:10px;flex-shrink:0;line-height:1.4}
 /* 蓝色主题深色背景，提高对比度 */
 .theme-yiban .photo-tip{color:#b0b0b0}
+/* 【v1.28.16】拍照提醒文字扫光动效：光剑从左到右循环流动，仅在文字轮廓内可见 */
+.photo-tip{
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.5) 50%,transparent 100%);
+  background-size:200% 100%;
+  background-position:200% 0;
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  color:transparent;
+  text-shadow:0 0 0 #999;
+  animation:photo-tip-scan 3s ease-in-out infinite
+}
+/* 兜底：动画未生效时仍可见文字（text-shadow 作为底层颜色） */
+@keyframes photo-tip-scan{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* 蓝色主题：霓虹青光剑 + 青色文字兜底 */
+.theme-yiban .photo-tip{
+  background:linear-gradient(90deg,transparent 0%,rgba(0,255,255,.5) 50%,transparent 100%);
+  text-shadow:0 0 0 #b0b0b0
+}
 
 /* 【修改1】删除座位按钮受开关控制 */
 .btn-delete-seat{padding:4px 12px;font-size:12px;font-weight:600;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;cursor:pointer;margin-left:auto;display:none}
