@@ -24,6 +24,10 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .header-btn:active,.header-btn._pressing{opacity:.7}
 .btn-cleanup{background:#ff4d4f}
 .btn-batch-dl{background:#722ed1}
+/* 【v1.28.15】拍照提醒：设置按钮左侧，仅在默认模式显示 */
+.photo-tip{font-size:11px;color:#999;white-space:nowrap;margin-right:10px;flex-shrink:0;line-height:1.4}
+/* 蓝色主题深色背景，提高对比度 */
+.theme-yiban .photo-tip{color:#b0b0b0}
 
 /* 【修改1】删除座位按钮受开关控制 */
 .btn-delete-seat{padding:4px 12px;font-size:12px;font-weight:600;border:1px solid #ff4d4f;border-radius:4px;background:#fff;color:#ff4d4f;cursor:pointer;margin-left:auto;display:none}
