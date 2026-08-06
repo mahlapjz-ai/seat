@@ -18,7 +18,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 10px 10px;gap:8px;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:10}
 /* 【v1.28.22】标题栏第二行：mode-hint + photo-tip，位于 title-group 内 */
 /* header-bottom 已在 title-group 内（LOGO 40px + gap 8px = 48px 处），padding-left:0 使 mode-hint 左边缘对齐标题文字 */
-.header-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-left:0;margin-top:2px}
+/* 【v1.28.23】align-self:stretch 让 header-bottom 宽度拉伸到 title-group(=page-title 标题+版本号)宽度，
+   使 photo-tip 右边缘对齐版本号右边缘，自适应版本号宽度变化 */
+.header-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-left:0;margin-top:2px;align-self:stretch}
 .page-title{font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:1px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;pointer-events:auto!important;position:relative;z-index:10}
 /* 【v1.27.0】标题栏两端对齐：左侧 LOGO+标题组 */
 .header-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
@@ -41,12 +43,13 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 /* 【v1.28.18修复】蓝色主题色块根因：.theme-yiban .photo-tip 原用 background 简写覆盖渐变，
    background 简写会重置 background-clip 为默认值 border-box，导致渐变变成整个元素背景色块。
    改用 background-image 只覆盖渐变图，保留 background-clip:text 不被重置。 */
-@keyframes photo-tip-scan{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* 【v1.28.23】扫光动画修复：background-position 200%→100%、-200%→-100%，总移动 200%，6s 只扫一次 */
+@keyframes photo-tip-scan{0%{background-position:100% 0}100%{background-position:-100% 0}}
 @supports ((background-clip:text) or (-webkit-background-clip:text)){
   .photo-tip{
     background:linear-gradient(90deg,#999 0%,rgba(255,255,255,.9) 50%,#999 100%);
     background-size:200% 100%;
-    background-position:200% 0;
+    background-position:100% 0;
     background-clip:text;
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
