@@ -234,7 +234,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .bar-btn{padding:12px 8px;font-size:13px;font-weight:600;border:none;border-radius:8px;cursor:pointer;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .app-footer{text-align:center;padding:12px 0 16px;max-width:480px;margin:0 auto}
 .app-footer .footer-title{font-size:12px;color:#999;font-weight:700;text-align:left;margin-bottom:4px;padding-left:16px}
-.app-footer .footer-collapsible{font-size:12px;color:#999;font-weight:700;text-align:left;margin-bottom:4px;padding-left:16px;cursor:pointer;min-height:44px;display:flex;align-items:center;-webkit-user-select:none;user-select:none}
+.app-footer .footer-collapsible{font-size:12px;color:#999;font-weight:700;text-align:left;margin-bottom:4px;padding:14px 16px 2px;cursor:pointer;display:flex;align-items:center;-webkit-user-select:none;user-select:none}
 .app-footer .footer-collapsible-body{font-size:10px;color:#999;line-height:1.5;text-align:left;padding:0 16px;margin-bottom:6px;overflow:hidden;position:relative}
 .app-footer .footer-collapsible-body.collapsed{max-height:3em}
 .app-footer .footer-collapsible-body.collapsed::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1.5em;background:linear-gradient(transparent,var(--footer-fade-color,#f0f2f5));pointer-events:none}
