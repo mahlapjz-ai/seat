@@ -9,6 +9,9 @@ scripts.js
 _check_lines.ps1
 _extract.ps1
 
+# 自测脚本（本地验证用，不上传仓库）
+_test_*.js
+
 # 测试依赖（本地 puppeteer-core，不上传）
 node_modules/
 package.json
