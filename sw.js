@@ -23,7 +23,8 @@
 // 【v1.28.25】修复 min.js 中 APP_VERSION 内联引用未同步(标题栏显示v1.28.20的根因)
 // 【v1.28.26】全屏预览 Blob URL 失效回退 IndexedDB Base64（修复微信内置浏览器破损图片）
 // 【v1.29.0】第二种显示模式：修复筛选后座位列表未刷新 + 新增楼层时段文字
-const CACHE_NAME = 'seat-cache-v172';
+// 【v1.29.1】修复叠加筛选手动勾选时段异常 + 多图模式补充筛选命中图标
+const CACHE_NAME = 'seat-cache-v173';
 
 // 【v1.25.9】友好离线页：当所有缓存回退均失败时返回，替代原裸露"离线"文本
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>离线</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;color:#333}.box{text-align:center;padding:32px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);max-width:80vw}h2{margin:0 0 8px;font-size:18px;color:#1890ff}p{margin:0;font-size:14px;color:#666;line-height:1.6}button{margin-top:16px;padding:8px 24px;background:#1890ff;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}button:active{opacity:.8}</style></head><body><div class="box"><h2>当前处于离线状态</h2><p>请检查网络连接后刷新页面</p><button onclick="location.reload()">重新加载</button></div></body></html>';
