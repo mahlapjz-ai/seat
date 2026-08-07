@@ -959,7 +959,18 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .multi-floor-block .multi-area-name{color:#5a3d2b;font-family:'Courier New',monospace}
 
 /* 多图模式楼层名 */
-.multi-floor-name{font-size:16px;font-weight:700;margin-bottom:6px;color:#333}
+/* 【v1.29.0】新增 multi-floor-header：楼层名+时段文字同一行，时段文字可横向滑动 */
+.multi-floor-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.multi-floor-name{font-size:16px;font-weight:700;color:#333;flex-shrink:0}
+.multi-floor-slots{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;font-size:12px;color:rgba(153,153,153,.85);line-height:1.4;-webkit-overflow-scrolling:touch}
+/* 默认主题(彩色楼层)：时段文字用半透明白色 */
+.multi-floor-block.floor-1 .multi-floor-slots,.multi-floor-block.floor-2 .multi-floor-slots,.multi-floor-block.floor-3 .multi-floor-slots,.multi-floor-block.floor-4 .multi-floor-slots,.multi-floor-block.floor-5 .multi-floor-slots{color:rgba(255,255,255,.75)}
+/* 护眼主题：时段文字淡棕 */
+.theme-normal .multi-floor-block .multi-floor-slots{color:rgba(91,58,26,.6)}
+/* 蓝色主题：时段文字淡青 */
+.theme-yiban .multi-floor-block .multi-floor-slots{color:rgba(0,204,204,.65)}
+/* 怀旧主题：时段文字棕灰 */
+.theme-pixel .multi-floor-block .multi-floor-slots{color:rgba(90,61,43,.7);font-family:'Courier New',monospace}
 
 /* 多图模式区域名 - 紧凑间距 */
 .multi-area-name{font-size:14px;font-weight:600;margin:4px 0 0;color:#666}
