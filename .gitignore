@@ -8,3 +8,8 @@ scripts.js
 .trae/
 _check_lines.ps1
 _extract.ps1
+
+# 测试依赖（本地 puppeteer-core，不上传）
+node_modules/
+package.json
+package-lock.json
