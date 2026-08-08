@@ -427,20 +427,20 @@ async function opBatchDownload(page) {
     const exec = document.getElementById('batch-exec');
     if (exec && !exec.disabled) exec.click();
   });
-  // 等待打包完成：精确检测最终 toast "下载完成"（最终完成提示，唯一文本）
-  // 【修正】原逻辑用 "下载"/"打包" 等宽泛关键词，会误匹配 showPersistentToast("正在处理...下载框...")
-  //   导致提前误判；同时 30 秒超时过高，实际 32 张图打包约 1-3 秒。
-  //   改为：精确匹配 "下载完成" 或 "无图片" 或 "失败"，超时降至 15 秒，轮询 200ms。
+  // 等待打包完成：精确检测最终完成 toast
+  // 【v1.30.1 修正】batch-exec 完成后 toast 是 "已提交下载：XXX"（非 "下载完成"）
+  //   原 "下载完成" 检测永远不匹配，导致每轮等待满超时（18s 虚高数据）。
+  //   改为匹配实际完成文案："已提交下载" / "无图片" / "图片数量超出" / "请选择"
   for (let i = 0; i < 75; i++) {
     await sleep(200);
     const done = await page.evaluate(() => {
       const toast = document.querySelector('.toast');
       const toastText = toast ? toast.textContent : '';
-      // 仅匹配最终完成提示，避免误匹配 "正在处理...下载框..."
-      const isDone = toastText.includes('下载完成') ||
-                     toastText.includes('无图片') ||
-                     toastText.includes('打包失败') ||
-                     toastText.includes('下载失败');
+      // 匹配 batch-exec 处理函数的最终 toast（L4538-4544）
+      const isDone = toastText.includes('已提交下载') ||
+                     toastText.includes('无图片可下载') ||
+                     toastText.includes('图片数量超出') ||
+                     toastText.includes('请选择区域和时段');
       return isDone;
     });
     if (done) break;
