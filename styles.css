@@ -618,7 +618,7 @@ html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 
 .theme-yiban .area-btn.has-images.expanded{border-color:#00ffff;background:linear-gradient(135deg,rgba(0,80,80,.35),rgba(55,55,62,.88));color:#00ffff}
 /* 【v1.12.1】记录完成时间按钮：霓虹橙胶囊 */
 .theme-yiban .record-time-btn{font-family:'Segoe UI','Helvetica Neue',sans-serif;background:rgba(55,55,62,.88);border:1px solid rgba(232,130,12,.5);color:#e8820c;box-shadow:0 0 4px rgba(232,130,12,.15),inset 0 1px 3px rgba(0,0,0,.3);border-radius:20px}
-.theme-yiban .record-time-btn:active,.theme-yiban .record-time-btn._pressing{transform:scale(.95);border-color:#00ffff;box-shadow:0 0 8px rgba(0,255,255,.25),inset 0 1px 3px rgba(0,0,0,.3)}
+.theme-yiban .record-time-btn:active,.theme-yiban .record-time-btn._pressing{transform:translateX(-50%) scale(.95);border-color:#00ffff;box-shadow:0 0 8px rgba(0,255,255,.25),inset 0 1px 3px rgba(0,0,0,.3)}
 /* 【v1.11.0】楼层卡片完成时间：霓虹青文字 */
 .theme-yiban .floor-completion{color:rgba(0,255,255,.7);text-shadow:0 0 4px rgba(0,255,255,.2)}
 .theme-yiban .floor-completion.fixed{color:#e8820c;text-shadow:0 0 6px rgba(232,130,12,.3)}
