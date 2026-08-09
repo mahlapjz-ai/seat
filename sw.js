@@ -30,7 +30,8 @@
 // 【v1.32.0】引入 cellKey 互斥锁解决 read-modify-write 竞态家族，递增 CACHE_NAME 触发更新
 // 【v1.32.1】错误处理契约修复（统一 QuotaExceededError/乐观更新回滚/重置代际取消机制），递增 CACHE_NAME 触发更新
 // 【v1.32.2】中低优先级代码异味清理（doProcess createdAt 定位/cleanup 隔离/trashClearAll 错误日志/Promise.all .catch/safeRevokeURL/safeDataURLtoBlob），递增 CACHE_NAME 触发更新
-const CACHE_NAME = 'seat-cache-v184';
+// 【v1.32.3】阶段2图片管线去重（stripExifViaCanvas/scheduleBackgroundTask/markImageFailedAndRetry/rollbackOptimisticUpdate/handleCaptureUploadError/commitProcessedUpload/commitRetrySuccess），递增 CACHE_NAME 触发更新
+const CACHE_NAME = 'seat-cache-v185';
 
 // 【v1.25.9】友好离线页：当所有缓存回退均失败时返回，替代原裸露"离线"文本
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>离线</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;color:#333}.box{text-align:center;padding:32px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);max-width:80vw}h2{margin:0 0 8px;font-size:18px;color:#1890ff}p{margin:0;font-size:14px;color:#666;line-height:1.6}button{margin-top:16px;padding:8px 24px;background:#1890ff;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}button:active{opacity:.8}</style></head><body><div class="box"><h2>当前处于离线状态</h2><p>请检查网络连接后刷新页面</p><button onclick="location.reload()">重新加载</button></div></body></html>';
