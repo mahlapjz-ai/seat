@@ -1,4 +1,30 @@
 /* 拆分自原单文件 index.html - 样式部分 */
+/* 【v1.32.4】z-index 集中管理：所有层级通过 CSS 变量统一维护，避免硬编码散落 */
+:root{
+  --z-bg-decor:0;            /* #app::before 装饰背景 */
+  --z-app:1;                  /* #app 主容器 */
+  --z-picker-highlight:1;     /* picker 高亮条 */
+  --z-thumb-del-before:-1;    /* 缩略图删除按钮 ::before 背景 */
+  --z-thumb-del:2;            /* 缩略图删除按钮 */
+  --z-thumb-expand:2;         /* 缩略图展开按钮（拼接预览/回收站） */
+  --z-record-btn:2;           /* 录时按钮 */
+  --z-picker-label:2;         /* picker 列标签 */
+  --z-seat-icon:5;            /* 座位状态图标 */
+  --z-page-header:10;         /* 页头 */
+  --z-bottom-bar:100;         /* 底部栏 */
+  --z-area-dragging:100;      /* 区域按钮拖拽 */
+  --z-modal-overlay:250;      /* 通用模态遮罩 */
+  --z-panel-overlay:260;      /* 抽屉遮罩（功能面板/拼接/筛选） */
+  --z-panel:261;              /* 抽屉本体 */
+  --z-trash-browser:300;      /* 回收站浏览器遮罩 */
+  --z-preview-floating:301;   /* 预览浮层（保存按钮/指示器/AI比对结果） */
+  --z-preview-modal:400;      /* 全屏预览 */
+  --z-preview-close:401;      /* 预览关闭按钮 */
+  --z-skeleton:500;           /* 骨架屏 */
+  --z-update-bar:9999;        /* 更新提示条 */
+  --z-toast:9999;             /* 全局轻提示 */
+  --z-loading:10000;          /* 全局加载遮罩 */
+}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;font-size:15px;color:#333;background:#f0f2f5;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 /* 【v1.2.0 iOS兼容】所有可点击元素统一 cursor:pointer，iOS 不做悬停效果 */
@@ -15,13 +41,13 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #app{max-width:480px;margin:0 auto;padding:0 10px 140px;min-height:calc(100vh - 50px);min-height:calc(100dvh - 50px)}
 
 /* 【修复文字消失】page-header 从 app 中移出，作为独立固定元素 */
-.page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 10px 10px;gap:8px;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:10}
+.page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 10px 10px;gap:8px;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:var(--z-page-header)}
 /* 【v1.28.22】标题栏第二行：mode-hint + photo-tip，位于 title-group 内 */
 /* header-bottom 已在 title-group 内（LOGO 40px + gap 8px = 48px 处），padding-left:0 使 mode-hint 左边缘对齐标题文字 */
 /* 【v1.28.23】align-self:stretch 让 header-bottom 宽度拉伸到 title-group(=page-title 标题+版本号)宽度，
    使 photo-tip 右边缘对齐版本号右边缘，自适应版本号宽度变化 */
 .header-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-left:0;margin-top:2px;align-self:stretch}
-.page-title{font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:1px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;pointer-events:auto!important;position:relative;z-index:10}
+.page-title{font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:1px;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;pointer-events:auto!important;position:relative;z-index:var(--z-page-header)}
 /* 【v1.27.0】标题栏两端对齐：左侧 LOGO+标题组 */
 .header-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
 .header-logo{width:40px;height:40px;flex-shrink:0;border:1px solid rgba(0,0,0,.15);border-radius:6px;object-fit:contain;display:block;background:#fff}
@@ -66,7 +92,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .btn-delete-seat:active,.btn-delete-seat._pressing{background:#fff1f0}
 
 /* 【v1.5.7】新版本更新提示条：滑入动画 + 不遮挡标题栏 */
-.update-bar{position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#1890ff,#096dd9);color:#fff;text-align:center;padding:12px 16px;font-size:14px;font-weight:500;cursor:pointer;box-shadow:0 2px 8px rgba(24,144,255,.4);transform:translateY(-100%);transition:transform .3s ease}
+.update-bar{position:fixed;top:0;left:0;right:0;z-index:var(--z-update-bar);background:linear-gradient(135deg,#1890ff,#096dd9);color:#fff;text-align:center;padding:12px 16px;font-size:14px;font-weight:500;cursor:pointer;box-shadow:0 2px 8px rgba(24,144,255,.4);transform:translateY(-100%);transition:transform .3s ease}
 .update-bar.show{transform:translateY(0)}
 .update-bar:active,.update-bar._pressing{opacity:.85}
 /* 提示条显示时下推标题栏，避免遮挡 */
@@ -74,10 +100,10 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .update-bar.show+.page-header{margin-top:44px}
 
 /* 【修改3】功能面板 */
-.func-panel-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:260}
+.func-panel-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:var(--z-panel-overlay)}
 .func-panel-overlay.show{display:block}
 /* 【v1.3.9 修复2+3】菜单面板：固定最大高度70vh，内部可滚动，阻止背景滑动穿透 */
-.func-panel{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:261;transform:translateY(100%);transition:transform .3s ease;max-width:480px;margin:0 auto;max-height:70vh;display:flex;flex-direction:column;padding-bottom:constant(safe-area-inset-bottom);padding-bottom:env(safe-area-inset-bottom)}
+.func-panel{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:var(--z-panel);transform:translateY(100%);transition:transform .3s ease;max-width:480px;margin:0 auto;max-height:70vh;display:flex;flex-direction:column;padding-bottom:constant(safe-area-inset-bottom);padding-bottom:env(safe-area-inset-bottom)}
 .func-panel.show{transform:translateY(0)}
 .func-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #f0f0f0;flex-shrink:0}
 .func-panel-title{font-size:17px;font-weight:700;color:#1a1a1a}
@@ -98,7 +124,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .func-toggle.on::after{transform:translateX(20px)}
 
 /* 【修改4】预览保存按钮淡出 */
-#preview-save-btn{position:absolute;bottom:calc(50px + constant(safe-area-inset-bottom));bottom:calc(50px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);padding:10px 28px;font-size:14px;font-weight:600;border:none;border-radius:8px;background:rgba(24,144,255,.9);color:#fff;cursor:pointer;z-index:301;box-shadow:0 2px 12px rgba(24,144,255,.4);transition:opacity .5s ease}
+#preview-save-btn{position:absolute;bottom:calc(50px + constant(safe-area-inset-bottom));bottom:calc(50px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);padding:10px 28px;font-size:14px;font-weight:600;border:none;border-radius:8px;background:rgba(24,144,255,.9);color:#fff;cursor:pointer;z-index:var(--z-preview-floating);box-shadow:0 2px 12px rgba(24,144,255,.4);transition:opacity .5s ease}
 #preview-save-btn:active{opacity:.8}
 #preview-save-btn.faded{opacity:.1}
 
@@ -129,7 +155,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .area-btn .area-stats .as-right{white-space:nowrap}
 .area-btn.expanded .arrow{transform:rotate(180deg)}
 /* 【v1.17.2】区域按钮拖动调序 */
-.area-btn._dragging{box-shadow:0 8px 24px rgba(0,0,0,.25);transform:scale(1.05);z-index:100;opacity:.85;transition:box-shadow .15s,opacity .15s}
+.area-btn._dragging{box-shadow:0 8px 24px rgba(0,0,0,.25);transform:scale(1.05);z-index:var(--z-area-dragging);opacity:.85;transition:box-shadow .15s,opacity .15s}
 .area-btn._drag-placeholder{visibility:hidden;border:2px dashed #722ed1;opacity:.3}
 .area-btn._drag-target{border-color:#722ed1;border-style:dashed}
 ._drag-placeholder-wrap{visibility:hidden;border:2px dashed #722ed1;opacity:.3;border-radius:8px;box-sizing:border-box;width:calc(33.33% - 4px);flex-shrink:0}
@@ -138,7 +164,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .area-btn.has-images{border:2px solid #52c41a;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
 .area-btn.has-images.expanded{border-color:#ff4d4f;background:linear-gradient(135deg,#f6ffed,#d9f7be);color:#389e0d}
 /* 【v1.12.1】记录完成时间按钮：圆角胶囊形 */
-.record-time-btn{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:4px 10px;margin:0;font-size:11px;font-weight:500;border:1.5px solid #d9d9d9;border-radius:20px;background:#f5f5f5;color:#666;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s;-webkit-user-select:none;user-select:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:4px;z-index:2}
+.record-time-btn{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:36px;padding:4px 10px;margin:0;font-size:11px;font-weight:500;border:1.5px solid #d9d9d9;border-radius:20px;background:#f5f5f5;color:#666;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s;-webkit-user-select:none;user-select:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:4px;z-index:var(--z-record-btn)}
 .record-time-btn:active,.record-time-btn._pressing{transform:translateX(-50%) scale(.95);background:#e8e8e8}
 /* 【v1.13.3】楼层卡片完成时间显示：居中填充中间空间 */
 .floor-completion{display:flex;flex-direction:column;flex:1;min-width:0;margin:0 8px;font-weight:400;color:rgba(255,255,255,.85);line-height:1.4;align-items:stretch;overflow:hidden}
@@ -178,10 +204,10 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .seat-btn.has-images-1.expanded{border:2px solid #ff4d4f;background:linear-gradient(135deg,#e6f7ff,#bae7ff);color:#096dd9;font-weight:700}
 .seat-btn.has-images-2.expanded{border:2px solid #ff4d4f;background:linear-gradient(135deg,#fff7e6,#ffe7ba);color:#d46b08;font-weight:700}
 /* 【v1.3.10】闭眼图标：左上角，表示隐藏时段有图 */
-.seat-btn .icon-hidden{position:absolute;top:2px;left:4px;right:auto;bottom:auto;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:5}
+.seat-btn .icon-hidden{position:absolute;top:2px;left:4px;right:auto;bottom:auto;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:var(--z-seat-icon)}
 .seat-btn .icon-hidden svg{width:12px;height:12px;fill:#999;filter:drop-shadow(0 1px 1px rgba(255,77,79,.5))}
 /* 【v1.3.10】筛选命中图标：右上角，表示可见时段有图（仅筛选非全选时显示） */
-.seat-btn .icon-filter-hit{position:absolute;top:2px;right:6px;left:auto;bottom:auto;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:5}
+.seat-btn .icon-filter-hit{position:absolute;top:2px;right:6px;left:auto;bottom:auto;width:14px;height:14px;display:flex;align-items:center;justify-content:center;z-index:var(--z-seat-icon)}
 .seat-btn .icon-filter-hit svg{width:12px;height:12px;fill:#52c41a}
 .seat-btn-text{display:inline;line-height:1.3;text-align:center;pointer-events:none}
 /* 二~五楼东区临时长编号字号缩小 */
@@ -222,11 +248,11 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .thumb-wrap{position:relative;width:80px;height:80px;border-radius:6px;overflow:hidden;border:1px solid #e8e8e8;flex-shrink:0}
 .thumb-wrap img{width:100%;height:100%;object-fit:cover;cursor:pointer;background:#f0f0f0}
 .thumb-wrap img[data-thumb-src]:not([src]){min-width:80px;min-height:80px}
-.thumb-del{position:absolute;top:-9px;right:-9px;width:44px;height:44px;border-radius:50%;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;line-height:1;background:transparent;border:none}
-.thumb-del::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);z-index:-1}
+.thumb-del{position:absolute;top:-9px;right:-9px;width:44px;height:44px;border-radius:50%;cursor:pointer;z-index:var(--z-thumb-del);display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;line-height:1;background:transparent;border:none}
+.thumb-del::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);z-index:var(--z-thumb-del-before)}
 .thumb-del:active::before{background:rgba(255,0,0,.7)}
 
-#bottom-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;box-shadow:0 -2px 8px rgba(0,0,0,.12);padding:10px 12px;padding-bottom:calc(10px + constant(safe-area-inset-bottom));padding-bottom:calc(10px + env(safe-area-inset-bottom));z-index:100;max-width:480px;margin:0 auto;flex-wrap:wrap}
+#bottom-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;box-shadow:0 -2px 8px rgba(0,0,0,.12);padding:10px 12px;padding-bottom:calc(10px + constant(safe-area-inset-bottom));padding-bottom:calc(10px + env(safe-area-inset-bottom));z-index:var(--z-bottom-bar);max-width:480px;margin:0 auto;flex-wrap:wrap}
 #bottom-bar.show{display:flex;align-items:center;gap:8px}
 #selected-count{font-size:13px;color:#666;flex-shrink:0;white-space:nowrap}
 #btn-clear-select{padding:8px 12px;font-size:13px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;color:#666;cursor:pointer;flex-shrink:0}
@@ -250,9 +276,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #btn-download-concat:disabled{background:#ccc;color:#999;cursor:not-allowed}
 .concat-hint{font-size:11px;color:#999;width:100%;text-align:center;margin-top:2px}
 /* 【v1.1.1 改造】拼接选择改为底部滑出面板 */
-#concat-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:260}
+#concat-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:var(--z-panel-overlay)}
 #concat-overlay.show{display:block}
-#concat-sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:261;transform:translateY(100%);transition:transform .3s ease;max-height:75vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
+#concat-sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:var(--z-panel);transform:translateY(100%);transition:transform .3s ease;max-height:75vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
 #concat-sheet.show{transform:translateY(0)}
 #concat-sheet .sheet-header{display:flex;align-items:center;justify-content:center;padding:14px 20px 8px;flex-shrink:0}
 #concat-sheet .sheet-title{font-size:15px;font-weight:600;color:#666}
@@ -276,7 +302,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 /* 【v1.1.1】全屏图标替换"展开"文字 */
 /* 【v1.3.1 Bug3修复】纯图标按钮：44×44px 点击热区，无多余背景，图标放大至 20px */
 /* 【v1.9.33】全屏图标紧贴左下角，热区 44×44px 从边缘开始，图标在热区内靠左下对齐 */
-#concat-sheet .concat-thumb .thumb-expand{position:absolute;left:0;bottom:0;width:44px;height:44px;background:transparent;border-radius:4px;cursor:pointer;z-index:2;display:flex;align-items:flex-end;justify-content:flex-start;padding:3px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#concat-sheet .concat-thumb .thumb-expand{position:absolute;left:0;bottom:0;width:44px;height:44px;background:transparent;border-radius:4px;cursor:pointer;z-index:var(--z-thumb-expand);display:flex;align-items:flex-end;justify-content:flex-start;padding:3px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 #concat-sheet .concat-thumb .thumb-expand svg{width:18px;height:18px;fill:rgba(255,255,255,.85);filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
 #concat-sheet .concat-thumb .thumb-check{position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
 #concat-sheet .concat-thumb.selected .thumb-check{background:#1890ff}
@@ -287,9 +313,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #concat-sheet .concat-btns-grid .concat-h{background:#1890ff;color:#fff}
 #concat-sheet .concat-btns-grid .concat-v{background:#722ed1;color:#fff}
 
-#preview-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:400;overflow:hidden;touch-action:none}
+#preview-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.92);z-index:var(--z-preview-modal);overflow:hidden;touch-action:none}
 #preview-modal.show{display:block}
-#preview-close{position:absolute;top:12px;right:16px;font-size:32px;color:#fff;cursor:pointer;z-index:401;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:50%}
+#preview-close{position:absolute;top:12px;right:16px;font-size:32px;color:#fff;cursor:pointer;z-index:var(--z-preview-close);width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border-radius:50%}
 #preview-scroller{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;will-change:transform}
 .pv-slide{flex:0 0 100%;width:100%;height:100%;display:flex;align-items:center;justify-content:center;position:relative}
 .pv-slide img{max-width:100vw;max-height:100vh;max-height:100dvh;object-fit:contain;border-radius:4px;transform-origin:center center;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:none;will-change:transform;transition:opacity .15s ease-out}
@@ -297,10 +323,10 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 /* 【v1.5.5】预览 loading spinner：高清源未就绪时显示 */
 .pv-slide .pv-loading{position:absolute;width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:rgba(255,255,255,.6);border-radius:50%;animation:pv-spin .8s linear infinite;pointer-events:none}
 @keyframes pv-spin{to{transform:rotate(360deg)}}
-#preview-indicator{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:301}
+#preview-indicator{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:14px;pointer-events:none;z-index:var(--z-preview-floating)}
 #preview-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.4);font-size:12px;pointer-events:none;white-space:nowrap;padding:0 16px}
 /* 【v1.28.0】AI比对结果展示区域：位于保存按钮上方，半透明卡片样式 */
-#ai-compare-result{display:none;position:absolute;bottom:calc(110px + constant(safe-area-inset-bottom));bottom:calc(110px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100vw - 32px);max-width:420px;padding:14px 18px;background:rgba(0,0,0,.72);border-radius:12px;color:#fff;font-size:14px;line-height:1.6;z-index:301;pointer-events:none;box-sizing:border-box;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#ai-compare-result{display:none;position:absolute;bottom:calc(110px + constant(safe-area-inset-bottom));bottom:calc(110px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100vw - 32px);max-width:420px;padding:14px 18px;background:rgba(0,0,0,.72);border-radius:12px;color:#fff;font-size:14px;line-height:1.6;z-index:var(--z-preview-floating);pointer-events:none;box-sizing:border-box;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 #ai-compare-result.show{display:block}
 #ai-compare-result .ai-result-header{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px}
 #ai-compare-result .ai-result-conclusion{font-size:16px;font-weight:600}
@@ -309,7 +335,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #ai-compare-result.ai-loading .ai-result-conclusion{opacity:.7}
 #ai-compare-result .ai-result-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:pv-spin .8s linear infinite;vertical-align:middle}
 
-.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:250;align-items:center;justify-content:center}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:var(--z-modal-overlay);align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
 .modal-box{background:#fff;border-radius:12px;padding:20px 16px;width:92%;max-width:400px;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);max-height:85vh;overflow-y:auto}
 .modal-box h3{font-size:17px;margin-bottom:12px;text-align:center}
@@ -338,8 +364,8 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .picker-pad{height:60px}
 .picker-item{height:40px;line-height:40px;text-align:center;font-size:16px;scroll-snap-align:center;cursor:pointer;color:#666;transition:color .15s}
 .picker-item.active{color:#1890ff;font-weight:700;font-size:18px}
-.picker-highlight{position:absolute;top:60px;left:0;right:0;height:40px;border-top:1px solid #d9d9d9;border-bottom:1px solid #d9d9d9;background:rgba(24,144,255,.06);pointer-events:none;z-index:1}
-.picker-col-label{position:absolute;top:4px;width:100%;text-align:center;font-size:11px;color:#999;z-index:2;pointer-events:none}
+.picker-highlight{position:absolute;top:60px;left:0;right:0;height:40px;border-top:1px solid #d9d9d9;border-bottom:1px solid #d9d9d9;background:rgba(24,144,255,.06);pointer-events:none;z-index:var(--z-picker-highlight)}
+.picker-col-label{position:absolute;top:4px;width:100%;text-align:center;font-size:11px;color:#999;z-index:var(--z-picker-label);pointer-events:none}
 .cleanup-btns{display:flex;gap:10px}
 .cleanup-btns button{flex:1;padding:12px;font-size:15px;font-weight:600;border:none;border-radius:8px;cursor:pointer}
 .cleanup-btns button:active{opacity:.8}
@@ -355,7 +381,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
    根因：iOS Safari 在页面滚动时创建 position:fixed + transform 元素，fixed 定位会短暂失效，
    导致 Toast 随页面滑动移动一下再跳回视口中心。改用 inset:0+margin:auto 不依赖 transform，
    彻底避免该渲染 bug，且动画 keyframes 仅改 opacity 不影响位置。 */
-.toast{position:fixed;top:0;right:0;bottom:0;left:0;margin:auto;width:max-content;height:max-content;max-width:80vw;background:rgba(0,0,0,.75);color:#fff;padding:14px 28px;border-radius:8px;font-size:15px;z-index:9999;pointer-events:none;animation:toast-fade 2s forwards}
+.toast{position:fixed;top:0;right:0;bottom:0;left:0;margin:auto;width:max-content;height:max-content;max-width:80vw;background:rgba(0,0,0,.75);color:#fff;padding:14px 28px;border-radius:8px;font-size:15px;z-index:var(--z-toast);pointer-events:none;animation:toast-fade 2s forwards}
 @keyframes toast-fade{0%{opacity:1}70%{opacity:1}100%{opacity:0}}
 
 /* 【v1.26.14】全局 Loading 提示组件（恢复操作等场景使用）
@@ -364,7 +390,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
    - 使用 top:0;right:0;bottom:0;left:0;margin:auto 居中，规避 iOS Safari 的 transform fixed bug
    - 【v1.26.15 BUG修复】默认 pointer-events:none，.show 时才为 auto，
      防止 hideLoading 后遮罩虽不可见（opacity:0）但仍拦截点击导致页面无法操作 */
-.global-loading-overlay{position:fixed;top:0;right:0;bottom:0;left:0;margin:auto;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.global-loading-overlay{position:fixed;top:0;right:0;bottom:0;left:0;margin:auto;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:var(--z-loading);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .global-loading-overlay.show{opacity:1;pointer-events:auto}
 .global-loading-box{display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px 32px;background:rgba(0,0,0,.75);border-radius:12px}
 .global-loading-spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:global-loading-spin .8s linear infinite}
@@ -385,9 +411,9 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .btn-filter .filter-icon{font-size:14px}
 
 /* 筛选底部面板 */
-.filter-sheet-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:260}
+.filter-sheet-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:var(--z-panel-overlay)}
 .filter-sheet-overlay.show{display:block}
-.filter-sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:261;transform:translateY(100%);transition:transform .3s ease;max-height:75vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
+.filter-sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;z-index:var(--z-panel);transform:translateY(100%);transition:transform .3s ease;max-height:75vh;display:flex;flex-direction:column;max-width:480px;margin:0 auto}
 .filter-sheet.show{transform:translateY(0)}
 .filter-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #f0f0f0;flex-shrink:0}
 .filter-sheet-title{font-size:17px;font-weight:700;color:#1a1a1a}
@@ -441,13 +467,13 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 20%,#f2f0e4 37.5%,#f8f4ec 50%,#f2f0e4 62.5%,#eaf2e4 80%,#e8f0f8 100%);min-height:100%;background-size:100% 100vh;background-size:100% 100dvh}
 .theme-normal{background:transparent;color:#4A3728;--footer-fade-color:#f2f0e4}
 /* 水彩纸纹 + 淡云纹理（#app::before，不遮挡固定元素） */
-.theme-normal #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(200,185,165,.03) 2px,rgba(200,185,165,.03) 4px),radial-gradient(ellipse 65% 30% at 20% 10%,rgba(255,255,255,.45) 0%,transparent 70%),radial-gradient(ellipse 50% 25% at 80% 18%,rgba(255,255,255,.35) 0%,transparent 60%),radial-gradient(ellipse 80% 28% at 50% 82%,rgba(232,242,228,.3) 0%,transparent 55%)}
+.theme-normal #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:var(--z-bg-decor);background:repeating-linear-gradient(45deg,transparent,transparent 2px,rgba(200,185,165,.03) 2px,rgba(200,185,165,.03) 4px),radial-gradient(ellipse 65% 30% at 20% 10%,rgba(255,255,255,.45) 0%,transparent 70%),radial-gradient(ellipse 50% 25% at 80% 18%,rgba(255,255,255,.35) 0%,transparent 60%),radial-gradient(ellipse 80% 28% at 50% 82%,rgba(232,242,228,.3) 0%,transparent 55%)}
 /* 交互元素提升层级（modal-box 已有 fixed 定位，不覆盖其 position） */
-.theme-normal #app{position:relative;z-index:1}
+.theme-normal #app{position:relative;z-index:var(--z-app)}
 /* 【v1.9.26】#bottom-bar 保持 fixed 定位，仅提升 z-index */
-.theme-normal #bottom-bar{z-index:100}
+.theme-normal #bottom-bar{z-index:var(--z-bottom-bar)}
 /* 页面标题：衬线体 + 暗红墨水感 */
-.theme-normal .page-header{background:linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 100%);position:relative;z-index:10}
+.theme-normal .page-header{background:linear-gradient(175deg,#e8f0f8 0%,#eaf2e4 100%);position:relative;z-index:var(--z-page-header)}
 .theme-normal .page-title{font-family:Georgia,'KaiTi','STKaiti',serif;color:#5B3A1A;letter-spacing:1.5px;text-shadow:0 1px 2px rgba(91,58,26,.08)}
 .theme-normal .page-title small{color:#9a8060!important}
 /* 【v1.27.0】LOGO 外框：护眼主题暖棕边框 */
@@ -481,8 +507,8 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
 .theme-normal .floor-completion.fixed{color:#8B7355}
 /* 座位编号按钮：米白底，暖棕边框 */
 .theme-normal .seat-btn{font-family:Georgia,'KaiTi','STKaiti',serif;background:rgba(255,253,248,.96);border:1px solid #c8bca8;color:#4A3728;font-size:12.5px;transition:background .12s,border-color .12s}
-.theme-normal .seat-btn .icon-hidden{position:absolute;top:2px;left:4px;z-index:5}
-.theme-normal .seat-btn .icon-filter-hit{position:absolute;top:2px;right:6px;z-index:5}
+.theme-normal .seat-btn .icon-hidden{position:absolute;top:2px;left:4px;z-index:var(--z-seat-icon)}
+.theme-normal .seat-btn .icon-filter-hit{position:absolute;top:2px;right:6px;z-index:var(--z-seat-icon)}
 .theme-normal .seat-btn:hover{background:rgba(255,248,232,.96)}
 .theme-normal .seat-btn:active,.theme-normal .seat-btn._pressing{background:rgba(255,240,215,.96)}
 .theme-normal .seat-btn.expanded{border:2px solid #7a9a5a;background:rgba(255,253,248,.96)}
@@ -585,13 +611,13 @@ html.theme-normal{background:repeating-linear-gradient(175deg,#e8f0f8 0%,#eaf2e4
 html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 15%,#5a5040 30%,#6a6050 50%,#5a5040 70%,#4a4540 85%,#3c3c46 100%);min-height:100%;background-size:100% 100vh;background-size:100% 100dvh}
 .theme-yiban{background:transparent;color:#c8c8c8;--footer-fade-color:#5a5040}
 /* 锈蚀金属纹理 + 扫描线（#app::before） */
-.theme-yiban #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,255,.015) 3px,rgba(0,255,255,.015) 4px),repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(100,90,70,.06) 80px,rgba(100,90,70,.06) 81px),radial-gradient(ellipse 60% 40% at 30% 20%,rgba(0,255,255,.04) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 75% 70%,rgba(204,51,51,.03) 0%,transparent 55%)}
+.theme-yiban #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:var(--z-bg-decor);background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,255,.015) 3px,rgba(0,255,255,.015) 4px),repeating-linear-gradient(90deg,transparent,transparent 80px,rgba(100,90,70,.06) 80px,rgba(100,90,70,.06) 81px),radial-gradient(ellipse 60% 40% at 30% 20%,rgba(0,255,255,.04) 0%,transparent 60%),radial-gradient(ellipse 50% 35% at 75% 70%,rgba(204,51,51,.03) 0%,transparent 55%)}
 /* 【v1.9.29】.toast 保持 fixed 定位，仅 #app 提升 z-index */
-.theme-yiban #app{position:relative;z-index:1}
+.theme-yiban #app{position:relative;z-index:var(--z-app)}
 /* 【v1.9.26】#bottom-bar 保持 fixed 定位，仅提升 z-index */
-.theme-yiban #bottom-bar{z-index:100}
+.theme-yiban #bottom-bar{z-index:var(--z-bottom-bar)}
 /* 页面标题：霓虹青发光 */
-.theme-yiban .page-header{background:linear-gradient(170deg,#3c3c46 0%,#4a4540 100%);position:relative;z-index:10}
+.theme-yiban .page-header{background:linear-gradient(170deg,#3c3c46 0%,#4a4540 100%);position:relative;z-index:var(--z-page-header)}
 .theme-yiban .page-title{font-family:'Segoe UI','Helvetica Neue',sans-serif;color:#00ffff;text-shadow:0 0 15px rgba(0,255,255,.5),0 0 5px rgba(0,255,255,.4);letter-spacing:2px;font-weight:700}
 .theme-yiban .page-title small{color:#e8820c!important;text-shadow:none}
 /* 【v1.27.0】LOGO 外框：蓝色主题霓虹边框 */
@@ -737,12 +763,12 @@ html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 
 html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 30%,#7ec850 50%,#a8d8a8 70%,#7ec8e8 100%);min-height:100%;background-size:100% 100vh;background-size:100% 100dvh}
 .theme-pixel{background:transparent;color:#4a3728;--footer-fade-color:#a8d8a8}
 /* 像素点阵纹理（#app::before） */
-.theme-pixel #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px),repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px)}
+.theme-pixel #app::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:var(--z-bg-decor);background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px),repeating-linear-gradient(90deg,transparent,transparent 3px,rgba(0,0,0,.02) 3px,rgba(0,0,0,.02) 4px)}
 /* 【v1.9.29】.toast 保持 fixed 定位，仅 #app 提升 z-index */
-.theme-pixel #app{position:relative;z-index:1}
-.theme-pixel #bottom-bar{z-index:100}
+.theme-pixel #app{position:relative;z-index:var(--z-app)}
+.theme-pixel #bottom-bar{z-index:var(--z-bottom-bar)}
 /* 页面标题：像素风 + 硬阴影 */
-.theme-pixel .page-header{background:linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 100%);position:relative;z-index:10}
+.theme-pixel .page-header{background:linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 100%);position:relative;z-index:var(--z-page-header)}
 .theme-pixel .page-title{font-family:'Courier New',monospace;color:#3e2b1f;letter-spacing:1px;font-weight:900;text-shadow:2px 2px 0 #e0d7c5}
 .theme-pixel .page-title small{color:#ffaa00!important}
 /* 【v1.27.0】LOGO 外框：怀旧主题像素描边 */
@@ -779,9 +805,9 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .floor-completion.s3{font-size:10px}
 /* 座位编号按钮：铁块/石英材质 + 像素描边 */
 .theme-pixel .seat-btn{font-family:'Courier New',monospace;background:#d8d8d8;border:2px solid #888;border-radius:0;box-shadow:2px 2px 0 #2d2d2d;color:#3a3a3a;font-size:11px;font-weight:700;transition:transform .08s,box-shadow .08s}
-.theme-pixel .seat-btn .icon-hidden{position:absolute;top:2px;left:4px;z-index:5}
+.theme-pixel .seat-btn .icon-hidden{position:absolute;top:2px;left:4px;z-index:var(--z-seat-icon)}
 .theme-pixel .seat-btn .icon-hidden svg{filter:drop-shadow(1px 0 0 #333) drop-shadow(-1px 0 0 #333) drop-shadow(0 1px 0 #333) drop-shadow(0 -1px 0 #333)}
-.theme-pixel .seat-btn .icon-filter-hit{position:absolute;top:2px;right:6px;z-index:5}
+.theme-pixel .seat-btn .icon-filter-hit{position:absolute;top:2px;right:6px;z-index:var(--z-seat-icon)}
 .theme-pixel .seat-btn .icon-filter-hit svg{filter:drop-shadow(1px 0 0 #333) drop-shadow(-1px 0 0 #333) drop-shadow(0 1px 0 #333) drop-shadow(0 -1px 0 #333)}
 .theme-pixel .seat-btn:hover{background:#e0e0e0}
 .theme-pixel .seat-btn:active,.theme-pixel .seat-btn._pressing{transform:translate(1px,1px);box-shadow:1px 1px 0 #2d2d2d}
@@ -890,7 +916,7 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .theme-list-item.active .theme-check{background:#7ec850;border-color:#5a8a30}
 /* 【v1.12.0】骨架屏加载动画 */
 @keyframes skeleton-shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-.skeleton-screen{position:fixed;top:0;left:0;right:0;bottom:0;padding:0 16px;background:#f0f2f5;z-index:500;animation:skeleton-fadein .2s ease;overflow-y:auto}
+.skeleton-screen{position:fixed;top:0;left:0;right:0;bottom:0;padding:0 16px;background:#f0f2f5;z-index:var(--z-skeleton);animation:skeleton-fadein .2s ease;overflow-y:auto}
 @keyframes skeleton-fadein{from{opacity:0}to{opacity:1}}
 .skeleton-header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;margin-bottom:8px}
 .skeleton-header-title{width:140px;height:22px;border-radius:4px;background:linear-gradient(90deg,#e8e8e8 25%,#f5f5f5 50%,#e8e8e8 75%);background-size:200% 100%;animation:skeleton-shimmer 1.5s infinite}
@@ -1006,7 +1032,7 @@ textarea:focus-visible {
 .theme-pixel button:focus-visible {
   outline-color: #333;
 }
-.trash-browser-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center}
+.trash-browser-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:var(--z-trash-browser);align-items:center;justify-content:center}
 .trash-browser-overlay.show{display:flex}
 .trash-browser-box{background:#fff;border-radius:12px;padding:20px 16px;width:92%;max-width:400px;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);max-height:85vh;display:flex;flex-direction:column;overflow:hidden}
 .trash-browser-box h3{font-size:17px;margin-bottom:6px;text-align:center;flex-shrink:0}
@@ -1023,7 +1049,7 @@ textarea:focus-visible {
 .trash-browser-thumb-wrap{position:relative;width:56px;height:56px;border-radius:6px;overflow:hidden;border:1px solid #e8e8e8;flex-shrink:0;background:#f0f0f0}
 .trash-browser-thumb{width:100%;height:100%;object-fit:cover;display:block}
 /* 【v1.26.1】全屏按钮与拼接预览面板的 .thumb-expand 完全一致 */
-.trash-browser-thumb-wrap .thumb-expand{position:absolute;left:0;bottom:0;width:44px;height:44px;background:transparent;border-radius:4px;cursor:pointer;z-index:2;display:flex;align-items:flex-end;justify-content:flex-start;padding:3px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.trash-browser-thumb-wrap .thumb-expand{position:absolute;left:0;bottom:0;width:44px;height:44px;background:transparent;border-radius:4px;cursor:pointer;z-index:var(--z-thumb-expand);display:flex;align-items:flex-end;justify-content:flex-start;padding:3px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .trash-browser-thumb-wrap .thumb-expand svg{width:18px;height:18px;fill:rgba(255,255,255,.85);filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
 .trash-browser-info{flex:1;min-width:0;overflow:hidden}
 .trash-browser-name{font-size:13px;font-weight:500;color:#333;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
