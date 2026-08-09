@@ -13,6 +13,7 @@ _extract.ps1
 _test_*.js
 _gen_test_img.js
 _test_img.jpg
+_refactor_plan.md
 
 # 性能测试脚本与报告（本地使用，不上传仓库）
 perf-test.js
