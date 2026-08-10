@@ -646,6 +646,8 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .floor-5{background:linear-gradient(135deg,#baa060,#aa9048);background-image:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(90,61,43,.08) 8px,rgba(90,61,43,.08) 10px),linear-gradient(135deg,#baa060,#aa9048)}
 .theme-pixel .floor-btn:hover{background-color:#d8b978;box-shadow:4px 4px 0 #2d2d2d}
 .theme-pixel .floor-btn:active,.theme-pixel .floor-btn._pressing{transform:translate(2px,2px);box-shadow:2px 2px 0 #2d2d2d}
+/* 【v1.34.1】怀旧主题 expanded 态：模拟游戏按钮按下，上面一层下压 + 阴影层缩小，保持像素双层结构 */
+.theme-pixel .floor-btn.expanded{transform:translate(2px,2px);box-shadow:2px 2px 0 #2d2d2d}
 /* 区域按钮：石材材质 + 像素描边 */
 .theme-pixel .area-btn{font-family:'Courier New',monospace;background:#aaa;border:3px solid #555;border-radius:0;box-shadow:3px 3px 0 #2d2d2d;color:#3a3a3a;font-weight:700;transition:transform .08s,box-shadow .08s;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .theme-pixel .area-btn:hover{background:#bbb}
@@ -831,7 +833,10 @@ html.theme-metal{background:#0d0d0d;background-image:repeating-linear-gradient(4
 .theme-metal .ts-btn-restore{background:linear-gradient(135deg,#3a2a0a 0%,#1a1a04 100%);border:1px solid #b8860b;color:#d4af37}
 /* 缩略图 */
 .theme-metal .thumb-wrap{border:1px solid rgba(201,169,110,.4);border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.5)}
-.theme-metal .thumb-del{background:rgba(204,51,51,.85);border:1px solid #991a1a}
+/* 【v1.34.1】删除按钮背景透明，避免红色填满44px热区形成红色外圈；仅 ::before 显示金属暗红圆形 */
+.theme-metal .thumb-del{background:transparent;border:none}
+.theme-metal .thumb-del::before{background:rgba(204,51,51,.9);border:1px solid #991a1a;box-shadow:0 0 4px rgba(0,0,0,.5)}
+.theme-metal .thumb-del:active::before{background:rgba(255,68,68,.95)}
 /* 新增/删除座位 */
 .theme-metal .add-seat-btn{border:1px dashed #c9a96e;color:#c9a96e;background:rgba(20,20,20,.6);border-radius:4px}
 .theme-metal .add-seat-btn:active{background:rgba(201,169,110,.15);border-color:#d4af37;color:#d4af37}
@@ -847,6 +852,8 @@ html.theme-metal{background:#0d0d0d;background-image:repeating-linear-gradient(4
 .theme-metal .func-panel-title{color:#d4af37;font-weight:800}
 .theme-metal .func-panel-close{color:#c9a96e}
 .theme-metal .func-item{border-bottom:1px solid rgba(201,169,110,.15)}
+/* 【v1.34.1】设置面板选项点击反馈改暗金色，避免暗色主题下白色反馈刺眼 */
+.theme-metal .func-item:active,.theme-metal .func-item._pressing{background:rgba(201,169,110,.12);border-radius:4px}
 .theme-metal .func-item-label{color:#e8d5b0}
 .theme-metal .func-item-desc{color:#8a7a5a}
 .theme-metal .func-toggle{background:#2a2a2a;border:1px solid #5a5a5a}
@@ -865,7 +872,12 @@ html.theme-metal{background:#0d0d0d;background-image:repeating-linear-gradient(4
 /* 拼接面板 */
 .theme-metal #concat-sheet{background:linear-gradient(180deg,#1a1a1a 0%,#0d0d0d 100%);border-top:1px solid #c9a96e}
 .theme-metal .sheet-title{color:#d4af37}
-.theme-metal .concat-h,.theme-metal .concat-v{background:linear-gradient(135deg,#3a3a3a 0%,#1a1a1a 100%);border:1px solid #c9a96e;color:#d4af37;border-radius:4px}
+/* 【v1.34.1】用 #concat-sheet 作用域提升特异性，覆盖默认主题的蓝色/紫色背景 */
+.theme-metal #concat-sheet .concat-h,.theme-metal #concat-sheet .concat-v{background:linear-gradient(135deg,#3a3a3a 0%,#1a1a1a 100%);border:1px solid #c9a96e;color:#d4af37;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.5),inset 0 1px 0 rgba(201,169,110,.2);font-weight:700}
+.theme-metal #concat-sheet .concat-h:active,.theme-metal #concat-sheet .concat-h._pressing,.theme-metal #concat-sheet .concat-v:active,.theme-metal #concat-sheet .concat-v._pressing{box-shadow:inset 0 2px 4px rgba(0,0,0,.6);transform:scale(.98)}
+.theme-metal #concat-sheet .concat-ai{background:linear-gradient(135deg,#3a2a0a 0%,#1a1a04 100%);border:1px solid #b8860b;color:#d4af37;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.5),inset 0 1px 0 rgba(184,134,11,.2);font-weight:700}
+.theme-metal #concat-sheet .concat-ai:active{box-shadow:inset 0 2px 4px rgba(0,0,0,.6);transform:scale(.98)}
+.theme-metal #concat-sheet .concat-ai.ai-disabled,.theme-metal #concat-sheet .concat-h:disabled,.theme-metal #concat-sheet .concat-v:disabled{background:linear-gradient(135deg,#2a2a2a 0%,#1a1a1a 100%);color:#5a5a5a;border-color:#3a3a3a;box-shadow:none;cursor:not-allowed}
 /* 筛选面板 */
 .theme-metal .filter-sheet{background:linear-gradient(180deg,#1a1a1a 0%,#0d0d0d 100%);border-top:1px solid #c9a96e}
 .theme-metal .filter-sheet-title{color:#d4af37}
