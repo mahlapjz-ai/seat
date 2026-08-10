@@ -889,10 +889,10 @@ html.theme-metal{background:#0d0d0d;background-image:repeating-linear-gradient(4
 /* 全局Loading */
 .theme-metal .global-loading-box{background:linear-gradient(180deg,#1a1a1a 0%,#0d0d0d 100%);border:1px solid #c9a96e;box-shadow:0 0 15px rgba(0,0,0,.6)}
 .theme-metal .global-loading-text{color:#d4af37}
-/* 多楼层概览 */
-.theme-metal .multi-floor-block{background:linear-gradient(135deg,#1a1a1a 0%,#0d0d0d 100%);border:1px solid rgba(201,169,110,.4);box-shadow:0 1px 4px rgba(0,0,0,.5)}
-.theme-metal .multi-floor-block .multi-floor-name{color:#d4af37}
-.theme-metal .multi-floor-block .multi-area-name{color:#c9a96e}
+/* 【v1.34.3】多楼层概览：提升特异性覆盖默认主题 .floor-N 渐变背景 */
+.theme-metal .multi-floor-block,.theme-metal .multi-floor-block.floor-1,.theme-metal .multi-floor-block.floor-2,.theme-metal .multi-floor-block.floor-3,.theme-metal .multi-floor-block.floor-4,.theme-metal .multi-floor-block.floor-5{background:rgba(20,20,20,.85);border:1px solid #c9a96e;border-radius:5px;box-shadow:0 2px 6px rgba(0,0,0,.6),inset 0 1px 0 rgba(201,169,110,.3)}
+.theme-metal .multi-floor-block .multi-floor-name,.theme-metal .multi-floor-block.floor-1 .multi-floor-name,.theme-metal .multi-floor-block.floor-2 .multi-floor-name,.theme-metal .multi-floor-block.floor-3 .multi-floor-name,.theme-metal .multi-floor-block.floor-4 .multi-floor-name,.theme-metal .multi-floor-block.floor-5 .multi-floor-name{color:#d4af37;text-shadow:0 0 4px rgba(0,0,0,.8)}
+.theme-metal .multi-floor-block .multi-area-name,.theme-metal .multi-floor-block.floor-1 .multi-area-name,.theme-metal .multi-floor-block.floor-2 .multi-area-name,.theme-metal .multi-floor-block.floor-3 .multi-area-name,.theme-metal .multi-floor-block.floor-4 .multi-area-name,.theme-metal .multi-floor-block.floor-5 .multi-area-name{color:#c9a96e}
 .theme-metal .multi-floor-block .multi-floor-slots{color:rgba(201,169,110,.6)}
 /* 预览模态 */
 .theme-metal #preview-modal{background:rgba(0,0,0,.92)}
@@ -935,6 +935,8 @@ html.theme-metal{background:#0d0d0d;background-image:repeating-linear-gradient(4
 .page-title.sword-light{animation:title-breath 2.5s ease-in-out infinite;color:#000}
 .theme-yiban .page-title.sword-light{color:#00ffff}
 .theme-pixel .page-title.sword-light{color:#3e2b1f}
+/* 【v1.34.3】金属主题第二种显示模式标题颜色适配（sword-light 覆盖默认金色） */
+.theme-metal .page-title.sword-light{color:#d4af37}
 @keyframes title-breath{0%,100%{opacity:1}50%{opacity:.85}}
 
 /* 多图模式：标题可点击 */
