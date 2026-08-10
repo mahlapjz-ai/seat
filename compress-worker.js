@@ -1,8 +1,10 @@
 // ============================================================
 // 大图压缩 Worker（v1.30.0 新增 / v1.30.1 修复 bitmap 泄漏与超大图保护）
+// v1.33.1 扩展：新增 thumbnail 模式，将缩略图生成也移入 Worker，
+//   消除大图缩略图生成的主线程阻塞（5.4MB 图原 260ms → 移出主线程）
 // 作用：将上传图片的 Canvas 绘制 + JPEG 编码移出主线程，
 //       消除选图后返回主页面的 1-2 秒卡顿。
-// 调用方：主线程 compressImage()（scripts.js）
+// 调用方：主线程 compressImage() / generateThumbnail()（scripts.js）
 // 策略：
 //   1. createImageBitmap 异步解码图片（Worker 内支持，不阻塞主线程）
 //   2. OffscreenCanvas 绘制（最大边长 4096，超大图等比缩放，防 OOM）
@@ -16,7 +18,7 @@
 const MAX_SIDE = 4096;
 
 self.onmessage = async (e) => {
-  const { id, imageData, quality } = e.data || {};
+  const { id, imageData, quality, mode, targetWidth } = e.data || {};
   let bitmap = null;
   try {
     // 环境检测：旧浏览器 Worker 内无 OffscreenCanvas
@@ -38,21 +40,30 @@ self.onmessage = async (e) => {
       return;
     }
 
-    // 超大图等比缩放，防 OOM
+    // 计算输出尺寸
     let dw = bitmap.width, dh = bitmap.height;
-    const maxSide = Math.max(dw, dh);
-    if (maxSide > MAX_SIDE) {
-      const scale = MAX_SIDE / maxSide;
-      dw = Math.round(dw * scale);
-      dh = Math.round(dh * scale);
+    if (mode === 'thumbnail' && targetWidth > 0) {
+      // 缩略图模式：按目标宽度等比缩放（不放大）
+      const scale = Math.min(targetWidth / bitmap.width, 1);
+      dw = Math.max(1, Math.round(bitmap.width * scale));
+      dh = Math.max(1, Math.round(bitmap.height * scale));
+    } else {
+      // 压缩模式：超大图等比缩放，防 OOM
+      const maxSide = Math.max(dw, dh);
+      if (maxSide > MAX_SIDE) {
+        const scale = MAX_SIDE / maxSide;
+        dw = Math.round(dw * scale);
+        dh = Math.round(dh * scale);
+      }
     }
 
     const canvas = new OffscreenCanvas(dw, dh);
     const ctx = canvas.getContext('2d');
     ctx.drawImage(bitmap, 0, 0, dw, dh);
 
-    // 质量参数兜底
-    const q = (typeof quality === 'number' && quality > 0 && quality <= 1) ? quality : 0.92;
+    // 质量参数兜底：缩略图默认 0.8，压缩默认 0.92
+    const defaultQ = (mode === 'thumbnail') ? 0.8 : 0.92;
+    const q = (typeof quality === 'number' && quality > 0 && quality <= 1) ? quality : defaultQ;
     const outBlob = await canvas.convertToBlob({ type: 'image/jpeg', quality: q });
     const buf = await outBlob.arrayBuffer();
     // transfer ArrayBuffer，避免拷贝
