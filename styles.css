@@ -903,6 +903,11 @@ html.theme-metal{background:#0d0d0d;background-image:repeating-linear-gradient(4
 .theme-metal .trash-browser-row.selected{background:rgba(201,169,110,.12)}
 .theme-metal .trash-browser-checkbox.checked{background:linear-gradient(135deg,#d4af37 0%,#b8860b 100%);border-color:#d4af37}
 .theme-metal .trash-browser-thumb-wrap{border:1px solid rgba(201,169,110,.4)}
+/* 【v1.34.4】回收站面板文字对比度修复：trash-browser-box 同时有 modal-box 类，金属主题下背景为暗色，原 #333/#999 不可读 */
+.theme-metal .trash-browser-name{color:#d4af37}
+.theme-metal .trash-browser-size{color:#b0b0b0}
+.theme-metal .trash-browser-desc{color:#b0b0b0}
+.theme-metal .trash-browser-row{border-bottom-color:rgba(201,169,110,.15)}
 /* 【v1.12.0】骨架屏加载动画 */
 @keyframes skeleton-shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .skeleton-screen{position:fixed;top:0;left:0;right:0;bottom:0;padding:0 16px;background:#f0f2f5;z-index:var(--z-skeleton);animation:skeleton-fadein .2s ease;overflow-y:auto}
