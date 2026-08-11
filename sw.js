@@ -44,7 +44,9 @@
 // 【v1.34.3】修复金属主题第二种显示模式（已释放座位概览）楼层色块未适配，提升选择器特异性覆盖默认主题 .floor-N 渐变，递增 CACHE_NAME 触发更新
 // 【v1.34.4】修复金属主题回收站面板图片名称/尺寸/描述文字对比度（trash-browser-box 有 modal-box 类，背景为暗色），递增 CACHE_NAME 触发更新
 // 【v1.34.5】修复 iOS Safari 下拼接预览完成后全局 Loading 不消失（hideLoading 内部 setTimeout 不触发），增加 1 秒兜底定时器，递增 CACHE_NAME 触发更新
-const CACHE_NAME = 'seat-cache-v198';
+// 【v1.34.6】上传缩略图灰色占位块+转圈加载动画，消除首次上传3-4秒空白期；预加载压缩Worker减少首次上传延迟，递增 CACHE_NAME 触发更新
+// 【v1.34.7】近期优化记录新增"修复已知问题 （08.12更新）"条目，递增 CACHE_NAME 触发更新
+const CACHE_NAME = 'seat-cache-v200';
 
 // 【v1.25.9】友好离线页：当所有缓存回退均失败时返回，替代原裸露"离线"文本
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>离线</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;color:#333}.box{text-align:center;padding:32px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);max-width:80vw}h2{margin:0 0 8px;font-size:18px;color:#1890ff}p{margin:0;font-size:14px;color:#666;line-height:1.6}button{margin-top:16px;padding:8px 24px;background:#1890ff;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}button:active{opacity:.8}</style></head><body><div class="box"><h2>当前处于离线状态</h2><p>请检查网络连接后刷新页面</p><button onclick="location.reload()">重新加载</button></div></body></html>';
