@@ -18,6 +18,7 @@
   --z-panel:261;              /* 抽屉本体 */
   --z-trash-browser:300;      /* 回收站浏览器遮罩 */
   --z-preview-floating:301;   /* 预览浮层（保存按钮/指示器/AI比对结果） */
+  --z-about-modal:350;        /* 关于弹窗（高于设置面板/筛选/批量下载，低于全屏预览） */
   --z-preview-modal:400;      /* 全屏预览 */
   --z-preview-close:401;      /* 预览关闭按钮 */
   --z-skeleton:500;           /* 骨架屏 */
@@ -358,7 +359,11 @@ body:has(#func-panel.show) #func-btn,#func-btn.expanded{box-shadow:inset 0 2px 4
 .modal-confirm{background:#722ed1;color:#fff}
 
 /* 【v1.35】关于弹窗：全屏卡片 + 标题/关闭 + 内容滚动（隐藏滚动条） */
-#about-modal{align-items:stretch;justify-content:stretch}
+/* 【v1.35.1】z-index 提升至 350，高于设置面板/筛选/批量下载等抽屉，避免被遮挡 */
+#about-modal{z-index:var(--z-about-modal);align-items:stretch;justify-content:stretch}
+/* 【v1.35.1】致谢信小尺寸居中弹窗模式（.about-modal-compact）：宽度 85%，最大高度 70vh */
+#about-modal.about-modal-compact{align-items:center;justify-content:center}
+#about-modal.about-modal-compact .about-modal-box{width:85%;max-width:400px;height:auto;max-height:70vh;border-radius:12px;padding:0}
 .about-modal-box{background:#fff;width:100%;height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden}
 .about-modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #f0f0f0;flex-shrink:0}
 .about-modal-title{font-size:17px;font-weight:700;color:#1a1a1a}
@@ -816,6 +821,8 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .theme-list-item.active .theme-check{background:#7ec850;border-color:#5a8a30}
 /* 【v1.35】关于弹窗 + 子选项列表 */
 .theme-pixel .about-modal-box{background:#c8a96e;border-radius:0;box-shadow:0 -4px 0 #5a3d2d,0 -6px 0 #2d2d2d}
+/* 【v1.35.1】怀旧主题 compact 模式保持方角，提升特异性覆盖默认 12px */
+.theme-pixel #about-modal.about-modal-compact .about-modal-box{border-radius:0}
 .theme-pixel .about-modal-header{border-bottom:4px solid #5a3d2b}
 .theme-pixel .about-modal-title{font-family:'Courier New',monospace;color:#4a3728;font-weight:900}
 .theme-pixel .about-modal-close{background:#8b7355;color:#fff;border:2px solid #5a3d2b;border-radius:0;box-shadow:2px 2px 0 #2d2d2d}
@@ -916,6 +923,8 @@ html.theme-metal{background:#0d0d0d;background-image:repeating-linear-gradient(4
 .theme-metal .theme-list-item.active .theme-check{background:linear-gradient(135deg,#d4af37 0%,#b8860b 100%);border-color:#d4af37}
 /* 【v1.35】关于弹窗 + 子选项列表 */
 .theme-metal .about-modal-box{background:linear-gradient(180deg,#1a1a1a 0%,#0d0d0d 100%);border-left:1px solid #c9a96e;border-right:1px solid #c9a96e;box-shadow:0 0 30px rgba(0,0,0,.7)}
+/* 【v1.35.1】compact 模式：4 边完整香槟金边框 + 5px 圆角，与金属主题 modal-box 风格一致 */
+.theme-metal #about-modal.about-modal-compact .about-modal-box{border:1px solid #c9a96e;border-radius:5px}
 .theme-metal .about-modal-header{border-bottom:1px solid rgba(201,169,110,.3)}
 .theme-metal .about-modal-title{color:#d4af37;text-shadow:0 0 6px rgba(212,175,55,.25)}
 .theme-metal .about-modal-close{background:linear-gradient(135deg,#2a2a2a 0%,#1a1a1a 100%);border:1px solid #c9a96e;color:#d4af37;border-radius:4px;box-shadow:0 0 6px rgba(0,0,0,.5)}
