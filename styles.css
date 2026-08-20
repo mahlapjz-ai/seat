@@ -226,6 +226,13 @@ body:has(#func-panel.show) #func-btn,#func-btn.expanded{box-shadow:inset 0 2px 4
 .android-device .seat-btn.long-name{font-size:10.5px}
 .android-device.theme-yiban .seat-btn.long-name{font-size:10.5px}
 .android-device.theme-pixel .seat-btn.long-name{font-size:8.5px}
+/* 【v1.36】爱心专座/视障专座背景水印标识（半透明，文字位于图标上方） */
+.area-btn.aixin-area{position:relative;isolation:isolate}
+.seat-btn.aixin-seat,.seat-btn.shizhang-seat{isolation:isolate}
+.area-btn.aixin-area::before,.seat-btn.aixin-seat::before,.seat-btn.shizhang-seat::before{content:'';position:absolute;inset:0;z-index:-1;opacity:.15;pointer-events:none;background-repeat:no-repeat;background-position:center;background-size:contain}
+.area-btn.aixin-area::before,.seat-btn.aixin-seat::before{background-image:url('aixin1.png')}
+.seat-btn.shizhang-seat::before{background-image:url('shizhang1.png')}
+.app-footer .usage-guide-divider{height:1px;background:rgba(0,0,0,.08);margin:8px 16px}
 .add-seat-btn{width:calc(20% - 6px);height:44px;margin:0 3px;padding:0 8px;font-size:20px;font-weight:700;border:2px dashed #bfbfbf;border-radius:6px;background:#fafafa;cursor:pointer;text-align:center;color:#8c8c8c;transition:all .15s;flex-shrink:0;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex-grow:0}
 .add-seat-btn:active{background:#e6f7ff;border-color:#1890ff;color:#1890ff}
 
@@ -548,6 +555,9 @@ html.theme-yiban{background:repeating-linear-gradient(180deg,#3c3c46 0%,#4a4540 
 .theme-yiban .seat-btn.has-images-2{border-color:#cc6633;background:linear-gradient(135deg,rgba(120,60,20,.35),rgba(45,45,52,.92));color:#e8820c;font-weight:700;box-shadow:0 0 8px rgba(204,102,51,.2)}
 .theme-yiban .seat-btn.has-images-1.expanded{border:2px solid #00ffff;background:linear-gradient(135deg,rgba(0,100,120,.4),rgba(45,45,52,.92));color:#00ffff}
 .theme-yiban .seat-btn.has-images-2.expanded{border:2px solid #00ffff;background:linear-gradient(135deg,rgba(120,60,20,.35),rgba(45,45,52,.92));color:#e8820c}
+/* 【v1.36】爱心/视障标识暗色背景适配 */
+.theme-yiban .area-btn.aixin-area::before,.theme-yiban .seat-btn.aixin-seat::before,.theme-yiban .seat-btn.shizhang-seat::before{opacity:.18}
+.theme-yiban .app-footer .usage-guide-divider{background:rgba(0,255,255,.12)}
 /* 座位名称 */
 .theme-yiban .seat-name-text{color:#00cccc}
 .theme-yiban .seat-header-label{color:#00cccc}
@@ -721,6 +731,8 @@ html.theme-pixel{background:repeating-linear-gradient(180deg,#7ec8e8 0%,#a8d8a8 
 .theme-pixel .seat-btn.has-images-2{border-color:#f0ad4e;background:#f0ad4e;color:#5a3a0a;font-weight:700;box-shadow:2px 2px 0 #2d2d2d}
 .theme-pixel .seat-btn.has-images-1.expanded{border:3px solid #5a3d2b;background:#5bc0de;color:#1a4a5a;box-shadow:3px 3px 0 #2d2d2d}
 .theme-pixel .seat-btn.has-images-2.expanded{border:3px solid #5a3d2b;background:#f0ad4e;color:#5a3a0a;box-shadow:3px 3px 0 #2d2d2d}
+/* 【v1.36】爱心/视障标识分隔线适配 */
+.theme-pixel .app-footer .usage-guide-divider{background:rgba(74,55,40,.15)}
 /* 【v1.20.13】安卓端座位按钮缩小字号，避免宽字体换行 */
 .android-device .seat-btn{font-size:11.5px;height:40px;padding:0 8px;flex-shrink:0;flex-grow:0;position:relative}
 .android-device:not(.theme-yiban):not(.theme-pixel):not(.theme-metal) .seat-btn{height:42px}
@@ -876,6 +888,9 @@ html.theme-metal{background:#0d0d0d;background-image:repeating-linear-gradient(4
 .theme-metal .seat-btn.has-images-2{border-color:#b8860b;background:linear-gradient(135deg,#3a2a0a 0%,#2a1a04 100%);color:#d4af37;font-weight:700}
 .theme-metal .seat-btn.has-images-1.expanded{border:1px solid #d4af37;background:linear-gradient(135deg,#1a2a0d 0%,#0d1506 100%);box-shadow:inset 0 2px 4px rgba(0,0,0,.6),0 0 4px rgba(212,175,55,.3)}
 .theme-metal .seat-btn.has-images-2.expanded{border:1px solid #d4af37;background:linear-gradient(135deg,#2a1a04 0%,#150d02 100%);box-shadow:inset 0 2px 4px rgba(0,0,0,.6),0 0 4px rgba(212,175,55,.3)}
+/* 【v1.36】爱心/视障标识暗色背景适配 */
+.theme-metal .area-btn.aixin-area::before,.theme-metal .seat-btn.aixin-seat::before,.theme-metal .seat-btn.shizhang-seat::before{opacity:.18}
+.theme-metal .app-footer .usage-guide-divider{background:rgba(201,169,110,.15)}
 /* 记录时间按钮 */
 .theme-metal .record-time-btn{background:linear-gradient(135deg,#2a2a2a 0%,#1a1a1a 100%);border:1px solid #5a5a5a;color:#c8c8c8;border-radius:20px}
 .theme-metal .record-time-btn:active,.theme-metal .record-time-btn._pressing{background:#0d0d0d}
