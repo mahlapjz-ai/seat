@@ -57,7 +57,8 @@
 // 【v1.36.3】更新日志内容替换（新增08.20爱心专座条目，旧条目以省略号收尾），递增 CACHE_NAME 触发更新
 // 【v1.36.4】LOGO 宽度从水印背景80%调整为95%，递增 CACHE_NAME 触发更新
 // 【v1.36.5】爱心专座扩容至90个：新增一楼中庭(中1089~中1096)+四楼北区(北4001~北4010)，区域标识同步新增，递增 CACHE_NAME 触发更新
-const CACHE_NAME = 'seat-cache-v211';
+// 【v1.36.6】视障水印标识不透明度固定为0.85（不随主题），爱心标识保持动态提取时间水印背景alpha，递增 CACHE_NAME 触发更新
+const CACHE_NAME = 'seat-cache-v212';
 
 // 【v1.25.9】友好离线页：当所有缓存回退均失败时返回，替代原裸露"离线"文本
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>离线</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;color:#333}.box{text-align:center;padding:32px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);max-width:80vw}h2{margin:0 0 8px;font-size:18px;color:#1890ff}p{margin:0;font-size:14px;color:#666;line-height:1.6}button{margin-top:16px;padding:8px 24px;background:#1890ff;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}button:active{opacity:.8}</style></head><body><div class="box"><h2>当前处于离线状态</h2><p>请检查网络连接后刷新页面</p><button onclick="location.reload()">重新加载</button></div></body></html>';
