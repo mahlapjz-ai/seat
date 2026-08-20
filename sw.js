@@ -51,7 +51,8 @@
 // 【v1.35.2】上传性能优化：原生格式直接 file.arrayBuffer() 传入 Worker，消除 base64 编解码往返（~50-100ms）；延迟座位按钮/底栏 DOM 更新到 rAF，递增 CACHE_NAME 触发更新
 // 【v1.35.3】常见问题"预估的图片存储上限"小节文案修正（安卓实际可分配占比 30-40%），递增 CACHE_NAME 触发更新
 // 【v1.35.4】修复 iOS Safari 上传后预览显示缩略图：Worker transfer 前复制 ArrayBuffer，保留原始数据供回退路径使用，递增 CACHE_NAME 触发更新
-const CACHE_NAME = 'seat-cache-v205';
+// 【v1.36.0】新增爱心专座/视障专座图标标识（区域按钮背景+座位按钮背景+拍照水印），递增 CACHE_NAME 触发更新
+const CACHE_NAME = 'seat-cache-v206';
 
 // 【v1.25.9】友好离线页：当所有缓存回退均失败时返回，替代原裸露"离线"文本
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>离线</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;color:#333}.box{text-align:center;padding:32px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);max-width:80vw}h2{margin:0 0 8px;font-size:18px;color:#1890ff}p{margin:0;font-size:14px;color:#666;line-height:1.6}button{margin-top:16px;padding:8px 24px;background:#1890ff;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}button:active{opacity:.8}</style></head><body><div class="box"><h2>当前处于离线状态</h2><p>请检查网络连接后刷新页面</p><button onclick="location.reload()">重新加载</button></div></body></html>';
@@ -66,14 +67,22 @@ const PRECACHE_ASSETS = [
   './manifest.json',
   './seat-icon.png',
   './seat-icon-192.png',
-  './shenyelogo.png'
+  './shenyelogo.png',
+  './aixin1.png',
+  './aixin2.png',
+  './shizhang1.png',
+  './shizhang2.png'
 ];
 
 // Cache-First 资源：不常变，优先从缓存读取
 const CACHE_FIRST_URLS = [
   './seat-icon.png',
   './seat-icon-192.png',
-  './shenyelogo.png'
+  './shenyelogo.png',
+  './aixin1.png',
+  './aixin2.png',
+  './shizhang1.png',
+  './shizhang2.png'
 ];
 
 // ===== 安装事件 =====
