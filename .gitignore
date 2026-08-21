@@ -12,9 +12,13 @@ _extract.ps1
 # 自测脚本与素材（本地验证用，不上传仓库）
 _test_*.js
 _gen_test_img.js
+_gen_test_img_large.js
 _test_img.jpg
+_test_img.png
 _test_img_large.jpg
 _test_gen_img.js
+_perf_report.json
+_perf_report_ext.json
 _refactor_plan.md
 
 # 性能测试脚本与报告（本地使用，不上传仓库）

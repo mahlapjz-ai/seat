@@ -42,7 +42,7 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 #app{max-width:480px;margin:0 auto;padding:0 10px 140px;min-height:calc(100vh - 50px);min-height:calc(100dvh - 50px)}
 
 /* 【修复文字消失】page-header 从 app 中移出，作为独立固定元素 */
-.page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 10px 10px;gap:8px;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:var(--z-page-header)}
+.page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 10px 10px;gap:8px;max-width:480px;margin:0 auto;background:#f0f2f5;position:relative;z-index:var(--z-page-header);padding-top:calc(14px + constant(safe-area-inset-top));padding-top:calc(14px + env(safe-area-inset-top))}
 /* 【v1.28.22】标题栏第二行：mode-hint + photo-tip，位于 title-group 内 */
 /* header-bottom 已在 title-group 内（LOGO 40px + gap 8px = 48px 处），padding-left:0 使 mode-hint 左边缘对齐标题文字 */
 /* 【v1.28.23】align-self:stretch 让 header-bottom 宽度拉伸到 title-group(=page-title 标题+版本号)宽度，
@@ -96,7 +96,8 @@ body:has(#func-panel.show) #func-btn,#func-btn.expanded{box-shadow:inset 0 2px 4
 .btn-delete-seat:active,.btn-delete-seat._pressing{background:#fff1f0}
 
 /* 【v1.5.7】新版本更新提示条：滑入动画 + 不遮挡标题栏 */
-.update-bar{position:fixed;top:0;left:0;right:0;z-index:var(--z-update-bar);background:linear-gradient(135deg,#1890ff,#096dd9);color:#fff;text-align:center;padding:12px 16px;font-size:14px;font-weight:500;cursor:pointer;box-shadow:0 2px 8px rgba(24,144,255,.4);transform:translateY(-100%);transition:transform .3s ease}
+/* 【v1.37.0 M-1修复】PWA standalone 模式下顶部避开刘海/灵动岛（Safari 浏览器模式 inset-top=0 无变化） */
+.update-bar{position:fixed;top:constant(safe-area-inset-top);top:env(safe-area-inset-top);left:0;right:0;z-index:var(--z-update-bar);background:linear-gradient(135deg,#1890ff,#096dd9);color:#fff;text-align:center;padding:12px 16px;font-size:14px;font-weight:500;cursor:pointer;box-shadow:0 2px 8px rgba(24,144,255,.4);transform:translateY(-100%);transition:transform .3s ease}
 .update-bar.show{transform:translateY(0)}
 .update-bar:active,.update-bar._pressing{opacity:.85}
 /* 提示条显示时下推标题栏，避免遮挡 */
@@ -999,7 +1000,7 @@ html.theme-metal{background:#0d0d0d;background-image:repeating-linear-gradient(4
 .theme-metal .trash-browser-row{border-bottom-color:rgba(201,169,110,.15)}
 /* 【v1.12.0】骨架屏加载动画 */
 @keyframes skeleton-shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-.skeleton-screen{position:fixed;top:0;left:0;right:0;bottom:0;padding:0 16px;background:#f0f2f5;z-index:var(--z-skeleton);animation:skeleton-fadein .2s ease;overflow-y:auto}
+.skeleton-screen{position:fixed;top:0;left:0;right:0;bottom:0;padding:0 16px;background:#f0f2f5;z-index:var(--z-skeleton);animation:skeleton-fadein .2s ease;overflow-y:auto;padding-top:constant(safe-area-inset-top);padding-top:env(safe-area-inset-top)}
 @keyframes skeleton-fadein{from{opacity:0}to{opacity:1}}
 .skeleton-header{display:flex;justify-content:space-between;align-items:center;padding:14px 0;margin-bottom:8px}
 .skeleton-header-title{width:140px;height:22px;border-radius:4px;background:linear-gradient(90deg,#e8e8e8 25%,#f5f5f5 50%,#e8e8e8 75%);background-size:200% 100%;animation:skeleton-shimmer 1.5s infinite}
