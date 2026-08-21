@@ -991,6 +991,7 @@ html.theme-metal{background:#0d0d0d;background-image:repeating-linear-gradient(4
 .theme-metal .filter-slot-img-icon{color:#c9a96e}
 /* 回收站浏览器 */
 .theme-metal .trash-browser-row.selected{background:rgba(201,169,110,.12)}
+.theme-metal .trash-browser-row.drag-origin{outline-color:#d4af37;background:rgba(201,169,110,.12)}
 .theme-metal .trash-browser-checkbox.checked{background:linear-gradient(135deg,#d4af37 0%,#b8860b 100%);border-color:#d4af37}
 .theme-metal .trash-browser-thumb-wrap{border:1px solid rgba(201,169,110,.4)}
 /* 【v1.34.4】回收站面板文字对比度修复：trash-browser-box 同时有 modal-box 类，金属主题下背景为暗色，原 #333/#999 不可读 */
@@ -1121,7 +1122,10 @@ textarea:focus-visible {
    防止滚动条出现/消失时内容重排（渐进增强，旧浏览器忽略） */
 .trash-browser-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable;scrollbar-width:none}
 .trash-browser-list::-webkit-scrollbar{display:none}
-.trash-browser-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0;cursor:pointer}
+.trash-browser-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+/* 【v1.37.1】长按拖动多选：拖动中锁定滚动 + 长按起始条目高亮边框 */
+.trash-browser-list.drag-select{overflow:hidden}
+.trash-browser-row.drag-origin{outline:2px solid #fa8c16;outline-offset:-2px;background:#fff7e6;border-radius:6px}
 .trash-browser-row:last-child{border-bottom:none}
 .trash-browser-row.selected{background:#fff7e6;border-radius:6px}
 .trash-browser-thumb-wrap{position:relative;width:56px;height:56px;border-radius:6px;overflow:hidden;border:1px solid #e8e8e8;flex-shrink:0;background:#f0f0f0}
@@ -1139,6 +1143,7 @@ textarea:focus-visible {
 /* 主题适配 */
 
 .theme-yiban .trash-browser-row.selected{background:rgba(204,122,0,.15)}
+.theme-yiban .trash-browser-row.drag-origin{outline-color:#cc7a00;background:rgba(204,122,0,.15)}
 .theme-yiban .trash-browser-checkbox.checked{background:#cc7a00;border-color:#cc7a00}
 .theme-yiban .trash-browser-thumb-wrap{border-color:rgba(0,255,255,.15)}
 /* 【v1.29.5】蓝色主题回收站面板文字对比度修复：暗色面板背景下原 #333/#999 几乎不可读 */
@@ -1148,6 +1153,7 @@ textarea:focus-visible {
 .theme-yiban .trash-browser-row{border-bottom-color:rgba(0,255,255,.1)}
 
 .theme-pixel .trash-browser-row.selected{background:rgba(200,169,110,.2)}
+.theme-pixel .trash-browser-row.drag-origin{outline-color:#c8a96e;background:rgba(200,169,110,.2)}
 .theme-pixel .trash-browser-checkbox.checked{background:#c8a96e;border-color:#c8a96e}
 .theme-pixel .trash-browser-thumb-wrap{border-color:#8b7355;border-radius:0}
 
