@@ -115,7 +115,7 @@ body:has(#func-panel.show) #func-btn,#func-btn.expanded{box-shadow:inset 0 2px 4
 .func-panel-close{width:36px;height:36px;border:none;background:#f5f5f5;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#999;min-width:44px;min-height:44px}
 .func-panel-close:active{background:#e8e8e8}
 /* 【v1.3.9 修复3】func-panel-body 可内部滚动，overflow-y:auto */
-.func-panel-body{padding:8px 20px 24px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
+.func-panel-body{padding:8px 20px 24px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0;overscroll-behavior:contain}
 /* 【v1.3.2 菜单优化4】菜单项高度缩小，更紧凑，保持 44px 最低触摸区域 */
 .func-item{display:flex;align-items:center;justify-content:space-between;padding:10px 0;min-height:44px;border-bottom:1px solid #f5f5f5;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .func-item:last-child{border-bottom:none}
@@ -314,7 +314,7 @@ body:has(#func-panel.show) #func-btn,#func-btn.expanded{box-shadow:inset 0 2px 4
 #concat-sheet .concat-btns-grid .concat-ai{background:linear-gradient(135deg,#52c41a,#389e0d);color:#fff;font-size:clamp(10px,3vw,13px);white-space:nowrap;padding-left:8px;padding-right:8px}
 /* 【v1.28.1】AI比对按钮置灰状态（不使用disabled属性，以便点击触发提示） */
 #concat-sheet .concat-ai.ai-disabled{background:#ccc;color:#999;cursor:not-allowed}
-#concat-sheet .concat-grid{display:none;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 20px 8px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;touch-action:manipulation}
+#concat-sheet .concat-grid{display:none;grid-template-columns:repeat(3,1fr);gap:8px;padding:4px 20px 8px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;touch-action:manipulation;overscroll-behavior:contain}
 #concat-sheet .concat-thumb{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:#f5f5f5}
 #concat-sheet .concat-thumb.selected{border-color:#1890ff}
 #concat-sheet .concat-thumb.disabled{opacity:.4;cursor:not-allowed}
@@ -357,7 +357,7 @@ body:has(#func-panel.show) #func-btn,#func-btn.expanded{box-shadow:inset 0 2px 4
 
 .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:var(--z-modal-overlay);align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
-.modal-box{background:#fff;border-radius:12px;padding:20px 16px;width:92%;max-width:400px;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);max-height:85vh;overflow-y:auto}
+.modal-box{background:#fff;border-radius:12px;padding:20px 16px;width:92%;max-width:400px;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);max-height:85vh;overflow-y:auto;overscroll-behavior:contain}
 .modal-box h3{font-size:17px;margin-bottom:12px;text-align:center}
 .modal-btns{display:flex;gap:10px;margin-top:16px}
 .modal-btns button{flex:1;padding:12px;font-size:15px;font-weight:600;border:none;border-radius:8px;cursor:pointer}
@@ -377,7 +377,7 @@ body:has(#func-panel.show) #func-btn,#func-btn.expanded{box-shadow:inset 0 2px 4
 .about-modal-title{font-size:17px;font-weight:700;color:#1a1a1a}
 .about-modal-close{width:36px;height:36px;border:none;background:#f5f5f5;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#999;min-width:44px;min-height:44px}
 .about-modal-close:active{background:#e8e8e8}
-.about-modal-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 20px 24px;scrollbar-width:none;-ms-overflow-style:none}
+.about-modal-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 20px 24px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain}
 .about-modal-body::-webkit-scrollbar{display:none}
 .about-section{margin-bottom:18px}
 .about-section:last-child{margin-bottom:0}
@@ -473,7 +473,7 @@ body:has(#func-panel.show) #func-btn,#func-btn.expanded{box-shadow:inset 0 2px 4
 .filter-default-all.state-default .fa-all{font-size:11px;opacity:.6}
 .filter-default-all.state-all .fa-all{font-weight:700}
 .filter-default-all.state-all .fa-default{font-size:11px;opacity:.6}
-.filter-sheet-body{overflow-y:auto;padding:8px 20px 24px;padding-bottom:calc(24px + constant(safe-area-inset-bottom));padding-bottom:calc(24px + env(safe-area-inset-bottom));flex:1;-webkit-overflow-scrolling:touch}
+.filter-sheet-body{overflow-y:auto;padding:8px 20px 24px;padding-bottom:calc(24px + constant(safe-area-inset-bottom));padding-bottom:calc(24px + env(safe-area-inset-bottom));flex:1;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .filter-slot-item{display:flex;align-items:center;padding:10px 0;min-height:44px;gap:12px;border-bottom:1px solid #f5f5f5;cursor:pointer}
 .filter-slot-item:last-child{border-bottom:none}
 .filter-slot-item:active{background:#fafafa}
@@ -1120,7 +1120,7 @@ textarea:focus-visible {
 /* 【v1.26.13 修复滚动条闪烁】移除 max-height:300px（与 flex:1 冲突导致边界抖动），
    改由 box 的 max-height:85vh 约束整体高度；添加 scrollbar-gutter:stable 保留滚动条空间，
    防止滚动条出现/消失时内容重排（渐进增强，旧浏览器忽略） */
-.trash-browser-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable;scrollbar-width:none}
+.trash-browser-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable;scrollbar-width:none;overscroll-behavior:contain}
 .trash-browser-list::-webkit-scrollbar{display:none}
 .trash-browser-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 /* 【v1.37.1】长按拖动多选：拖动中锁定滚动 + 长按起始条目高亮边框 */
