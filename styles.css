@@ -39,6 +39,12 @@ button,[data-action],.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb,.filter-s
 .header-btn:active,.header-btn._pressing{transition:opacity .1s ease,transform .1s ease}
 .btn-delete-seat:active,.btn-delete-seat._pressing{transition:background .1s ease}
 .update-bar:active,.update-bar._pressing{transition:opacity .1s ease}
+/* 【v1.37.3 修复快速连点丢click】交互按钮统一 touch-action:manipulation：
+   告知浏览器这些元素无需双击缩放手势，消除双击检测窗口（约300ms内第二次tap不派发click）。
+   根因：iOS Safari 无视 viewport user-scalable=no 保留双击缩放检测（iPhone15/iOS26实测），
+   部分安卓浏览器（如魅族）同样保留；表现为快速点击"区域"按钮第二次无响应只有按压反馈。
+   manipulation 仅禁用双击缩放，不影响单击/滚动/长按/拖动等任何现有手势 */
+.floor-btn,.area-btn,.record-time-btn,.seat-btn,.header-btn,.btn-delete-seat,.func-item,.update-bar,.modal-btns button,.batch-chip,.filter-slot-item,.ts-checkbox,.thumb-del,.thumb-wrap,.concat-thumb{touch-action:manipulation}
 #app{max-width:480px;margin:0 auto;padding:0 10px 140px;min-height:calc(100vh - 50px);min-height:calc(100dvh - 50px)}
 
 /* 【修复文字消失】page-header 从 app 中移出，作为独立固定元素 */
