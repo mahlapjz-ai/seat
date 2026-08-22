@@ -1,0 +1,15 @@
+# Cloudflare Pages 自定义响应头（GitHub Pages 不支持此文件，仅 seat-def.pages.dev 生效）
+# 【v1.37.6】CSP 内容安全策略（纵深防御）：
+#   - script-src：仅同源脚本 + JSZip CDN（已叠加 SRI 锁定）+ 主题预载内联脚本 hash
+#     + 'unsafe-hashes' 精确放行 index.html 仅有的两个内联 onclick（标题点击/时段筛选）
+#   - style-src 'unsafe-inline'：静态/动态生成 HTML 均有内联 style 属性（如骨架屏过渡）
+#   - img-src data: blob:：缩略图 data URL、预览 blob URL
+#   - connect-src data: blob:：compress-worker 内 fetch(data:/blob:) 压缩图片；
+#     https://seat-def.pages.dev：GitHub Pages 托管时 AI 比对接口跨域地址（当前功能已关闭，保留前向兼容）
+#   - worker-src 'self'：compress-worker.js / sw.js 均为同源
+#   - object-src 'none' + base-uri + form-action 'self'：阻断 object/embed/base 注入
+#   - frame-ancestors 'self'：防点击劫持（禁止第三方站点 iframe 嵌入）
+# 内联脚本 hash 由 _gen_csp_hash.js 从 index.html 提取计算；修改 index.html 内联脚本或
+# onclick 值时必须同步更新下方 hash，否则对应代码会被 CSP 拦截
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'sha256-xpIgW/mbombi7lhNKRyrBxWGGsxQWfyYBeQMUyUv5BI=' 'unsafe-hashes' 'sha256-8b4otHMRrCAKYld1Wjb6ZUhKiCICZLOiLpyYTKYEDSk=' 'sha256-PaFkj9aHOBqbW671Bo+g+aiZSOzIeb6n9Ak8MLopxtI='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' data: blob: https://seat-def.pages.dev; worker-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; manifest-src 'self'

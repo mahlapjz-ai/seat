@@ -65,7 +65,8 @@
 // 【v1.37.3】交互按钮统一touch-action:manipulation，消除双击缩放检测窗口（修复快速连点第二次无响应），递增 CACHE_NAME 触发更新
 // 【v1.37.4】金属主题适配：记录完成时间按钮改香槟金配色（原灰边灰字）+ 补齐确认弹窗金属适配（原遗漏），递增 CACHE_NAME 触发更新
 // 【v1.37.5】安全下线：AI比对代理接口移出部署路径（functions/api/ai-compare.js → functions/disabled/ai-compare.js.disabled），/api/ai-compare 返回 404，前端无功能改动，递增 CACHE_NAME 触发更新
-const CACHE_NAME = 'seat-cache-v219';
+// 【v1.37.6】安全加固：新增 _headers 输出 CSP 内容安全策略（脚本白名单+内联hash+防点击劫持）+ 清理纯调试 console.log（保留 error/warn 诊断日志），递增 CACHE_NAME 触发更新
+const CACHE_NAME = 'seat-cache-v220';
 
 // 【v1.25.9】友好离线页：当所有缓存回退均失败时返回，替代原裸露"离线"文本
 const OFFLINE_HTML = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>离线</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f2f5;color:#333}.box{text-align:center;padding:32px 24px;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.08);max-width:80vw}h2{margin:0 0 8px;font-size:18px;color:#1890ff}p{margin:0;font-size:14px;color:#666;line-height:1.6}button{margin-top:16px;padding:8px 24px;background:#1890ff;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer}button:active{opacity:.8}</style></head><body><div class="box"><h2>当前处于离线状态</h2><p>请检查网络连接后刷新页面</p><button onclick="location.reload()">重新加载</button></div></body></html>';

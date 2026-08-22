@@ -11,6 +11,7 @@ _extract.ps1
 
 # 自测脚本与素材（本地验证用，不上传仓库）
 _test_*.js
+_gen_csp_hash.js
 _gen_test_img.js
 _gen_test_img_large.js
 _test_img.jpg
