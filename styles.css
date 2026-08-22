@@ -899,8 +899,16 @@ html.theme-metal{background:#0d0d0d;background-image:repeating-linear-gradient(4
 .theme-metal .area-btn.aixin-area::before,.theme-metal .seat-btn.aixin-seat::before,.theme-metal .seat-btn.shizhang-seat::before{opacity:.18}
 .theme-metal .app-footer .usage-guide-divider{background:rgba(201,169,110,.15)}
 /* 记录时间按钮 */
-.theme-metal .record-time-btn{background:linear-gradient(135deg,#2a2a2a 0%,#1a1a1a 100%);border:1px solid #5a5a5a;color:#c8c8c8;border-radius:20px}
-.theme-metal .record-time-btn:active,.theme-metal .record-time-btn._pressing{background:#0d0d0d}
+/* 【v1.37.4】香槟金配色（原灰边灰字），与金属主题统一：暗色半透明底+金边金字+5px圆角，:active 暗金反馈+内阴影凹陷 */
+.theme-metal .record-time-btn{background:rgba(20,20,20,.85);border:1px solid #c9a96e;color:#d4af37;border-radius:5px}
+.theme-metal .record-time-btn:active,.theme-metal .record-time-btn._pressing{background:rgba(201,169,110,.15);box-shadow:inset 0 2px 4px rgba(0,0,0,.6)}
+/* 【v1.37.4】记录完成时间确认弹窗（原遗漏金属适配）：容器同 modal-box 惯例，取消暗底金边、确认亮金渐变深字 */
+.theme-metal .record-confirm-box{background:linear-gradient(180deg,#1a1a1a 0%,#0d0d0d 100%);border:1px solid #c9a96e;border-radius:5px;box-shadow:0 0 30px rgba(0,0,0,.7)}
+.theme-metal .record-confirm-text{color:#b0b0b0}
+.theme-metal .record-confirm-cancel{background:linear-gradient(135deg,#3a3a3a 0%,#1a1a1a 100%);border:1px solid #c9a96e;color:#c8c8c8;border-radius:4px}
+.theme-metal .record-confirm-cancel:active{box-shadow:inset 0 2px 4px rgba(0,0,0,.6)}
+.theme-metal .record-confirm-ok{background:linear-gradient(135deg,#d4af37 0%,#b8860b 100%);border:1px solid #d4af37;color:#1a1a1a;border-radius:4px;box-shadow:0 0 6px rgba(212,175,55,.3)}
+.theme-metal .record-confirm-ok:active{box-shadow:inset 0 2px 4px rgba(0,0,0,.6)}
 /* 时段卡片 */
 .theme-metal .timeslot-card{background:linear-gradient(135deg,#1a1a1a 0%,#0d0d0d 100%);border:1px solid rgba(201,169,110,.3);border-radius:5px;box-shadow:0 1px 4px rgba(0,0,0,.5)}
 .theme-metal .ts-header{border-bottom:1px solid rgba(201,169,110,.2)}
